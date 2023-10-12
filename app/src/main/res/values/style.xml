@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+  <style name="TransparentDialog" parent="Theme.Design.Light.BottomSheetDialog">
+    <item name="android:colorBackground">@android:color/transparent</item>
+    <item name="textAllCaps">false</item>
+    <item name="buttonBarPositiveButtonStyle">@style/positiveBtnStyle</item>
+    <item name="buttonBarNegativeButtonStyle">@style/negativeBtnstyle</item>
+  </style>
+
+  <style name="positiveBtnStyle" parent="Widget.AppCompat.Button.ButtonBar.AlertDialog">
+    <item name="android:textColor">#0000ff</item>
+  </style>
+
+  <style name="negativeBtnstyle" parent="Widget.AppCompat.Button.ButtonBar.AlertDialog">
+    <item name="android:textColor">#999999</item>
+  </style>
+
+  <style name="BeautyBottomSheetStyleWrapper" parent="Widget.Design.BottomSheet.Modal">
+    <item name="android:background">@android:color/transparent</item>
+    <item name="android:layout_width">match_parent</item>
+  </style>
+
+  <style name="BeautyBottomSheetDialog" parent="Theme.Design.Light.BottomSheetDialog">
+    <item name="bottomSheetStyle">@style/BeautyBottomSheetStyleWrapper</item>
+    <item name="android:backgroundDimEnabled">false</item>
+    <item name="android:windowBackground">@android:color/transparent</item>
+  </style>
+
+  <style name="BeautyDialogPop" parent="BeautyBottomSheetDialog">
+    <item name="android:windowContentOverlay">@null</item>
+    <item name="android:windowIsFloating">true</item>
+    <item name="android:windowFrame">@null</item>
+    <item name="android:windowNoTitle">true</item>
+    <item name="android:windowIsTranslucent">true</item>
+  </style>
+
+  <style name="dialogActivityTheme" parent="@style/Theme.AppCompat.Light.Dialog.Alert">
+    <item name="android:windowBackground">@android:color/transparent</item>
+    <item name="windowNoTitle">true</item>
+    <item name="android:backgroundDimEnabled">true</item>
+    <item name="android:backgroundDimAmount">0.1</item>
+    <item name="windowActionBar">false</item>
+  </style>
+
+  <style name="roundedCornerImageStyle">
+    <item name="cornerFamily">rounded</item>
+    <item name="cornerSize">25dp</item>
+  </style>
+
+  <style name="circleImageStyle">
+    <item name="cornerFamily">rounded</item>
+    <item name="cornerSize">50%</item>
+  </style>
+</resources>

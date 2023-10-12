@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  xmlns:tools="http://schemas.android.com/tools"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  tools:context=".activity.MainActivity">
+
+  <TextView
+    android:id="@+id/live_userinfo_userid_prefix"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    android:text="Your UserID :"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toTopOf="parent" />
+
+  <TextView
+    android:id="@+id/live_userinfo_userid"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="18sp"
+    app:layout_constraintBottom_toBottomOf="@id/live_userinfo_userid_prefix"
+    app:layout_constraintStart_toEndOf="@id/live_userinfo_userid_prefix"
+    app:layout_constraintTop_toTopOf="@id/live_userinfo_userid_prefix" />
+
+  <TextView
+    android:id="@+id/live_userinfo_username_prefix"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    android:text="Your UserName :"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toBottomOf="@id/live_userinfo_userid_prefix" />
+
+  <TextView
+    android:id="@+id/live_userinfo_username"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="18sp"
+    app:layout_constraintBottom_toBottomOf="@id/live_userinfo_username_prefix"
+    app:layout_constraintStart_toEndOf="@id/live_userinfo_username_prefix"
+    app:layout_constraintTop_toTopOf="@id/live_userinfo_username_prefix" />
+
+  <LinearLayout
+    android:id="@+id/live_layout"
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_marginTop="64dp"
+    android:orientation="vertical"
+    app:layout_constraintBottom_toTopOf="@id/call_layout"
+    app:layout_constraintHeight_percent="0.6"
+    app:layout_constraintTop_toTopOf="parent">
+
+    <com.google.android.material.textfield.TextInputLayout
+      android:id="@+id/live_id_streaming"
+      style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+      android:layout_width="275dp"
+      android:layout_height="wrap_content"
+      android:layout_gravity="center_horizontal"
+      android:layout_marginTop="32dp"
+      android:hint="LiveStreaming ID">
+
+      <com.google.android.material.textfield.TextInputEditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="middle"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:singleLine="true"
+        android:text="" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <Button
+      android:id="@+id/start_live_streaming"
+      android:layout_width="275dp"
+      android:layout_height="wrap_content"
+      android:layout_gravity="center_horizontal"
+      android:layout_marginTop="8dp"
+      android:text="Start LiveStreaming" />
+
+    <Button
+      android:id="@+id/watch_live_streaming"
+      android:layout_width="275dp"
+      android:layout_height="wrap_content"
+      android:layout_gravity="center_horizontal"
+      android:layout_marginTop="8dp"
+      android:text="Watch LiveStreaming" />
+
+    <com.google.android.material.textfield.TextInputLayout
+      android:id="@+id/live_id_audio_room"
+      style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+      android:layout_width="275dp"
+      android:layout_height="wrap_content"
+      android:layout_gravity="center_horizontal"
+      android:layout_marginTop="8dp"
+      android:hint="Live Audio Room ID">
+
+      <com.google.android.material.textfield.TextInputEditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="middle"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:singleLine="true"
+        android:text="" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <Button
+      android:id="@+id/start_live_audioroom"
+      android:layout_width="275dp"
+      android:layout_height="wrap_content"
+      android:layout_gravity="center_horizontal"
+      android:layout_marginTop="8dp"
+      android:text="Start Live Audio Room" />
+
+    <Button
+      android:id="@+id/watch_live_audioroom"
+      android:layout_width="275dp"
+      android:layout_height="wrap_content"
+      android:layout_gravity="center_horizontal"
+      android:layout_marginTop="8dp"
+      android:text="Watch Live Audio Room" />
+  </LinearLayout>
+
+  <LinearLayout
+    android:id="@+id/call_layout"
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:orientation="vertical"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintTop_toBottomOf="@+id/live_layout">
+
+
+    <com.google.android.material.textfield.TextInputLayout
+      android:id="@+id/call_user_id"
+      style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+      android:layout_width="275dp"
+      android:layout_height="wrap_content"
+      android:layout_gravity="center_horizontal"
+      android:layout_marginTop="8dp"
+      android:hint="Call User ID">
+
+      <com.google.android.material.textfield.TextInputEditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="middle"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:singleLine="true"
+        android:text="" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <Button
+      android:id="@+id/call_user_video"
+      android:layout_width="275dp"
+      android:layout_height="wrap_content"
+      android:layout_gravity="center_horizontal"
+      android:layout_marginTop="16dp"
+      android:text="Start A Video Call" />
+
+    <Button
+      android:id="@+id/call_user_audio"
+      android:layout_width="275dp"
+      android:layout_height="wrap_content"
+      android:layout_gravity="center_horizontal"
+      android:layout_marginTop="16dp"
+      android:text="Start A Audio Call" />
+  </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

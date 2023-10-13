@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:tools="http://schemas.android.com/tools"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:orientation="vertical"
+  tools:context=".activity.MainActivity">
+
+  <TextView
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="16dp"
+    android:layout_marginTop="128dp"
+    android:text="Please test with two or more devices"
+    android:textSize="16sp" />
+
+  <TextView
+    android:id="@+id/your_user_id"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="16dp"
+    android:layout_marginTop="16dp"
+    android:text="Your userID:"
+    android:textSize="16sp" />
+
+  <TextView
+    android:id="@+id/your_user_name"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="16dp"
+    android:layout_marginTop="16dp"
+    android:text="Your userName:"
+    android:textSize="16sp" />
+
+
+  <com.google.android.material.textfield.TextInputLayout
+    android:id="@+id/live_id"
+    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+    android:layout_width="275dp"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
+    android:layout_marginTop="64dp"
+    android:hint="Room ID">
+
+    <com.google.android.material.textfield.TextInputEditText
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:ellipsize="middle"
+      android:paddingStart="16dp"
+      android:paddingEnd="16dp"
+      android:singleLine="true" />
+
+  </com.google.android.material.textfield.TextInputLayout>
+
+  <Button
+    android:id="@+id/start_live"
+    android:layout_width="275dp"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
+    android:layout_marginTop="16dp"
+    android:text="Start a live" />
+
+  <Button
+    android:id="@+id/watch_live"
+    android:layout_width="275dp"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
+    android:layout_marginTop="16dp"
+    android:text="Watch a live" />
+
+</LinearLayout>

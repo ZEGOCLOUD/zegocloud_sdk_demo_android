@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">ZegoQuickStart</string>
+
+
+    <string name="permission_explain_camera">Camera access is required to start a video conference.</string>
+    <string name="permission_explain_mic">Microphone access is required to start a video conference.</string>
+    <string name="permission_explain_camera_mic">Camera and microphone access are required to start a video conference.</string>
+    <string name="settings_camera">Please go to system settings to allow camera access. </string>
+    <string name="settings_mic">Please go to system settings to allow microphone access. </string>
+    <string name="settings_camera_mic">Please go to system settings to allow camera and microphone access.</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="settings">Settings</string>
+
+</resources>

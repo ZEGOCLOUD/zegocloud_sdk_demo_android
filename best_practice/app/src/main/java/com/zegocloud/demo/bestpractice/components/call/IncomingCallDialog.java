@@ -16,6 +16,8 @@ import com.zegocloud.demo.bestpractice.internal.business.UserRequestCallback;
 import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
 import im.zego.zegoexpress.callback.IZegoRoomLoginCallback;
 import im.zego.zegoexpress.constants.ZegoScenario;
+import im.zego.zim.entity.ZIMCallInvitationCancelledInfo;
+import im.zego.zim.entity.ZIMCallInvitationTimeoutInfo;
 import org.json.JSONObject;
 
 public class IncomingCallDialog extends AppCompatActivity {
@@ -39,14 +41,14 @@ public class IncomingCallDialog extends AppCompatActivity {
         zimEventHandler = new IZIMEventHandler() {
 
             @Override
-            public void onInComingUserRequestTimeout(String requestID) {
+            public void onInComingUserRequestTimeout(String requestID, ZIMCallInvitationTimeoutInfo info) {
                 if (requestID.equals(callInfo.callID)) {
                     finish();
                 }
             }
 
             @Override
-            public void onInComingUserRequestCancelled(String requestID, String inviter, String extendedData) {
+            public void onInComingUserRequestCancelled(String requestID, ZIMCallInvitationCancelledInfo info) {
                 if (requestID.equals(callInfo.callID)) {
                     finish();
                 }

@@ -8,30 +8,40 @@ public interface PKListener {
     default void onPKEnded() {
     }
 
-    default void onReceiveStartPKRequest(String requestID, String inviter, String inviterName, String roomId) {
+    default void onReceivePKBattleRequest(String requestID, String inviter, String inviterName, String roomId) {
     }
 
-    default void onReceiveStopPKRequest(String requestID) {
+
+    default void onPKBattleAccepted(String userID, String extendedData) {
+
     }
 
-    default void onInComingStartPKRequestTimeout(String requestID) {
+    default void onInComingPKBattleTimeout(String requestID) {
     }
 
-    default void onOutgoingStartPKRequestTimeout() {
+    default void onPKBattleTimeout(String userID, String extendedData) {
     }
 
-    default void onInComingStartPKRequestCancelled(String requestID) {
+    default void onPKBattleCancelled(String userID, String extendedData) {
     }
 
-    default void onOutgoingStartPKRequestRejected() {
+    default void onPKBattleRejected(String userID, String extendedData) {
     }
 
-    default void onPKCameraOpen(String userID, boolean open) {
+    default void onPKUserCameraOpen(String userID, boolean open) {
     }
 
-    default void onPKMicrophoneOpen(String userID, boolean open) {
+    default void onPKUserMicrophoneOpen(String userID, boolean open) {
     }
 
-    default void onPKSEITimeOut(String userID, boolean timeout) {
+    default void onPKUserConnecting(String userID, long duration) {
+    }
+
+    default void onPKUserQuit(String userID, String extendedData) {
+
+    }
+
+    default void onPKUserJoin(String userID, String extendedData) {
+
     }
 }

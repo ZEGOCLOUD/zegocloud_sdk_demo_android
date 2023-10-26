@@ -39,7 +39,7 @@ public class CoHostView extends RecyclerView {
         ZEGOSDKManager.getInstance().expressService.addEventHandler(new IExpressEngineEventHandler() {
             @Override
             public void onCameraOpen(String userID, boolean open) {
-                if (ZEGOLiveStreamingManager.getInstance().getPKInfo() == null) {
+                if (ZEGOLiveStreamingManager.getInstance().getPKBattleInfo() == null) {
                     coHostAdapter.notifyDataSetChanged();
                 }
 
@@ -47,7 +47,7 @@ public class CoHostView extends RecyclerView {
 
             @Override
             public void onMicrophoneOpen(String userID, boolean open) {
-                if (ZEGOLiveStreamingManager.getInstance().getPKInfo() == null) {
+                if (ZEGOLiveStreamingManager.getInstance().getPKBattleInfo() == null) {
                     coHostAdapter.notifyDataSetChanged();
                 }
             }

@@ -18,18 +18,34 @@ import im.zego.zegoexpress.entity.ZegoMixerInput;
 import im.zego.zegoexpress.entity.ZegoMixerOutput;
 import im.zego.zegoexpress.entity.ZegoMixerTask;
 import im.zego.zegoexpress.entity.ZegoMixerVideoConfig;
+import im.zego.zim.ZIM;
 import im.zego.zim.callback.ZIMCallAcceptanceSentCallback;
 import im.zego.zim.callback.ZIMCallCancelSentCallback;
+import im.zego.zim.callback.ZIMCallEndSentCallback;
 import im.zego.zim.callback.ZIMCallInvitationSentCallback;
+import im.zego.zim.callback.ZIMCallQuitSentCallback;
 import im.zego.zim.callback.ZIMCallRejectionSentCallback;
+import im.zego.zim.callback.ZIMCallingInvitationSentCallback;
 import im.zego.zim.callback.ZIMRoomAttributesOperatedCallback;
 import im.zego.zim.entity.ZIMCallAcceptConfig;
 import im.zego.zim.entity.ZIMCallCancelConfig;
+import im.zego.zim.entity.ZIMCallEndConfig;
+import im.zego.zim.entity.ZIMCallInvitationCancelledInfo;
+import im.zego.zim.entity.ZIMCallInvitationEndedInfo;
+import im.zego.zim.entity.ZIMCallInvitationReceivedInfo;
 import im.zego.zim.entity.ZIMCallInvitationSentInfo;
+import im.zego.zim.entity.ZIMCallInvitationTimeoutInfo;
 import im.zego.zim.entity.ZIMCallInviteConfig;
+import im.zego.zim.entity.ZIMCallQuitConfig;
 import im.zego.zim.entity.ZIMCallRejectConfig;
+import im.zego.zim.entity.ZIMCallUserInfo;
+import im.zego.zim.entity.ZIMCallUserStateChangeInfo;
+import im.zego.zim.entity.ZIMCallingInvitationSentInfo;
+import im.zego.zim.entity.ZIMCallingInviteConfig;
 import im.zego.zim.entity.ZIMError;
 import im.zego.zim.entity.ZIMRoomAttributesSetConfig;
+import im.zego.zim.enums.ZIMCallInvitationMode;
+import im.zego.zim.enums.ZIMCallUserState;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,6 +53,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -45,17 +63,15 @@ public class PKService {
     private Handler handler = new Handler(Looper.getMainLooper());
     private Runnable syncSEIRunnable;
     private Runnable checkSEIRunnable;
-    private PKInfo currentPKInfo;
-    private Map<String, Long> seiTimeMap = new HashMap<>();
-    private Map<String, Boolean> seiStateMap = new HashMap<>();
+    private ConcurrentHashMap<String, Long> seiTimeMap = new ConcurrentHashMap<>();
     private Map<String, String> roomProperties = new HashMap<>();
-    private PKRequest sendPKStartRequest;
-    private PKRequest recvPKStartRequest;
-    private boolean hasNotified = false;
-    private boolean mutePKUser = false;
+
+    private PKBattleInfo pkBattleInfo;
+
     private ZegoMixerTask task;
     private IZIMEventHandler zimEventHandler;
     private List<PKListener> listenerList = new ArrayList<>();
+    private boolean isPKStarted;
 
     public void initWhenUserLogin() {
         syncSEIRunnable = new Runnable() {
@@ -85,20 +101,9 @@ public class PKService {
                 for (Entry<String, Long> entry : seiTimeMap.entrySet()) {
                     String userID = entry.getKey();
                     Long timeStamp = entry.getValue();
-                    boolean isTimeOut = System.currentTimeMillis() - timeStamp > 5000;
-                    if (seiStateMap.containsKey(userID)) {
-                        boolean lastTimeOutState = seiStateMap.get(userID);
-                        seiStateMap.put(userID, isTimeOut);
-                        if (isTimeOut != lastTimeOutState) {
-                            for (PKListener listener : listenerList) {
-                                listener.onPKSEITimeOut(userID, isTimeOut);
-                            }
-                        }
-                    } else {
-                        seiStateMap.put(userID, isTimeOut);
-                        for (PKListener listener : listenerList) {
-                            listener.onPKSEITimeOut(userID, isTimeOut);
-                        }
+                    long duration = System.currentTimeMillis() - timeStamp;
+                    for (PKListener listener : listenerList) {
+                        listener.onPKUserConnecting(userID, duration);
                     }
                 }
                 handler.postDelayed(checkSEIRunnable, 1000);
@@ -106,180 +111,374 @@ public class PKService {
         };
 
         zimEventHandler = new IZIMEventHandler() {
+
             @Override
-            public void onInComingUserRequestReceived(String requestID, String inviter, String extendedData) {
-                PKExtendedData pkExtendedData = PKExtendedData.parse(extendedData);
-                if (pkExtendedData != null) {
-                    if (pkExtendedData.type == PKExtendedData.START_PK) {
+            public void onInComingUserRequestReceived(String requestID, ZIMCallInvitationReceivedInfo info) {
+                PKExtendedData inviterExtendedData = PKExtendedData.parse(info.extendedData);
+                if (inviterExtendedData != null) {
+                    if (inviterExtendedData.type == PKExtendedData.START_PK) {
                         String currentRoomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
                         boolean userNotHost =
                             TextUtils.isEmpty(currentRoomID) || (!ZEGOLiveStreamingManager.getInstance()
                                 .isCurrentUserHost());
-                        boolean inPKStartRequest = sendPKStartRequest != null || recvPKStartRequest != null;
-                        if (userNotHost || (currentPKInfo != null) || inPKStartRequest) {
-                            rejectPKBattleStartRequest(requestID);
+                        if (userNotHost || pkBattleInfo != null) {
+                            rejectPKBattle(requestID);
                             return;
                         }
-                        recvPKStartRequest = new PKRequest();
-                        recvPKStartRequest.requestID = requestID;
-                        recvPKStartRequest.targetUserID = inviter;
+                        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+                        PKBattleInfo pkInfo = new PKBattleInfo();
+                        pkInfo.requestID = requestID;
+                        pkInfo.pkUserList = new ArrayList<>();
+                        for (ZIMCallUserInfo zimCallUserInfo : info.callUserList) {
+                            PKUser pkUser = new PKUser(zimCallUserInfo.userID, zimCallUserInfo.state,
+                                zimCallUserInfo.extendedData);
+                            // parse each user and it's extendedData
+                            if (!TextUtils.isEmpty(zimCallUserInfo.extendedData)) {
+                                PKExtendedData userData = PKExtendedData.parse(zimCallUserInfo.extendedData);
+                                if (userData != null) {
+                                    pkUser.userName = userData.userName;
+                                    pkUser.roomID = userData.roomID;
+                                }
+                            }
+                            //
+                            if (Objects.equals(currentUser.userID, zimCallUserInfo.userID)) {
+                                pkUser.userName = currentUser.userName;
+                                pkUser.roomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
+                                pkUser.setCamera(currentUser.isCameraOpen());
+                                pkUser.setMicrophone(currentUser.isMicrophoneOpen());
+                                pkInfo.pkUserList.add(0, pkUser);
+                            } else {
+                                if (Objects.equals(zimCallUserInfo.userID, inviterExtendedData.userID)) {
+                                    pkUser.roomID = inviterExtendedData.roomID;
+                                    pkUser.userName = inviterExtendedData.userName;
+                                }
+                                pkInfo.pkUserList.add(pkUser);
+                            }
+                        }
+                        PKService.this.pkBattleInfo = pkInfo;
 
                         for (PKListener listener : listenerList) {
-                            listener.onReceiveStartPKRequest(requestID, inviter, pkExtendedData.userName,
-                                pkExtendedData.roomID);
-                        }
-                    } else if (pkExtendedData.type == PKExtendedData.END_PK) {
-                        acceptPKBattleStopRequest(requestID);
-                        if (currentPKInfo == null) {
-                            return;
-                        }
-                        for (PKListener listener : listenerList) {
-                            listener.onReceiveStopPKRequest(requestID);
-                        }
-                        stopPKBattle();
-                    }
-                    if (pkExtendedData.type == PKExtendedData.RESUME_PK) {
-                        // already stopped PK
-                        if (currentPKInfo == null) {
-                            rejectPKBattleResumeRequest(requestID);
-                        } else {
-                            acceptPKBattleResumeRequest(requestID);
+                            listener.onReceivePKBattleRequest(requestID, info.inviter, inviterExtendedData.userName,
+                                inviterExtendedData.roomID);
                         }
                     }
                 }
             }
 
             @Override
-            public void onInComingUserRequestTimeout(String requestID) {
-                if (recvPKStartRequest != null && requestID.equals(recvPKStartRequest.requestID)) {
-                    recvPKStartRequest = null;
+            public void onInComingUserRequestTimeout(String requestID, ZIMCallInvitationTimeoutInfo info) {
+                if (pkBattleInfo != null && requestID.equals(pkBattleInfo.requestID)) {
+                    pkBattleInfo = null;
                     for (PKListener listener : listenerList) {
-                        listener.onInComingStartPKRequestTimeout(requestID);
+                        listener.onInComingPKBattleTimeout(requestID);
                     }
                 }
             }
 
             @Override
-            public void onInComingUserRequestCancelled(String requestID, String inviter, String extendedData) {
-                if (recvPKStartRequest != null && requestID.equals(recvPKStartRequest.requestID)) {
-                    recvPKStartRequest = null;
+            public void onInComingUserRequestCancelled(String requestID, ZIMCallInvitationCancelledInfo info) {
+                if (pkBattleInfo != null && requestID.equals(pkBattleInfo.requestID)) {
+                    pkBattleInfo = null;
                     for (PKListener listener : listenerList) {
-                        listener.onInComingStartPKRequestCancelled(requestID);
+                        listener.onPKBattleCancelled(info.inviter, info.extendedData);
                     }
                 }
             }
 
             @Override
-            public void onOutgoingUserRequestTimeout(String requestID) {
-                if (sendPKStartRequest != null && requestID.equals(sendPKStartRequest.requestID)) {
-                    sendPKStartRequest = null;
-                    for (PKListener listener : listenerList) {
-                        listener.onOutgoingStartPKRequestTimeout();
+            public void onUserRequestEnded(String requestID, ZIMCallInvitationEndedInfo info) {
+                if (pkBattleInfo != null && requestID.equals(pkBattleInfo.requestID)) {
+                    stopPKBattle();
+                }
+            }
+
+            @Override
+            public void onUserRequestStateChanged(ZIMCallUserStateChangeInfo info, String requestID) {
+                super.onUserRequestStateChanged(info, requestID);
+                if (pkBattleInfo != null && requestID.equals(pkBattleInfo.requestID)) {
+                    ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+                    for (ZIMCallUserInfo userInfo : info.callUserList) {
+                        boolean findIfAlreadyAdded = false;
+                        for (PKUser pkUser : pkBattleInfo.pkUserList) {
+                            if (Objects.equals(pkUser.userID, userInfo.userID)) {
+                                pkUser.setCallUserState(userInfo.state);
+                                pkUser.setExtendedData(userInfo.extendedData);
+                                if (!TextUtils.isEmpty(userInfo.extendedData)) {
+                                    PKExtendedData userData = PKExtendedData.parse(userInfo.extendedData);
+                                    if (userData != null) {
+                                        pkUser.userName = userData.userName;
+                                        pkUser.roomID = userData.roomID;
+                                    }
+                                }
+                                if (Objects.equals(pkUser.userID, currentUser.userID)) {
+                                    pkUser.roomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
+                                    pkUser.userName = currentUser.userName;
+                                    pkUser.setCamera(currentUser.isCameraOpen());
+                                    pkUser.setMicrophone(currentUser.isMicrophoneOpen());
+                                }
+                                findIfAlreadyAdded = true;
+                                break;
+                            }
+                        }
+                        if (!findIfAlreadyAdded) {
+                            PKUser pkUser = new PKUser(userInfo.userID, userInfo.state, userInfo.extendedData);
+                            if (Objects.equals(pkUser.userID, currentUser.userID)) {
+                                pkUser.roomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
+                                pkUser.userName = currentUser.userName;
+                                pkUser.setCamera(currentUser.isCameraOpen());
+                                pkUser.setMicrophone(currentUser.isMicrophoneOpen());
+                                pkBattleInfo.pkUserList.add(0, pkUser);
+                            } else {
+                                pkBattleInfo.pkUserList.add(pkUser);
+                            }
+                        }
+                    }
+
+                    for (ZIMCallUserInfo userInfo : info.callUserList) {
+                        if (userInfo.state == ZIMCallUserState.ACCEPTED) {
+                            PKUser pkUser = getPKUser(pkBattleInfo, userInfo.userID);
+                            if (pkUser != null) {
+                                for (PKListener listener : listenerList) {
+                                    listener.onPKBattleAccepted(userInfo.userID, userInfo.extendedData);
+                                }
+                            }
+                            onReceivePKUserAccepted(userInfo);
+                        } else if (userInfo.state == ZIMCallUserState.REJECTED) {
+                            for (PKListener listener : listenerList) {
+                                listener.onPKBattleRejected(userInfo.userID, userInfo.extendedData);
+                            }
+                            checkIfPKEnd(requestID, currentUser);
+                        } else if (userInfo.state == ZIMCallUserState.TIMEOUT) {
+                            for (PKListener listener : listenerList) {
+                                listener.onPKBattleTimeout(userInfo.userID, userInfo.extendedData);
+                            }
+                            checkIfPKEnd(requestID, currentUser);
+                        } else if (userInfo.state == ZIMCallUserState.QUITED) {
+                            onReceivePKUserQuit(requestID, userInfo);
+                            seiTimeMap.remove(userInfo.userID);
+                        }
                     }
                 }
             }
 
             @Override
-            public void onOutgoingUserRequestAccepted(String requestID, String invitee, String extendedData) {
-                PKExtendedData pkExtendedData = PKExtendedData.parse(extendedData);
-                if (pkExtendedData != null) {
-                    if (pkExtendedData.type == PKExtendedData.START_PK) {
-                        sendPKStartRequest = null;
-                        PKInfo pkInfo = new PKInfo(new ZEGOSDKUser(invitee, pkExtendedData.userName),
-                            pkExtendedData.roomID);
-                        setCurrentPKInfo(pkInfo);
-                        startPKBattle();
-                    } else if (pkExtendedData.type == PKExtendedData.END_PK) {
-                        stopPKBattle();
-                    } else if (pkExtendedData.type == PKExtendedData.RESUME_PK) {
-                        // re enter room
-                        String pk_room = roomProperties.get("pk_room");
-                        String pk_user_id = roomProperties.get("pk_user_id");
-                        String pk_user_name = roomProperties.get("pk_user_name");
-                        String pk_seq = roomProperties.get("pk_seq");
-                        String host = roomProperties.get("host");
-                        PKInfo pkInfo = new PKInfo(new ZEGOSDKUser(pk_user_id, pk_user_name), pk_room);
-                        pkInfo.hostUserID = host;
-                        pkInfo.seq = Long.parseLong(pk_seq);
-                        setCurrentPKInfo(pkInfo);
-                        startPKBattle();
-                    }
-                }
-            }
-
-            @Override
-            public void onOutgoingUserRequestRejected(String requestID, String invitee, String extendedData) {
-                if (sendPKStartRequest != null && requestID.equals(sendPKStartRequest.requestID)) {
-                    sendPKStartRequest = null;
-                    for (PKListener listener : listenerList) {
-                        listener.onOutgoingStartPKRequestRejected();
-                    }
-                } else {
-                    // if is resume be rejected,need to delete room attributes
-                    deletePKRoomAttributes();
+            public void onCallInvitationEnded(ZIM zim, ZIMCallInvitationEndedInfo info, String callID) {
+                super.onCallInvitationEnded(zim, info, callID);
+                if (pkBattleInfo != null) {
+                    endPKBattle(pkBattleInfo.requestID, null);
+                    stopPKBattle();
                 }
             }
         };
         ZEGOSDKManager.getInstance().zimService.addEventHandler(zimEventHandler, false);
     }
 
-
-    private void onReceivePKRoomAttribute(Map<String, String> roomProperties) {
-        String pk_user_id = roomProperties.get("pk_user_id");
-        String pk_user_name = roomProperties.get("pk_user_name");
-        String pk_room = roomProperties.get("pk_room");
-        String pk_seq = roomProperties.get("pk_seq");
-        String host = roomProperties.get("host");
-
-        PKInfo pkInfo = new PKInfo(new ZEGOSDKUser(pk_user_id, pk_user_name), pk_room);
-        pkInfo.hostUserID = host;
-        pkInfo.seq = Long.parseLong(pk_seq);
-
-        if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
-            // receive attribute but no pkInfo, resume PK
-            if (currentPKInfo == null) {
-                sendPKBattleResumeRequest(pk_user_id);
-            }
-            seiTimeMap.put(pk_user_id, System.currentTimeMillis());
-        } else {
-            seiTimeMap.put(host, System.currentTimeMillis());
-            seiTimeMap.put(pk_user_id, System.currentTimeMillis());
-            if (currentPKInfo == null) {
-                // normal，audience receive Host PK action
-                if (ZEGOLiveStreamingManager.getInstance().getHostUser() != null) {
-                    setCurrentPKInfo(pkInfo);
-                    startPKBattle();
+    private void checkIfPKEnd(String requestID, ZEGOSDKUser currentUser) {
+        PKUser self = getPKUser(pkBattleInfo, currentUser.userID);
+        if (self.hasAccepted()) {
+            boolean hasWaitingUser = false;
+            for (PKUser pkUser : pkBattleInfo.pkUserList) {
+                if (!Objects.equals(pkUser.userID, currentUser.userID)) {
+                    // except self
+                    if (pkUser.hasAccepted() || pkUser.isWaiting()) {
+                        hasWaitingUser = true;
+                    }
                 }
+            }
+            if (!hasWaitingUser) {
+                quitPKBattle(requestID, null);
+                stopPKBattle();
             }
         }
     }
 
-    private void updatePKDeviceState(ZEGOSDKUser zegosdkUser, boolean isMicOpen, boolean isCameraOpen) {
-        boolean micChanged = zegosdkUser.isMicrophoneOpen() != isMicOpen;
-        if (micChanged) {
-            zegosdkUser.setMicrophoneOpen(isMicOpen);
-            handler.post(() -> {
-                for (PKListener listener : listenerList) {
-                    listener.onPKMicrophoneOpen(zegosdkUser.userID, isMicOpen);
+    public void removePKBattle(String userID) {
+        if (pkBattleInfo != null) {
+            List<PKUser> timeoutQuitUsers = new ArrayList<>();
+            for (PKUser pkUser : pkBattleInfo.pkUserList) {
+                if (Objects.equals(userID, pkUser.userID)) {
+                    pkUser.setCallUserState(ZIMCallUserState.QUITED);
+                    timeoutQuitUsers.add(pkUser);
                 }
-            });
+            }
+            if (!timeoutQuitUsers.isEmpty()) {
+                for (PKUser timeoutQuitUser : timeoutQuitUsers) {
+                    ZIMCallUserInfo callUserInfo = new ZIMCallUserInfo();
+                    callUserInfo.userID = timeoutQuitUser.userID;
+                    callUserInfo.extendedData = timeoutQuitUser.getExtendedData();
+                    callUserInfo.state = timeoutQuitUser.getCallUserState();
+                    onReceivePKUserQuit(pkBattleInfo.requestID, callUserInfo);
+                }
+            }
         }
-        boolean camChanged = zegosdkUser.isCameraOpen() != isCameraOpen;
-        if (camChanged) {
-            zegosdkUser.setCameraOpen(isCameraOpen);
-            handler.post(() -> {
-                for (PKListener listener : listenerList) {
-                    listener.onPKCameraOpen(zegosdkUser.userID, isCameraOpen);
+        handler.post(() -> {
+            seiTimeMap.remove(userID);
+        });
+    }
+
+    private void onReceivePKUserQuit(String requestID, ZIMCallUserInfo userInfo) {
+        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+        PKUser self = getPKUser(pkBattleInfo, currentUser.userID);
+        if (self.hasAccepted()) {
+            boolean moreThanOneAcceptedExceptMe = false;
+            boolean hasWaitingUser = false;
+            for (PKUser pkUser : pkBattleInfo.pkUserList) {
+                if (!Objects.equals(pkUser.userID, currentUser.userID)) {
+                    // except self
+                    if (pkUser.hasAccepted() || pkUser.isWaiting()) {
+                        hasWaitingUser = true;
+                    }
+                    if (pkUser.hasAccepted()) {
+                        moreThanOneAcceptedExceptMe = true;
+                    }
                 }
-            });
+            }
+            if (moreThanOneAcceptedExceptMe) {
+                if (isPKStarted) {
+                    updatePKMixTask(new IZegoMixerStartCallback() {
+                        @Override
+                        public void onMixerStartResult(int errorCode, JSONObject extendedData) {
+                            for (PKListener listener : listenerList) {
+                                listener.onPKUserQuit(userInfo.userID, userInfo.extendedData);
+                            }
+                        }
+                    });
+                }
+            }
+            if (!hasWaitingUser) {
+                quitPKBattle(requestID, null);
+                stopPKBattle();
+            }
+        }
+    }
+
+    private void onReceivePKUserAccepted(ZIMCallUserInfo userInfo) {
+        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+        PKExtendedData pkExtendedData = PKExtendedData.parse(userInfo.extendedData);
+        if (pkExtendedData == null) {
+            return;
+        }
+        if (pkExtendedData.type == PKExtendedData.START_PK) {
+            boolean moreThanOneAcceptedExceptMe = false;
+            boolean meHasAccepted = false;
+            for (PKUser pkUser : pkBattleInfo.pkUserList) {
+                if (Objects.equals(pkUser.userID, currentUser.userID)) {
+                    meHasAccepted = pkUser.hasAccepted();
+                } else {
+                    if (pkUser.hasAccepted()) {
+                        moreThanOneAcceptedExceptMe = true;
+                    }
+                }
+
+            }
+            if (meHasAccepted && moreThanOneAcceptedExceptMe && !isPKStarted) {
+                isPKStarted = true;
+                updatePKMixTask(new IZegoMixerStartCallback() {
+                    @Override
+                    public void onMixerStartResult(int errorCode, JSONObject mixData) {
+                        if (errorCode == 0) {
+                            // ended when waiting for mix result
+                            if (pkBattleInfo == null) {
+                                return;
+                            }
+                            syncDeviceStatus();
+                            checkPKUserSEI();
+                            for (PKListener listener : listenerList) {
+                                listener.onPKStarted();
+                            }
+                            for (PKUser pkUser : pkBattleInfo.pkUserList) {
+                                if (pkUser.hasAccepted()) {
+                                    for (PKListener listener : listenerList) {
+                                        listener.onPKUserJoin(pkUser.userID, pkUser.getExtendedData());
+                                    }
+                                }
+                            }
+                        } else {
+                            isPKStarted = false;
+                            if (pkBattleInfo != null) {
+                                quitPKBattle(pkBattleInfo.requestID, null);
+                            }
+                        }
+                    }
+                });
+            } else {
+                updatePKMixTask(new IZegoMixerStartCallback() {
+                    @Override
+                    public void onMixerStartResult(int errorCode, JSONObject extendedData) {
+                        if (errorCode == 0) {
+                            for (PKListener listener : listenerList) {
+                                listener.onPKUserJoin(userInfo.userID, userInfo.extendedData);
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    private void onReceivePKRoomAttribute(Map<String, String> roomProperties) {
+
+        String request_id = roomProperties.get("request_id");
+        List<PKUser> pkUserList = new ArrayList<>();
+        try {
+            JSONArray pkUsers = new JSONArray(roomProperties.get("pk_users"));
+            for (int i = 0; i < pkUsers.length(); i++) {
+                PKUser pkUser = PKUser.parse(pkUsers.getString(i));
+                if (!ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
+                    // for audience,all is ACCEPTED,he can't get call user state.
+                    pkUser.setCallUserState(ZIMCallUserState.ACCEPTED);
+                }
+                pkUserList.add(pkUser);
+            }
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
+            // receive attribute but no pkInfo, resume PK
+            if (pkBattleInfo == null) {
+                deletePKRoomAttributes();
+            }
+        } else {
+            for (PKUser pkUser : pkUserList) {
+                seiTimeMap.put(pkUser.userID, System.currentTimeMillis());
+            }
+            if (pkBattleInfo == null) {
+                // normal，audience receive Host PK action
+                if (ZEGOLiveStreamingManager.getInstance().getHostUser() != null) {
+                    pkBattleInfo = new PKBattleInfo();
+                    pkBattleInfo.requestID = request_id;
+                    pkBattleInfo.pkUserList = pkUserList;
+
+                    checkPKUserSEI();
+                    isPKStarted = true;
+                    for (PKListener listener : listenerList) {
+                        listener.onPKStarted();
+                    }
+                    for (PKUser pkUser : pkBattleInfo.pkUserList) {
+                        if (pkUser.hasAccepted()) {
+                            for (PKListener listener : listenerList) {
+                                listener.onPKUserJoin(pkUser.userID, pkUser.getExtendedData());
+                            }
+                        }
+                    }
+                }
+            } else {
+                //  already started,do nothing
+            }
         }
     }
 
     public boolean isPKUser(String userID) {
-        if (currentPKInfo == null) {
+        if (pkBattleInfo == null) {
             return false;
         } else {
-            return currentPKInfo.pkUser.userID.equals(userID);
+            for (PKUser pkUser : pkBattleInfo.pkUserList) {
+                if (pkUser.userID.equals(userID)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -294,154 +493,233 @@ public class PKService {
         return data.toString();
     }
 
-    public void sendPKBattlesStartRequest(String targetUserID, UserRequestCallback callback) {
-        sendPKStartRequest = new PKRequest();
-        String pkExtendedData = getPKExtendedData(PKExtendedData.START_PK);
-        sendUserRequest(targetUserID, pkExtendedData, new ZIMCallInvitationSentCallback() {
-            @Override
-            public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info, ZIMError errorInfo) {
-                if (errorInfo.code.value() == 0) {
-                    sendPKStartRequest.requestID = requestID;
-                    sendPKStartRequest.targetUserID = targetUserID;
-                } else {
-                    sendPKStartRequest = null;
-                }
-                if (callback != null) {
-                    callback.onUserRequestSend(errorInfo.code.value(), requestID);
-                }
-            }
-        });
-    }
+    private static final String TAG = "PKService";
 
-    public void acceptPKBattleStartRequest(String requestID) {
-        if (recvPKStartRequest != null && requestID.equals(recvPKStartRequest.requestID)) {
-            recvPKStartRequest = null;
-        }
-
-        String pkExtendedData = getPKExtendedData(PKExtendedData.START_PK);
-        acceptUserRequest(requestID, pkExtendedData, new ZIMCallAcceptanceSentCallback() {
-            @Override
-            public void onCallAcceptanceSent(String callID, ZIMError errorInfo) {
-                if (errorInfo.code.value() == 0) {
-                    startPKBattle();
-                } else {
-                    sendPKBattlesStopRequestInner();
-                }
-            }
-        });
-    }
-
-    public void rejectPKBattleStartRequest(String requestID) {
-        if (recvPKStartRequest != null && requestID.equals(recvPKStartRequest.requestID)) {
-            recvPKStartRequest = null;
-        }
-
-        String pkExtendedData = getPKExtendedData(PKExtendedData.START_PK);
-        rejectUserRequest(requestID, pkExtendedData, null);
-    }
-
-    public void cancelPKBattleStartRequest(String requestID, String userID) {
-        sendPKStartRequest = null;
-        cancelUserRequest(userID, requestID, "", null);
-    }
-
-    public void sendPKBattlesStopRequest() {
-        if (currentPKInfo != null) {
-            sendPKBattlesStopRequestInner();
-            stopPKBattle(); // end right now,no need to wait for answer because there
-        }
-    }
-
-    private void sendPKBattlesStopRequestInner() {
-        if (currentPKInfo != null) {
-            String pkExtendedData = getPKExtendedData(PKExtendedData.END_PK);
-            sendUserRequest(currentPKInfo.pkUser.userID, pkExtendedData, null);
-            setCurrentPKInfo(null);
-        }
-    }
-
-    public void sendPKBattleResumeRequest(String pk_user_id) {
-        List<String> list = Collections.singletonList(pk_user_id);
-        ZIMCallInviteConfig config = new ZIMCallInviteConfig();
-        config.extendedData = getPKExtendedData(PKExtendedData.RESUME_PK);
-        ZEGOSDKManager.getInstance().zimService.sendUserRequest(list, config, null);
-    }
-
-    public void rejectPKBattleResumeRequest(String requestID) {
-        String pkExtendedData = getPKExtendedData(PKExtendedData.RESUME_PK);
-        rejectUserRequest(requestID, pkExtendedData, null);
-    }
-
-    public void acceptPKBattleResumeRequest(String requestID) {
-        String pkExtendedData = getPKExtendedData(PKExtendedData.RESUME_PK);
-        acceptUserRequest(requestID, pkExtendedData, null);
-        startMixStreamTask(false, new IZegoMixerStartCallback() {
-            @Override
-            public void onMixerStartResult(int errorCode, JSONObject extendedData) {
-                if (errorCode == 0) {
-                    setPKRoomAttributes();
-                } else {
-                    sendPKBattlesStopRequestInner();
-                }
-            }
-        });
-    }
-
-    public void acceptPKBattleStopRequest(String requestID) {
-        String pkExtendedData = getPKExtendedData(PKExtendedData.END_PK);
-        acceptUserRequest(requestID, pkExtendedData, null);
-    }
-
-    public void setCurrentPKInfo(PKInfo currentPKInfo) {
-        this.currentPKInfo = currentPKInfo;
-    }
-
-    public PKInfo getPKInfo() {
-        return currentPKInfo;
-    }
-
-    public PKRequest getSendPKStartRequest() {
-        return sendPKStartRequest;
-    }
-
-    private void startPKBattle() {
-        if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
-            startMixStreamTask(false, new IZegoMixerStartCallback() {
-                @Override
-                public void onMixerStartResult(int errorCode, JSONObject extendedData) {
-                    if (errorCode == 0) {
-                        syncDeviceStatus();
-                        setPKRoomAttributes();
-                        hasNotified = false;
-
-                        checkPKUserSEI();
-                        for (PKListener listener : listenerList) {
-                            listener.onPKStarted();
+    public void invitePKBattle(List<String> targetUserIDList, UserRequestCallback callback) {
+        if (pkBattleInfo == null) {
+            pkBattleInfo = new PKBattleInfo();
+            ZEGOSDKUser localUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+            String pkExtendedData = getPKExtendedData(PKExtendedData.START_PK);
+            try {
+                // inviter extended data will keep while different person invite each other,so
+                // we need recognize who's data when first invite
+                JSONObject jsonObject = new JSONObject(pkExtendedData);
+                jsonObject.put("user_id", localUser.userID);
+                sendUserRequest(targetUserIDList, jsonObject.toString(), true, new ZIMCallInvitationSentCallback() {
+                    @Override
+                    public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info,
+                        ZIMError errorInfo) {
+                        if (errorInfo.code.value() == 0) {
+                            PKBattleInfo pkInfo = new PKBattleInfo();
+                            pkInfo.requestID = requestID;
+                            pkInfo.pkUserList = new ArrayList<>();
+                            pkBattleInfo = pkInfo;
+                        } else {
+                            pkBattleInfo = null;
                         }
+                        if (callback != null) {
+                            callback.onUserRequestSend(errorInfo.code.value(), requestID);
+                        }
+                    }
+                });
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            if (!TextUtils.isEmpty(pkBattleInfo.requestID)) {
+                addUserToRequest(targetUserIDList, pkBattleInfo.requestID, new ZIMCallingInvitationSentCallback() {
+                    @Override
+                    public void onCallingInvitationSent(String callID, ZIMCallingInvitationSentInfo info,
+                        ZIMError errorInfo) {
+                        if (callback != null) {
+                            callback.onUserRequestSend(errorInfo.code.value(), callID);
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    public void acceptPKBattle(String requestID) {
+        if (pkBattleInfo != null && requestID.equals(pkBattleInfo.requestID)) {
+            String pkExtendedData = getPKExtendedData(PKExtendedData.START_PK);
+            acceptUserRequest(requestID, pkExtendedData, new ZIMCallAcceptanceSentCallback() {
+                @Override
+                public void onCallAcceptanceSent(String callID, ZIMError errorInfo) {
+                    // will receive self state changed to accepted in advanced mode,so do nothing when success
+                    if (errorInfo.code.value() == 0) {
                     } else {
-                        sendPKBattlesStopRequestInner();
+                        pkBattleInfo = null;
                     }
                 }
             });
-        } else {
-            hasNotified = false;
-
-            checkPKUserSEI();
-            for (PKListener listener : listenerList) {
-                listener.onPKStarted();
-            }
         }
     }
 
+    private void updatePKMixTask(IZegoMixerStartCallback callback) {
+        if (pkBattleInfo != null) {
+            List<String> pkUserStreamList = new ArrayList<>();
+            for (PKUser pkUser : pkBattleInfo.pkUserList) {
+                if (pkUser.getCallUserState() == ZIMCallUserState.ACCEPTED) {
+                    pkUserStreamList.add(pkUser.getPKUserStream());
+                }
+            }
 
-    private void setPKRoomAttributes() {
-        ZEGOSDKUser localUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+            ZegoMixerVideoConfig videoConfig = new ZegoMixerVideoConfig();
+            videoConfig.width = 1080;
+            videoConfig.height = 960;
+
+            MixLayoutProvider mixLayoutProvider = ZEGOLiveStreamingManager.getInstance().getMixLayoutProvider();
+            ArrayList<ZegoMixerInput> mixVideoInputs;
+            if (mixLayoutProvider == null) {
+                mixVideoInputs = getMixVideoInputs(pkUserStreamList, videoConfig);
+            } else {
+                mixVideoInputs = mixLayoutProvider.getMixVideoInputs(pkUserStreamList, videoConfig);
+            }
+
+            if (task == null) {
+                String mixStreamID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID() + "_mix";
+
+                task = new ZegoMixerTask(mixStreamID);
+                task.videoConfig = videoConfig;
+
+                task.setInputList(mixVideoInputs);
+
+                ZegoMixerOutput mixerOutput = new ZegoMixerOutput(mixStreamID);
+                ArrayList<ZegoMixerOutput> mixerOutputList = new ArrayList<>();
+                mixerOutputList.add(mixerOutput);
+                task.setOutputList(mixerOutputList);
+
+                task.enableSoundLevel(true);
+            } else {
+                task.inputList = mixVideoInputs;
+            }
+
+            ZEGOSDKManager.getInstance().expressService.startMixerTask(task, new IZegoMixerStartCallback() {
+                @Override
+                public void onMixerStartResult(int errorCode, JSONObject data) {
+                    // 1005026 non_exists_stream_list
+                    if (errorCode == 0) {
+                        updatePKRoomAttributes();
+                    }
+                    if (callback != null) {
+                        callback.onMixerStartResult(errorCode, data);
+                    }
+
+                }
+            });
+        }
+    }
+
+    private ArrayList<ZegoMixerInput> getMixVideoInputs(List<String> streamList, ZegoMixerVideoConfig videoConfig) {
+        ArrayList<ZegoMixerInput> inputList = new ArrayList<>();
+        if (streamList.size() == 2) {
+            for (int i = 0; i < streamList.size(); i++) {
+                int left = (videoConfig.width / streamList.size()) * i;
+                int top = 0;
+                int right = (videoConfig.width / streamList.size()) * (i + 1);
+                int bottom = videoConfig.height;
+                ZegoMixerInput input = new ZegoMixerInput(streamList.get(i), ZegoMixerInputContentType.VIDEO,
+                    new Rect(left, top, right, bottom));
+                input.renderMode = ZegoMixRenderMode.FILL;
+                inputList.add(input);
+            }
+        } else {
+            int row = 2;
+            int maxCellCount = streamList.size() % 2 == 0 ? streamList.size() : (streamList.size() + 1);
+            int column = maxCellCount / row;
+            int cellWidth = videoConfig.width / column;
+            int cellHeight = videoConfig.height / row;
+            int left, top, right, bottom;
+            for (int i = 0; i < streamList.size(); i++) {
+                left = cellWidth * (i % column);
+                top = cellHeight * (i < column ? 0 : 1);
+                right = left + cellWidth;
+                bottom = top + cellHeight;
+                ZegoMixerInput input = new ZegoMixerInput(streamList.get(i), ZegoMixerInputContentType.VIDEO,
+                    new Rect(left, top, right, bottom));
+                input.renderMode = ZegoMixRenderMode.FILL;
+                inputList.add(input);
+            }
+        }
+
+        return inputList;
+    }
+
+    public void rejectPKBattle(String requestID) {
+        String pkExtendedData = getPKExtendedData(PKExtendedData.START_PK);
+        rejectUserRequest(requestID, pkExtendedData, null);
+        if (pkBattleInfo != null && requestID.equals(pkBattleInfo.requestID)) {
+            pkBattleInfo = null;
+        }
+    }
+
+    public void cancelPKBattle(String requestID, String userID) {
+        if (pkBattleInfo != null && requestID.equals(pkBattleInfo.requestID)) {
+            cancelUserRequest(userID, requestID, "", null);
+            pkBattleInfo = null;
+        }
+    }
+
+    /**
+     * just send request,no local actions
+     *
+     * @param requestID
+     * @param callback
+     */
+    public void endPKBattle(String requestID, ZIMCallEndSentCallback callback) {
+        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+        if (isPKUser(currentUser.userID)) {
+            endUserRequest(requestID, "", callback);
+        }
+        if (pkBattleInfo != null && requestID.equals(pkBattleInfo.requestID)) {
+            pkBattleInfo = null;
+        }
+    }
+
+    /**
+     * just send request,no local actions
+     *
+     * @param requestID
+     * @param callback
+     */
+    public void quitPKBattle(String requestID, ZIMCallQuitSentCallback callback) {
+        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+        if (isPKUser(currentUser.userID)) {
+            quitUserRequest(requestID, "", callback);
+        }
+        if (pkBattleInfo != null && requestID.equals(pkBattleInfo.requestID)) {
+            pkBattleInfo = null;
+        }
+    }
+
+    public PKBattleInfo getPKBattleInfo() {
+        return pkBattleInfo;
+    }
+
+    private void updatePKRoomAttributes() {
         HashMap<String, String> hashMap = new HashMap<>();
-        hashMap.put("host", localUser.userID);
-        hashMap.put("pk_room", currentPKInfo.pkRoom);
-        hashMap.put("pk_user_id", currentPKInfo.pkUser.userID);
-        hashMap.put("pk_user_name", currentPKInfo.pkUser.userName);
-        hashMap.put("pk_seq", String.valueOf(currentPKInfo.seq + 1));
+
+        if (ZEGOLiveStreamingManager.getInstance().getHostUser() != null) {
+            hashMap.put("host_user_id", ZEGOLiveStreamingManager.getInstance().getHostUser().userID);
+        }
+
+        hashMap.put("request_id", pkBattleInfo.requestID);
+
+        List<PKUser> acceptedUsers = new ArrayList<>();
+        for (PKUser pkUser : pkBattleInfo.pkUserList) {
+            if (pkUser.hasAccepted()) {
+                acceptedUsers.add(pkUser);
+            }
+        }
+        for (PKUser pkUser : acceptedUsers) {
+            for (ZegoMixerInput zegoMixerInput : task.inputList) {
+                if (Objects.equals(pkUser.getPKUserStream(), zegoMixerInput.streamID)) {
+                    pkUser.rect = zegoMixerInput.layout;
+                }
+            }
+        }
+        hashMap.put("pk_users", acceptedUsers.toString());
 
         ZIMRoomAttributesSetConfig config = new ZIMRoomAttributesSetConfig();
         config.isDeleteAfterOwnerLeft = false;
@@ -454,6 +732,9 @@ public class PKService {
             });
     }
 
+    /**
+     * means stop pk locally,update views and finish local logic
+     */
     public void stopPKBattle() {
         if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
             deletePKRoomAttributes();
@@ -463,17 +744,15 @@ public class PKService {
             muteHostAudioVideo(false);
         }
 
-        setCurrentPKInfo(null);
-
+        pkBattleInfo = null;
         stopCheckPKUserSEI();
 
-        hasNotified = false;
-        mutePKUser = false;
         seiTimeMap.clear();
-        seiStateMap.clear();
-
-        for (PKListener listener : listenerList) {
-            listener.onPKEnded();
+        if (isPKStarted) {
+            isPKStarted = false;
+            for (PKListener listener : listenerList) {
+                listener.onPKEnded();
+            }
         }
     }
 
@@ -487,72 +766,18 @@ public class PKService {
     }
 
     private void deletePKRoomAttributes() {
-        if (roomProperties != null && !roomProperties.isEmpty()) {
-            String pk_user_id = roomProperties.get("pk_user_id");
-            if (!TextUtils.isEmpty(pk_user_id)) {
-                List<String> keys = new ArrayList<>();
-                keys.add("host");
-                keys.add("pk_room");
-                keys.add("pk_user_id");
-                keys.add("pk_user_name");
-                keys.add("pk_seq");
-                ZEGOSDKManager.getInstance().zimService.deleteRoomAttributes(keys,
-                    new ZIMRoomAttributesOperatedCallback() {
-                        @Override
-                        public void onRoomAttributesOperated(String roomID, ArrayList<String> errorKeys,
-                            ZIMError errorInfo) {
-                        }
-                    });
-            }
-        }
-    }
-
-    private void startMixStreamTask(boolean muteAudio, IZegoMixerStartCallback callback) {
-        String currentRoomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
-        String mixStreamID = currentRoomID + "_mix";
-        if (task == null) {
-            task = new ZegoMixerTask(mixStreamID);
-            task.enableSoundLevel(true);
-        }
-
-        ZegoMixerVideoConfig videoConfig = new ZegoMixerVideoConfig();
-        videoConfig.width = 1080;
-        videoConfig.height = 960;
-        task.videoConfig = videoConfig;
-
-        ArrayList<ZegoMixerInput> inputList = new ArrayList<>();
-        ZEGOSDKUser localUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
-        String roomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
-        String streamID = ZEGOLiveStreamingManager.getInstance().generateUserStreamID(localUser.userID, roomID);
-        ZegoMixerInput input_1 = new ZegoMixerInput(streamID, ZegoMixerInputContentType.VIDEO,
-            new Rect(0, 0, 540, 960));
-        input_1.renderMode = ZegoMixRenderMode.FILL;
-        inputList.add(input_1);
-        ZegoMixerInput input_2 = new ZegoMixerInput(currentPKInfo.getPKStream(), ZegoMixerInputContentType.VIDEO,
-            new Rect(540, 0, 1080, 960));
-        input_2.renderMode = ZegoMixRenderMode.FILL;
-        if (muteAudio) {
-            input_2.contentType = ZegoMixerInputContentType.VIDEO_ONLY;
-        } else {
-            input_2.contentType = ZegoMixerInputContentType.VIDEO;
-        }
-        inputList.add(input_2);
-        task.setInputList(inputList);
-
-        ZegoMixerOutput mixerOutput = new ZegoMixerOutput(mixStreamID);
-        ArrayList<ZegoMixerOutput> mixerOutputList = new ArrayList<>();
-        mixerOutputList.add(mixerOutput);
-        task.setOutputList(mixerOutputList);
-
-        ZEGOSDKManager.getInstance().expressService.startMixerTask(task, new IZegoMixerStartCallback() {
-            @Override
-            public void onMixerStartResult(int errorCode, JSONObject extendedData) {
-                // 1005026 non_exists_stream_list
-                if (callback != null) {
-                    callback.onMixerStartResult(errorCode, extendedData);
+        if (roomProperties.containsKey("pk_users")) {
+            List<String> keys = new ArrayList<>();
+            keys.add("request_id");
+            keys.add("host_user_id");
+            keys.add("pk_users");
+            ZEGOSDKManager.getInstance().zimService.deleteRoomAttributes(keys, new ZIMRoomAttributesOperatedCallback() {
+                @Override
+                public void onRoomAttributesOperated(String roomID, ArrayList<String> errorKeys, ZIMError errorInfo) {
                 }
-            }
-        });
+            });
+        }
+
     }
 
     public void stopMixTask() {
@@ -567,20 +792,51 @@ public class PKService {
         }
     }
 
-    public boolean isPKUserMuted() {
-        return mutePKUser;
+    public boolean isPKUserMuted(String userID) {
+        if (pkBattleInfo != null) {
+            for (PKUser pkUser : pkBattleInfo.pkUserList) {
+                if (Objects.equals(userID, pkUser.userID)) {
+                    return pkUser.isMuted();
+                }
+            }
+        }
+        return false;
     }
 
-    public void mutePKUser(boolean mute, IZegoMixerStartCallback callback) {
-        startMixStreamTask(mute, new IZegoMixerStartCallback() {
+    public void mutePKUser(List<Integer> muteIndexList, boolean mute, IZegoMixerStartCallback callback) {
+        if (task == null || task.inputList == null) {
+            return;
+        }
+
+        List<String> muteStreamList = new ArrayList<>();
+        for (Integer index : muteIndexList) {
+            if (index < task.inputList.size()) {
+                ZegoMixerInput zegoMixerInput = task.inputList.get(index);
+                if (mute) {
+                    zegoMixerInput.contentType = ZegoMixerInputContentType.VIDEO_ONLY;
+                    muteStreamList.add(zegoMixerInput.streamID);
+                } else {
+                    zegoMixerInput.contentType = ZegoMixerInputContentType.VIDEO;
+                }
+            }
+        }
+        ZEGOSDKManager.getInstance().expressService.startMixerTask(task, new IZegoMixerStartCallback() {
             @Override
             public void onMixerStartResult(int errorCode, JSONObject extendedData) {
+                // 1005026 non_exists_stream_list
                 if (errorCode == 0) {
-                    ZEGOSDKManager.getInstance().expressService.mutePlayStreamAudio(currentPKInfo.getPKStream(), mute);
-                    mutePKUser = mute;
-                    if (callback != null) {
-                        callback.onMixerStartResult(errorCode, extendedData);
+                    for (String stream : muteStreamList) {
+                        for (PKUser pkUser : pkBattleInfo.pkUserList) {
+                            if (Objects.equals(pkUser.getPKUserStream(), stream)) {
+                                pkUser.setMuted(true);
+                                // only host can mute,
+                                ZEGOSDKManager.getInstance().expressService.mutePlayStreamAudio(stream, mute);
+                            }
+                        }
                     }
+                }
+                if (callback != null) {
+                    callback.onMixerStartResult(errorCode, extendedData);
                 }
             }
         });
@@ -619,13 +875,10 @@ public class PKService {
     }
 
     public void removeRoomData() {
-        setCurrentPKInfo(null);
         seiTimeMap.clear();
-        seiStateMap.clear();
         roomProperties.clear();
-        hasNotified = false;
-        mutePKUser = false;
         handler.removeCallbacksAndMessages(null);
+        pkBattleInfo = null;
     }
 
     public void removeUserListeners() {
@@ -643,8 +896,8 @@ public class PKService {
             if (!TextUtils.isEmpty(mainStreamID)) {
                 if (mainStreamID.endsWith("_host")) {
                     if (roomProperties != null && !roomProperties.isEmpty()) {
-                        String pk_user_id = roomProperties.get("pk_user_id");
-                        if (!TextUtils.isEmpty(pk_user_id)) {
+                        String pkUsers = roomProperties.get("pk_users");
+                        if (!TextUtils.isEmpty(pkUsers)) {
                             onReceivePKRoomAttribute(roomProperties);
                         }
                     }
@@ -669,42 +922,25 @@ public class PKService {
             boolean isMicOpen = jsonObject.getBoolean("mic");
             boolean isCameraOpen = jsonObject.getBoolean("cam");
 
-            boolean isPKUser =
-                currentPKInfo != null && currentPKInfo.pkUser != null && Objects.equals(currentPKInfo.pkUser.userID,
-                    senderID);
+            PKUser pkUser = getPKUser(pkBattleInfo, senderID);
 
-            ZEGOSDKUser hostUser = ZEGOLiveStreamingManager.getInstance().getHostUser();
-            boolean isHostUser = hostUser != null && Objects.equals(hostUser.userID, senderID);
-
-            if (isPKUser) {
-                boolean micChanged = currentPKInfo.pkUser.isMicrophoneOpen() != isMicOpen;
-                if (micChanged || !hasNotified) {
-                    currentPKInfo.pkUser.setMicrophoneOpen(isMicOpen);
+            if (pkUser != null) {
+                boolean micChanged = pkUser.isMicrophoneOpen() != isMicOpen;
+                if (micChanged) {
+                    pkUser.setMicrophone(isMicOpen);
                     handler.post(() -> {
                         for (PKListener listener : listenerList) {
-                            listener.onPKMicrophoneOpen(currentPKInfo.pkUser.userID, isMicOpen);
+                            listener.onPKUserMicrophoneOpen(pkUser.userID, isMicOpen);
                         }
                     });
                 }
-                boolean camChanged = currentPKInfo.pkUser.isCameraOpen() != isCameraOpen;
-                if (camChanged || !hasNotified) {
-                    currentPKInfo.pkUser.setCameraOpen(isCameraOpen);
+                boolean camChanged = pkUser.isCameraOpen() != isCameraOpen;
+                if (camChanged) {
+                    pkUser.setCamera(isCameraOpen);
                     handler.post(() -> {
                         for (PKListener listener : listenerList) {
-                            listener.onPKCameraOpen(currentPKInfo.pkUser.userID, isCameraOpen);
+                            listener.onPKUserCameraOpen(pkUser.userID, isCameraOpen);
                         }
-                    });
-                }
-                hasNotified = true;
-            } else if (isHostUser) {
-                if (hostUser.isCameraOpen() != isCameraOpen) {
-                    handler.post(() -> {
-                        ZEGOSDKManager.getInstance().expressService.syncCameraState(hostUser.userID, isCameraOpen);
-                    });
-                }
-                if (hostUser.isMicrophoneOpen() != isMicOpen) {
-                    handler.post(() -> {
-                        ZEGOSDKManager.getInstance().expressService.syncMicrophoneState(hostUser.userID, isMicOpen);
                     });
                 }
             }
@@ -725,15 +961,15 @@ public class PKService {
         }
 
         for (Map<String, String> setPropertyMap : setProperties) {
-            if (setPropertyMap.containsKey("pk_user_id")) {
+            if (setPropertyMap.containsKey("pk_users")) {
                 onReceivePKRoomAttribute(setPropertyMap);
             }
         }
 
         for (Map<String, String> deleteProperty : deleteProperties) {
-            if (deleteProperty.containsKey("pk_user_id")) {
+            if (deleteProperty.containsKey("pk_users")) {
                 // if already not in pk,return
-                if (currentPKInfo == null) {
+                if (pkBattleInfo == null) {
                     return;
                 } else {
                     stopPKBattle();
@@ -742,11 +978,46 @@ public class PKService {
         }
     }
 
-    private void sendUserRequest(String userID, String extendedData, ZIMCallInvitationSentCallback callback) {
-        ZIMCallInviteConfig config = new ZIMCallInviteConfig();
-        config.extendedData = extendedData;
-        ZEGOSDKManager.getInstance().zimService.sendUserRequest(Collections.singletonList(userID), config, callback);
+    private boolean containsUser(PKBattleInfo pkBattleInfo, String userID) {
+        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+        if (!Objects.equals(currentUser.userID, userID)) {
+            if (pkBattleInfo != null) {
+                for (PKUser pkUser : pkBattleInfo.pkUserList) {
+                    if (Objects.equals(userID, pkUser.userID)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
+
+    private PKUser getPKUser(PKBattleInfo pkBattleInfo, String userID) {
+        if (pkBattleInfo != null) {
+            for (PKUser pkUser : pkBattleInfo.pkUserList) {
+                if (Objects.equals(userID, pkUser.userID)) {
+                    return pkUser;
+                }
+            }
+        }
+        return null;
+    }
+
+    private void sendUserRequest(List<String> userIDList, String extendedData, boolean advanced,
+        ZIMCallInvitationSentCallback callback) {
+        ZIMCallInviteConfig config = new ZIMCallInviteConfig();
+        if (advanced) {
+            config.mode = ZIMCallInvitationMode.ADVANCED;
+        }
+        config.extendedData = extendedData;
+        ZEGOSDKManager.getInstance().zimService.sendUserRequest(userIDList, config, callback);
+    }
+
+    private void addUserToRequest(List<String> invitees, String requestID, ZIMCallingInvitationSentCallback callback) {
+        ZIMCallingInviteConfig config = new ZIMCallingInviteConfig();
+        ZEGOSDKManager.getInstance().zimService.addUserToRequest(invitees, requestID, config, callback);
+    }
+
 
     private void acceptUserRequest(String requestID, String extendedData, ZIMCallAcceptanceSentCallback callback) {
         ZIMCallAcceptConfig config = new ZIMCallAcceptConfig();
@@ -768,35 +1039,27 @@ public class PKService {
             callback);
     }
 
-    public static class PKRequest {
-
-        public String requestID;
-        public String targetUserID;
+    private void quitUserRequest(String requestID, String extendedData, ZIMCallQuitSentCallback callback) {
+        ZIMCallQuitConfig config = new ZIMCallQuitConfig();
+        config.extendedData = extendedData;
+        ZEGOSDKManager.getInstance().zimService.quitUserRequest(requestID, config, callback);
     }
 
-    public static class PKInfo {
+    private void endUserRequest(String requestID, String extendedData, ZIMCallEndSentCallback callback) {
+        ZIMCallEndConfig config = new ZIMCallEndConfig();
+        config.extendedData = extendedData;
+        ZEGOSDKManager.getInstance().zimService.endUserRequest(requestID, config, callback);
+    }
 
-        public ZEGOSDKUser pkUser;
-        public String pkRoom;
-        public long seq;
-        public String hostUserID;
+    public static class PKBattleInfo {
 
-        public PKInfo(ZEGOSDKUser pkUser, String pkRoom) {
-            this.pkUser = pkUser;
-            this.pkRoom = pkRoom;
-        }
-
-        public PKInfo(String targetUserID) {
-            this.pkUser = new ZEGOSDKUser(targetUserID, "");
-        }
-
-        public String getPKStream() {
-            return pkRoom + "_" + pkUser.userID + "_main" + "_host";
-        }
+        public String requestID;
+        public List<PKUser> pkUserList;
 
         @Override
         public String toString() {
-            return "PKInfo{" + "pkUser=" + pkUser + ", pkRoom='" + pkRoom + '\'' + '}';
+            return "PKBattleInfo{" + "requestID='" + requestID + '\'' + ", pkUserList=" + pkUserList
+                + ", pkExtendedData=" + '}';
         }
     }
 }

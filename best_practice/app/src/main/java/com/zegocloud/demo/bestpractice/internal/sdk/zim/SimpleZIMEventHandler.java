@@ -4,8 +4,11 @@ import im.zego.zim.ZIM;
 import im.zego.zim.callback.ZIMEventHandler;
 import im.zego.zim.entity.ZIMCallInvitationAcceptedInfo;
 import im.zego.zim.entity.ZIMCallInvitationCancelledInfo;
+import im.zego.zim.entity.ZIMCallInvitationEndedInfo;
 import im.zego.zim.entity.ZIMCallInvitationReceivedInfo;
 import im.zego.zim.entity.ZIMCallInvitationRejectedInfo;
+import im.zego.zim.entity.ZIMCallInvitationTimeoutInfo;
+import im.zego.zim.entity.ZIMCallUserStateChangeInfo;
 import im.zego.zim.entity.ZIMConversationChangeInfo;
 import im.zego.zim.entity.ZIMError;
 import im.zego.zim.entity.ZIMGroupAttributesUpdateInfo;
@@ -13,6 +16,7 @@ import im.zego.zim.entity.ZIMGroupFullInfo;
 import im.zego.zim.entity.ZIMGroupMemberInfo;
 import im.zego.zim.entity.ZIMGroupOperatedInfo;
 import im.zego.zim.entity.ZIMMessage;
+import im.zego.zim.entity.ZIMMessageReaction;
 import im.zego.zim.entity.ZIMMessageReceiptInfo;
 import im.zego.zim.entity.ZIMMessageSentStatusChangeInfo;
 import im.zego.zim.entity.ZIMRevokeMessage;
@@ -291,6 +295,46 @@ class SimpleZIMEventHandler extends ZIMEventHandler {
         super.onCallInviteesAnsweredTimeout(zim, invitees, callID);
         for (ZIMEventHandler handler : handlerList) {
             handler.onCallInviteesAnsweredTimeout(zim, invitees, callID);
+        }
+    }
+
+    @Override
+    public void onCallInvitationEnded(ZIM zim, ZIMCallInvitationEndedInfo info, String callID) {
+        super.onCallInvitationEnded(zim, info, callID);
+        for (ZIMEventHandler handler : handlerList) {
+            handler.onCallInvitationEnded(zim, info, callID);
+        }
+    }
+
+    @Override
+    public void onCallInvitationTimeout(ZIM zim, ZIMCallInvitationTimeoutInfo info, String callID) {
+        super.onCallInvitationTimeout(zim, info, callID);
+        for (ZIMEventHandler handler : handlerList) {
+            handler.onCallInvitationTimeout(zim, info, callID);
+        }
+    }
+
+    @Override
+    public void onCallUserStateChanged(ZIM zim, ZIMCallUserStateChangeInfo info, String callID) {
+        super.onCallUserStateChanged(zim, info, callID);
+        for (ZIMEventHandler handler : handlerList) {
+            handler.onCallUserStateChanged(zim, info, callID);
+        }
+    }
+
+    @Override
+    public void onBroadcastMessageReceived(ZIM zim, ZIMMessage message) {
+        super.onBroadcastMessageReceived(zim, message);
+        for (ZIMEventHandler handler : handlerList) {
+            handler.onBroadcastMessageReceived(zim, message);
+        }
+    }
+
+    @Override
+    public void onMessageReactionsChanged(ZIM zim, ArrayList<ZIMMessageReaction> reactions) {
+        super.onMessageReactionsChanged(zim, reactions);
+        for (ZIMEventHandler handler : handlerList) {
+            handler.onMessageReactionsChanged(zim, reactions);
         }
     }
 

@@ -25,6 +25,7 @@ import im.zego.zegoexpress.constants.ZegoUpdateType;
 import im.zego.zegoexpress.constants.ZegoVideoCodecID;
 import im.zego.zegoexpress.entity.ZegoBarrageMessageInfo;
 import im.zego.zegoexpress.entity.ZegoBroadcastMessageInfo;
+import im.zego.zegoexpress.entity.ZegoMediaSideInfo;
 import im.zego.zegoexpress.entity.ZegoNetworkSpeedTestQuality;
 import im.zego.zegoexpress.entity.ZegoPerformanceStatus;
 import im.zego.zegoexpress.entity.ZegoPlayStreamQuality;
@@ -176,10 +177,10 @@ class SimpleExpressEventHandler extends IZegoEventHandler {
     }
 
     @Override
-    public void onPublisherSendAudioFirstFrame() {
-        super.onPublisherSendAudioFirstFrame();
+    public void onPublisherSendAudioFirstFrame(ZegoPublishChannel channel) {
+        super.onPublisherSendAudioFirstFrame(channel);
         for (IZegoEventHandler handler : handlerList) {
-            handler.onPublisherSendAudioFirstFrame();
+            handler.onPublisherSendAudioFirstFrame(channel);
         }
     }
 
@@ -552,6 +553,38 @@ class SimpleExpressEventHandler extends IZegoEventHandler {
         super.onScreenCaptureExceptionOccurred(exceptionType);
         for (IZegoEventHandler handler : handlerList) {
             handler.onScreenCaptureExceptionOccurred(exceptionType);
+        }
+    }
+
+    @Override
+    public void onPlayerRecvMediaSideInfo(ZegoMediaSideInfo info) {
+        super.onPlayerRecvMediaSideInfo(info);
+        for (IZegoEventHandler handler : handlerList) {
+            handler.onPlayerRecvMediaSideInfo(info);
+        }
+    }
+
+    @Override
+    public void onPlayerSyncRecvVideoFirstFrame(String streamID) {
+        super.onPlayerSyncRecvVideoFirstFrame(streamID);
+        for (IZegoEventHandler handler : handlerList) {
+            handler.onPlayerSyncRecvVideoFirstFrame(streamID);
+        }
+    }
+
+    @Override
+    public void onPublisherDummyCaptureImagePathError(int errorCode, String path, ZegoPublishChannel channel) {
+        super.onPublisherDummyCaptureImagePathError(errorCode, path, channel);
+        for (IZegoEventHandler handler : handlerList) {
+            handler.onPublisherDummyCaptureImagePathError(errorCode, path, channel);
+        }
+    }
+
+    @Override
+    public void onPublisherLowFpsWarning(ZegoVideoCodecID codecID, ZegoPublishChannel channel) {
+        super.onPublisherLowFpsWarning(codecID, channel);
+        for (IZegoEventHandler handler : handlerList) {
+            handler.onPublisherLowFpsWarning(codecID, channel);
         }
     }
 

@@ -1,18 +1,19 @@
 package com.zegocloud.demo.bestpractice.internal;
 
+import com.zegocloud.demo.bestpractice.internal.business.UserRequestCallback;
 import com.zegocloud.demo.bestpractice.internal.business.cohost.CoHostService;
 import com.zegocloud.demo.bestpractice.internal.business.cohost.CoHostService.CoHostListener;
+import com.zegocloud.demo.bestpractice.internal.business.pk.MixLayoutProvider;
 import com.zegocloud.demo.bestpractice.internal.business.pk.PKListener;
 import com.zegocloud.demo.bestpractice.internal.business.pk.PKService;
-import com.zegocloud.demo.bestpractice.internal.business.pk.PKService.PKInfo;
-import com.zegocloud.demo.bestpractice.internal.business.pk.PKService.PKRequest;
+import com.zegocloud.demo.bestpractice.internal.business.pk.PKService.PKBattleInfo;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
 import com.zegocloud.demo.bestpractice.internal.sdk.zim.IZIMEventHandler;
-import com.zegocloud.demo.bestpractice.internal.business.UserRequestCallback;
 import im.zego.zegoexpress.callback.IZegoMixerStartCallback;
 import im.zego.zegoexpress.constants.ZegoPublisherState;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.json.JSONObject;
@@ -36,6 +37,7 @@ public class ZEGOLiveStreamingManager {
 
     private PKService pkService;
     private CoHostService coHostService;
+    private MixLayoutProvider mixLayoutProvider;
 
     public void init() {
         pkService = new PKService();
@@ -71,6 +73,20 @@ public class ZEGOLiveStreamingManager {
             @Override
             public void onPlayerSyncRecvSEI(String streamID, byte[] data) {
                 pkService.onPlayerSyncRecvSEI(streamID, data);
+            }
+
+            @Override
+            public void onUserLeft(List<ZEGOSDKUser> userList) {
+                if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
+                    return;
+                }
+                for (ZEGOSDKUser zegosdkUser : userList) {
+                    if (pkService.isPKUser(zegosdkUser.userID)) {
+                        // means this room's pk user left
+                        ZEGOLiveStreamingManager.getInstance().endPKBattle();
+                        break;
+                    }
+                }
             }
         });
         ZEGOSDKManager.getInstance().zimService.addEventHandler(new IZIMEventHandler() {
@@ -161,52 +177,20 @@ public class ZEGOLiveStreamingManager {
         return coHostService.generateUserStreamID(userID, roomID);
     }
 
-    public void sendPKBattlesStopRequest() {
-        pkService.sendPKBattlesStopRequest();
-    }
-
-    public PKInfo getPKInfo() {
-        return pkService.getPKInfo();
-    }
-
-    public void stopPKBattle() {
-        pkService.stopPKBattle();
-    }
-
-    public void setCurrentPKInfo(PKInfo pkInfo) {
-        pkService.setCurrentPKInfo(pkInfo);
-    }
-
-    public void acceptPKBattleStartRequest(String requestID) {
-        pkService.acceptPKBattleStartRequest(requestID);
-    }
-
-    public void rejectPKBattleStartRequest(String requestID) {
-        pkService.rejectPKBattleStartRequest(requestID);
+    public PKBattleInfo getPKBattleInfo() {
+        return pkService.getPKBattleInfo();
     }
 
     public boolean isPKUser(String userID) {
         return pkService.isPKUser(userID);
     }
 
-    public boolean isPKUserMuted() {
-        return pkService.isPKUserMuted();
+    public boolean isPKUserMuted(String userID) {
+        return pkService.isPKUserMuted(userID);
     }
 
     public void mutePKUser(boolean mute, IZegoMixerStartCallback callback) {
-        pkService.mutePKUser(mute, callback);
-    }
-
-    public PKRequest getSendPKStartRequest() {
-        return pkService.getSendPKStartRequest();
-    }
-
-    public void sendPKBattlesStartRequest(String targetUserID, UserRequestCallback callback) {
-        pkService.sendPKBattlesStartRequest(targetUserID, callback);
-    }
-
-    public void cancelPKBattleStartRequest(String requestID, String targetUserID) {
-        pkService.cancelPKBattleStartRequest(requestID, targetUserID);
+        pkService.mutePKUser(Collections.singletonList(1), mute, callback);
     }
 
     public void addLiveStreamingListener(LiveStreamingListener listener) {
@@ -219,9 +203,68 @@ public class ZEGOLiveStreamingManager {
         coHostService.removeListener(listener);
     }
 
+    public void invitePKBattle(String targetUserID, UserRequestCallback callback) {
+        pkService.invitePKBattle(Collections.singletonList(targetUserID), callback);
+    }
+
+    public void invitePKBattle(List<String> anotherHostIDList, UserRequestCallback callback) {
+        pkService.invitePKBattle(anotherHostIDList, callback);
+    }
+
+    public void startPKBattle(String anotherHostID, UserRequestCallback callback) {
+
+    }
+
+    public void startPKBattle(List<String> anotherHostIDList, UserRequestCallback callback) {
+
+    }
+
+    public void cancelPKBattle(String requestID, String targetUserID) {
+        pkService.cancelPKBattle(requestID, targetUserID);
+    }
+
+    public void acceptPKBattle(String requestID) {
+        pkService.acceptPKBattle(requestID);
+    }
+
+    public void rejectPKBattle(String requestID) {
+        pkService.rejectPKBattle(requestID);
+    }
+
+    public void removePKBattle(String userID) {
+        PKBattleInfo pkBattleInfo = pkService.getPKBattleInfo();
+        if (pkBattleInfo != null) {
+            pkService.removePKBattle(userID);
+        }
+    }
+
+    public void endPKBattle() {
+        PKBattleInfo pkBattleInfo = pkService.getPKBattleInfo();
+        if (pkBattleInfo != null) {
+            pkService.endPKBattle(pkBattleInfo.requestID, null);
+            pkService.stopPKBattle();
+        }
+    }
+
+    public void quitPKBattle() {
+        PKBattleInfo pkBattleInfo = pkService.getPKBattleInfo();
+        if (pkBattleInfo != null) {
+            pkService.quitPKBattle(pkBattleInfo.requestID, null);
+            pkService.stopPKBattle();
+        }
+    }
+
+    public void setMixLayoutProvider(MixLayoutProvider mixLayoutProvider) {
+        this.mixLayoutProvider = mixLayoutProvider;
+    }
+
+    public MixLayoutProvider getMixLayoutProvider() {
+        return mixLayoutProvider;
+    }
+
     public void leave() {
         if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
-            ZEGOLiveStreamingManager.getInstance().sendPKBattlesStopRequest();
+            ZEGOLiveStreamingManager.getInstance().quitPKBattle();
         }
         ZEGOLiveStreamingManager.getInstance().removeRoomData();
         ZEGOLiveStreamingManager.getInstance().removeRoomListeners();

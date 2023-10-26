@@ -1,0 +1,295 @@
+package com.zegocloud.demo.bestpractice.components.cohost;
+
+import android.content.Context;
+import android.content.DialogInterface;
+import android.util.AttributeSet;
+import android.view.LayoutInflater;
+import android.widget.FrameLayout;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import com.zegocloud.demo.bestpractice.R;
+import com.zegocloud.demo.bestpractice.databinding.LayoutPkBattleBinding;
+import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
+import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager.LiveStreamingListener;
+import com.zegocloud.demo.bestpractice.internal.business.pk.PKService.PKBattleInfo;
+import com.zegocloud.demo.bestpractice.internal.business.pk.PKUser;
+import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
+import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
+import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
+import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
+import im.zego.zegoexpress.callback.IZegoMixerStartCallback;
+import java.util.Objects;
+import org.json.JSONObject;
+
+public class PKBattleLayout extends FrameLayout {
+
+    public PKBattleLayout(@NonNull Context context) {
+        super(context);
+        initView();
+    }
+
+    public PKBattleLayout(@NonNull Context context, @Nullable AttributeSet attrs) {
+        super(context, attrs);
+        initView();
+    }
+
+    public PKBattleLayout(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        initView();
+    }
+
+    public PKBattleLayout(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+        super(context, attrs, defStyleAttr, defStyleRes);
+        initView();
+    }
+
+    private LayoutPkBattleBinding binding;
+    private AlertDialog startPKDialog;
+
+    private static final String TAG = "PKBattleLayout";
+
+
+    private void initView() {
+        binding = LayoutPkBattleBinding.inflate(LayoutInflater.from(getContext()), this, true);
+
+        ZEGOSDKManager.getInstance().expressService.addEventHandler(new IExpressEngineEventHandler() {
+            @Override
+            public void onCameraOpen(String userID, boolean open) {
+                PKBattleInfo pkInfo = ZEGOLiveStreamingManager.getInstance().getPKBattleInfo();
+                if (pkInfo != null) {
+                    for (PKUser pkUser : pkInfo.pkUserList) {
+                        if (Objects.equals(userID, pkUser.userID)) {
+                            pkUser.setCamera(open);
+                            int childCount = binding.pkBattleUserLayout.getChildCount();
+                            for (int i = 0; i < childCount; i++) {
+                                PKBattleView pkBattleView = (PKBattleView) binding.pkBattleUserLayout.getChildAt(i);
+                                if (Objects.equals(pkBattleView.getPkUser().userID, userID)) {
+                                    pkBattleView.onCameraUpdate(open);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        ZEGOLiveStreamingManager.getInstance().addLiveStreamingListener(new LiveStreamingListener() {
+
+            @Override
+            public void onRoleChanged(String userID, int after) {
+                if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
+                    // host pull every single stream of other pk hosts
+                    binding.pkBattleVideoMixLayout.setVisibility(GONE);
+                } else {
+                    // audience only pull mix stream
+                    binding.pkBattleVideoMixLayout.setVisibility(VISIBLE);
+                }
+            }
+
+            @Override
+            public void onReceivePKBattleRequest(String requestID, String inviter, String inviterName, String roomId) {
+                if (startPKDialog != null && startPKDialog.isShowing()) {
+                    return;
+                }
+                AlertDialog.Builder startPKBuilder = new AlertDialog.Builder(getContext());
+                startPKBuilder.setTitle(inviterName + " invite you pkbattle");
+                startPKBuilder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        ZEGOLiveStreamingManager.getInstance().acceptPKBattle(requestID);
+                    }
+                });
+                startPKBuilder.setNegativeButton(R.string.reject, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        ZEGOLiveStreamingManager.getInstance().rejectPKBattle(requestID);
+                    }
+                });
+                startPKDialog = startPKBuilder.create();
+                startPKDialog.setCanceledOnTouchOutside(false);
+                startPKDialog.show();
+            }
+
+            @Override
+            public void onInComingPKBattleTimeout(String requestID) {
+                if (startPKDialog != null && startPKDialog.isShowing()) {
+                    startPKDialog.dismiss();
+                }
+            }
+
+            @Override
+            public void onPKBattleCancelled(String requestID, String extendedData) {
+                if (startPKDialog != null && startPKDialog.isShowing()) {
+                    startPKDialog.dismiss();
+                }
+            }
+
+            @Override
+            public void onPKBattleAccepted(String userID, String extendedData) {
+                PKBattleInfo pkInfo = ZEGOLiveStreamingManager.getInstance().getPKBattleInfo();
+                ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+                for (PKUser pkUser : pkInfo.pkUserList) {
+                    if (Objects.equals(pkUser.userID, userID) && !Objects.equals(currentUser.userID, userID)) {
+                        ToastUtil.show(getContext(), pkUser.userName + " accept the pk battle");
+                        break;
+                    }
+                }
+            }
+
+
+            @Override
+            public void onPKStarted() {
+                onRoomPKStarted();
+            }
+
+            @Override
+            public void onPKUserJoin(String userID, String extendedData) {
+                onRoomPKUserJoin();
+            }
+
+            @Override
+            public void onPKEnded() {
+                onRoomPKEnded();
+            }
+
+            @Override
+            public void onPKUserConnecting(String userID, long duration) {
+                boolean timeout = duration > 5000;
+                int childCount = binding.pkBattleUserLayout.getChildCount();
+                for (int i = 0; i < childCount; i++) {
+                    PKBattleView pkBattleView = (PKBattleView) binding.pkBattleUserLayout.getChildAt(i);
+                    if (Objects.equals(pkBattleView.getPkUser().userID, userID)) {
+                        pkBattleView.onTimeOut(timeout);
+                        if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
+                            if (timeout) {
+                                boolean pkUserMuted = ZEGOLiveStreamingManager.getInstance().isPKUserMuted(userID);
+                                if (!pkUserMuted) {
+                                    ZEGOLiveStreamingManager.getInstance()
+                                        .mutePKUser(true, new IZegoMixerStartCallback() {
+                                            @Override
+                                            public void onMixerStartResult(int errorCode, JSONObject extendedData) {
+                                                if (errorCode == 0) {
+                                                    pkBattleView.mutePlayAudio(true);
+                                                }
+                                            }
+                                        });
+                                }
+                            } else {
+                                boolean pkUserMuted = ZEGOLiveStreamingManager.getInstance().isPKUserMuted(userID);
+                                if (pkUserMuted) {
+                                    ZEGOLiveStreamingManager.getInstance()
+                                        .mutePKUser(false, new IZegoMixerStartCallback() {
+                                            @Override
+                                            public void onMixerStartResult(int errorCode, JSONObject extendedData) {
+                                                if (errorCode == 0) {
+                                                    pkBattleView.mutePlayAudio(false);
+                                                }
+                                            }
+                                        });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onPKUserCameraOpen(String userID, boolean open) {
+                int childCount = binding.pkBattleUserLayout.getChildCount();
+                for (int i = 0; i < childCount; i++) {
+                    PKBattleView pkBattleView = (PKBattleView) binding.pkBattleUserLayout.getChildAt(i);
+                    if (Objects.equals(pkBattleView.getPkUser().userID, userID)) {
+                        pkBattleView.onCameraUpdate(open);
+                    }
+                }
+            }
+
+            @Override
+            public void onPKUserQuit(String userID, String extendedData) {
+                PKBattleInfo pkInfo = ZEGOLiveStreamingManager.getInstance().getPKBattleInfo();
+                boolean isCurrentUserHost = ZEGOLiveStreamingManager.getInstance().isCurrentUserHost();
+
+                int childCount = binding.pkBattleUserLayout.getChildCount();
+                for (int i = 0; i < childCount; i++) {
+                    PKBattleView pkBattleView = (PKBattleView) binding.pkBattleUserLayout.getChildAt(i);
+                    if (Objects.equals(pkBattleView.getPkUser().userID, userID)) {
+                        pkBattleView.setPKUser(null, false);
+                        break;
+                    }
+                }
+                binding.pkBattleUserLayout.removeAllViews();
+
+                for (PKUser pkUser : pkInfo.pkUserList) {
+                    if (pkUser.hasAccepted()) {
+                        PKBattleView pkBattleView = new PKBattleView(getContext());
+                        pkBattleView.setPKUser(pkUser, isCurrentUserHost);
+                        binding.pkBattleUserLayout.addView(pkBattleView);
+                    }
+                }
+            }
+        });
+    }
+
+    private void onRoomPKUserJoin() {
+        PKBattleInfo pkInfo = ZEGOLiveStreamingManager.getInstance().getPKBattleInfo();
+        boolean isCurrentUserHost = ZEGOLiveStreamingManager.getInstance().isCurrentUserHost();
+
+        binding.pkBattleUserLayout.removeAllViews();
+        for (PKUser pkUser : pkInfo.pkUserList) {
+            if (pkUser.hasAccepted()) {
+                PKBattleView pkBattleView = new PKBattleView(getContext());
+                pkBattleView.setPKUser(pkUser, isCurrentUserHost);
+                binding.pkBattleUserLayout.addView(pkBattleView);
+            }
+        }
+    }
+
+    /**
+     * a video view background to show mix-steam when is audience a framelayout to show cell view of pk battle. contains
+     * a video view in each cell when is host
+     */
+    private void onRoomPKStarted() {
+        boolean isCurrentUserHost = ZEGOLiveStreamingManager.getInstance().isCurrentUserHost();
+        // onRoomPKStarted will be called later,no need to add view here
+        //        for (PKUser pkUser : pkInfo.pkUserList) {
+        //            PKBattleView pkBattleView = new PKBattleView(getContext());
+        //            pkBattleView.setPKUser(pkUser, isCurrentUserHost);
+        //            binding.pkBattleUserLayout.addView(pkBattleView);
+        //        }
+        if (!isCurrentUserHost) {
+            String mixStreamID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID() + "_mix";
+            binding.pkBattleVideoMixLayout.setStreamID(mixStreamID);
+            binding.pkBattleVideoMixLayout.startPlayRemoteAudioVideo();
+        }
+        //        binding.pkOtherVideoMute.setOnClickListener(v -> {
+        //            boolean pkUserMuted = ZEGOLiveStreamingManager.getInstance().isPKUserMuted();
+        //            ZEGOLiveStreamingManager.getInstance().mutePKUser(!pkUserMuted, new IZegoMixerStartCallback() {
+        //                @Override
+        //                public void onMixerStartResult(int errorCode, JSONObject extendedData) {
+        //                    if (errorCode == 0) {
+        //                        if (pkUserMuted) {
+        //                            binding.pkOtherVideoMute.setText("Mute user");
+        //                        } else {
+        //                            binding.pkOtherVideoMute.setText("Unmute user");
+        //                        }
+        //                    }
+        //                }
+        //            });
+        //        });
+    }
+
+    private void onRoomPKEnded() {
+        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+
+        int childCount = binding.pkBattleUserLayout.getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            PKBattleView pkBattleView = (PKBattleView) binding.pkBattleUserLayout.getChildAt(i);
+            if (!Objects.equals(pkBattleView.getPkUser().userID, currentUser.userID)) {
+                pkBattleView.setPKUser(null, false);
+            }
+        }
+        binding.pkBattleUserLayout.removeAllViews();
+    }
+}

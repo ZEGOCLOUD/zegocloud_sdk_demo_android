@@ -23,6 +23,8 @@ public class LoginActivity extends AppCompatActivity {
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        binding.liveLoginUserid.getEditText().setText(Build.MANUFACTURER.toLowerCase());
+        binding.liveLoginName.getEditText().setText(Build.MANUFACTURER.toLowerCase());
         binding.liveLoginUserid.getEditText().addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {

@@ -5,8 +5,11 @@ import com.zegocloud.demo.bestpractice.internal.utils.LogUtil;
 import im.zego.zim.ZIM;
 import im.zego.zim.callback.ZIMCallAcceptanceSentCallback;
 import im.zego.zim.callback.ZIMCallCancelSentCallback;
+import im.zego.zim.callback.ZIMCallEndSentCallback;
 import im.zego.zim.callback.ZIMCallInvitationSentCallback;
+import im.zego.zim.callback.ZIMCallQuitSentCallback;
 import im.zego.zim.callback.ZIMCallRejectionSentCallback;
+import im.zego.zim.callback.ZIMCallingInvitationSentCallback;
 import im.zego.zim.callback.ZIMEventHandler;
 import im.zego.zim.callback.ZIMLogUploadedCallback;
 import im.zego.zim.callback.ZIMLoggedInCallback;
@@ -20,12 +23,18 @@ import im.zego.zim.callback.ZIMUserAvatarUrlUpdatedCallback;
 import im.zego.zim.callback.ZIMUsersInfoQueriedCallback;
 import im.zego.zim.entity.ZIMCallAcceptConfig;
 import im.zego.zim.entity.ZIMCallCancelConfig;
+import im.zego.zim.entity.ZIMCallEndConfig;
 import im.zego.zim.entity.ZIMCallInvitationAcceptedInfo;
 import im.zego.zim.entity.ZIMCallInvitationCancelledInfo;
+import im.zego.zim.entity.ZIMCallInvitationEndedInfo;
 import im.zego.zim.entity.ZIMCallInvitationReceivedInfo;
 import im.zego.zim.entity.ZIMCallInvitationRejectedInfo;
+import im.zego.zim.entity.ZIMCallInvitationTimeoutInfo;
 import im.zego.zim.entity.ZIMCallInviteConfig;
+import im.zego.zim.entity.ZIMCallQuitConfig;
 import im.zego.zim.entity.ZIMCallRejectConfig;
+import im.zego.zim.entity.ZIMCallUserStateChangeInfo;
+import im.zego.zim.entity.ZIMCallingInviteConfig;
 import im.zego.zim.entity.ZIMCommandMessage;
 import im.zego.zim.entity.ZIMError;
 import im.zego.zim.entity.ZIMErrorUserInfo;
@@ -182,19 +191,17 @@ public class ZIMService {
             @Override
             public void onCallInvitationReceived(ZIM zim, ZIMCallInvitationReceivedInfo info, String callID) {
                 super.onCallInvitationReceived(zim, info, callID);
-
                 for (IZIMEventHandler handler : autoDeleteHandlerList) {
-                    handler.onInComingUserRequestReceived(callID, info.inviter, info.extendedData);
+                    handler.onInComingUserRequestReceived(callID, info);
                 }
                 for (IZIMEventHandler handler : handlerList) {
-                    handler.onInComingUserRequestReceived(callID, info.inviter, info.extendedData);
+                    handler.onInComingUserRequestReceived(callID, info);
                 }
             }
 
             @Override
             public void onCallInvitationAccepted(ZIM zim, ZIMCallInvitationAcceptedInfo info, String callID) {
                 super.onCallInvitationAccepted(zim, info, callID);
-
                 for (IZIMEventHandler handler : autoDeleteHandlerList) {
                     handler.onOutgoingUserRequestAccepted(callID, info.invitee, info.extendedData);
                 }
@@ -206,19 +213,17 @@ public class ZIMService {
             @Override
             public void onCallInvitationCancelled(ZIM zim, ZIMCallInvitationCancelledInfo info, String callID) {
                 super.onCallInvitationCancelled(zim, info, callID);
-
                 for (IZIMEventHandler handler : autoDeleteHandlerList) {
-                    handler.onInComingUserRequestCancelled(callID, info.inviter, info.extendedData);
+                    handler.onInComingUserRequestCancelled(callID, info);
                 }
                 for (IZIMEventHandler handler : handlerList) {
-                    handler.onInComingUserRequestCancelled(callID, info.inviter, info.extendedData);
+                    handler.onInComingUserRequestCancelled(callID, info);
                 }
             }
 
             @Override
             public void onCallInvitationRejected(ZIM zim, ZIMCallInvitationRejectedInfo info, String callID) {
                 super.onCallInvitationRejected(zim, info, callID);
-
                 for (IZIMEventHandler handler : autoDeleteHandlerList) {
                     handler.onOutgoingUserRequestRejected(callID, info.invitee, info.extendedData);
                 }
@@ -230,24 +235,55 @@ public class ZIMService {
             @Override
             public void onCallInvitationTimeout(ZIM zim, String callID) {
                 super.onCallInvitationTimeout(zim, callID);
-
                 for (IZIMEventHandler handler : autoDeleteHandlerList) {
-                    handler.onInComingUserRequestTimeout(callID);
+                    handler.onInComingUserRequestTimeout(callID, null);
                 }
                 for (IZIMEventHandler handler : handlerList) {
-                    handler.onInComingUserRequestTimeout(callID);
+                    handler.onInComingUserRequestTimeout(callID, null);
                 }
             }
 
             @Override
             public void onCallInviteesAnsweredTimeout(ZIM zim, ArrayList<String> invitees, String callID) {
                 super.onCallInviteesAnsweredTimeout(zim, invitees, callID);
-
                 for (IZIMEventHandler handler : autoDeleteHandlerList) {
                     handler.onOutgoingUserRequestTimeout(callID);
                 }
                 for (IZIMEventHandler handler : handlerList) {
                     handler.onOutgoingUserRequestTimeout(callID);
+                }
+            }
+
+            @Override
+            public void onCallUserStateChanged(ZIM zim, ZIMCallUserStateChangeInfo info, String callID) {
+                super.onCallUserStateChanged(zim, info, callID);
+                for (IZIMEventHandler handler : autoDeleteHandlerList) {
+                    handler.onUserRequestStateChanged(info, callID);
+                }
+                for (IZIMEventHandler handler : handlerList) {
+                    handler.onUserRequestStateChanged(info, callID);
+                }
+            }
+
+            @Override
+            public void onCallInvitationEnded(ZIM zim, ZIMCallInvitationEndedInfo info, String callID) {
+                super.onCallInvitationEnded(zim, info, callID);
+                for (IZIMEventHandler handler : autoDeleteHandlerList) {
+                    handler.onUserRequestEnded(callID, info);
+                }
+                for (IZIMEventHandler handler : handlerList) {
+                    handler.onUserRequestEnded(callID, info);
+                }
+            }
+
+            @Override
+            public void onCallInvitationTimeout(ZIM zim, ZIMCallInvitationTimeoutInfo info, String callID) {
+                super.onCallInvitationTimeout(zim, info, callID);
+                for (IZIMEventHandler handler : autoDeleteHandlerList) {
+                    handler.onInComingUserRequestTimeout(callID, info);
+                }
+                for (IZIMEventHandler handler : handlerList) {
+                    handler.onInComingUserRequestTimeout(callID, info);
                 }
             }
 
@@ -518,6 +554,14 @@ public class ZIMService {
         zimProxy.callInvite(list, config, sentCallback);
     }
 
+    public void addUserToRequest(List<String> invitees, String requestID, ZIMCallingInviteConfig config,
+        ZIMCallingInvitationSentCallback callback) {
+        if (zimProxy.getZIM() == null || currentUser == null) {
+            return;
+        }
+        zimProxy.callingInvite(invitees, requestID, config, callback);
+    }
+
     public void acceptUserRequest(String requestID, ZIMCallAcceptConfig config,
         ZIMCallAcceptanceSentCallback callback) {
         if (zimProxy.getZIM() == null || currentUser == null) {
@@ -540,6 +584,22 @@ public class ZIMService {
         }
         zimProxy.callCancel(list, requestID, config, callback);
     }
+
+
+    public void quitUserRequest(String callID, ZIMCallQuitConfig config, ZIMCallQuitSentCallback callback) {
+        if (zimProxy.getZIM() == null || currentUser == null) {
+            return;
+        }
+        zimProxy.callQuit(callID, config, callback);
+    }
+
+    public void endUserRequest(String callID, ZIMCallEndConfig config, ZIMCallEndSentCallback callback) {
+        if (zimProxy.getZIM() == null || currentUser == null) {
+            return;
+        }
+        zimProxy.callEnd(callID, config, callback);
+    }
+
 
     public void sendRoomCommand(String command, RoomCommandCallback callback) {
         if (zimProxy.getZIM() == null || currentRoom == null || currentUser == null) {

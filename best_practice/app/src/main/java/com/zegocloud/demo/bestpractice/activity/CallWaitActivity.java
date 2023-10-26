@@ -14,14 +14,16 @@ import com.permissionx.guolindev.callback.RequestCallback;
 import com.zegocloud.demo.bestpractice.R;
 import com.zegocloud.demo.bestpractice.databinding.ActivityCallWaitBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOCallInvitationManager;
+import com.zegocloud.demo.bestpractice.internal.business.UserRequestCallback;
 import com.zegocloud.demo.bestpractice.internal.business.call.FullCallInfo;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.zim.IZIMEventHandler;
-import com.zegocloud.demo.bestpractice.internal.business.UserRequestCallback;
 import com.zegocloud.demo.bestpractice.internal.utils.LogUtil;
 import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
 import im.zego.zegoexpress.callback.IZegoRoomLoginCallback;
 import im.zego.zegoexpress.constants.ZegoScenario;
+import im.zego.zim.entity.ZIMCallInvitationCancelledInfo;
+import im.zego.zim.entity.ZIMCallInvitationTimeoutInfo;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -145,14 +147,14 @@ public class CallWaitActivity extends AppCompatActivity {
         zimEventHandler = new IZIMEventHandler() {
 
             @Override
-            public void onInComingUserRequestTimeout(String requestID) {
+            public void onInComingUserRequestTimeout(String requestID, ZIMCallInvitationTimeoutInfo info) {
                 if (requestID.equals(callInfo.callID)) {
                     finish();
                 }
             }
 
             @Override
-            public void onInComingUserRequestCancelled(String requestID, String inviter, String extendedData) {
+            public void onInComingUserRequestCancelled(String requestID, ZIMCallInvitationCancelledInfo info) {
                 if (requestID.equals(callInfo.callID)) {
                     finish();
                 }

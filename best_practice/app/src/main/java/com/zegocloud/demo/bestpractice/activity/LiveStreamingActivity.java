@@ -19,15 +19,12 @@ import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager.LiveStreamingListener;
 import com.zegocloud.demo.bestpractice.internal.business.RoomRequestExtendedData;
 import com.zegocloud.demo.bestpractice.internal.business.RoomRequestType;
-import com.zegocloud.demo.bestpractice.internal.business.pk.PKService.PKInfo;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKCallBack;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import com.zegocloud.demo.bestpractice.internal.sdk.express.ExpressService;
 import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
 import com.zegocloud.demo.bestpractice.internal.sdk.zim.IZIMEventHandler;
-import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
-import im.zego.zegoexpress.callback.IZegoMixerStartCallback;
 import im.zego.zegoexpress.callback.IZegoRoomLoginCallback;
 import im.zego.zegoexpress.constants.ZegoPublisherState;
 import im.zego.zegoexpress.constants.ZegoRoomStateChangedReason;
@@ -52,7 +49,6 @@ public class LiveStreamingActivity extends AppCompatActivity {
     private String liveID;
     //    private AlertDialog inviteCoHostDialog;
     private AlertDialog zimReconnectDialog;
-    private AlertDialog startPKDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,11 +118,39 @@ public class LiveStreamingActivity extends AppCompatActivity {
         ZEGOSDKManager.getInstance().expressService.startSoundLevelMonitor();
 
         int width = binding.getRoot().getWidth() / 4;
-        binding.pkOtherVideoIcon.setCircleBackgroundRadius(width / 2);
-        binding.pkSelfVideoIcon.setCircleBackgroundRadius(width / 2);
-        binding.audienceMixSelfIcon.setCircleBackgroundRadius(width / 2);
-        binding.audienceMixOtherIcon.setCircleBackgroundRadius(width / 2);
         binding.mainHostVideoIcon.setCircleBackgroundRadius(width);
+
+//        ZEGOLiveStreamingManager.getInstance().setMixLayoutProvider(new MixLayoutProvider() {
+//            @Override
+//            public ArrayList<ZegoMixerInput> getMixVideoInputs(List<String> streamList,
+//                ZegoMixerVideoConfig videoConfig) {
+//                ArrayList<ZegoMixerInput> inputList = new ArrayList<>();
+//                if (streamList.size() < 4) {
+//                    for (int i = 0; i < streamList.size(); i++) {
+//                        int left = (videoConfig.width / streamList.size()) * i;
+//                        int top = 0;
+//                        int right = (videoConfig.width / streamList.size()) * (i + 1);
+//                        int bottom = videoConfig.height;
+//                        ZegoMixerInput input_1 = new ZegoMixerInput(streamList.get(i), ZegoMixerInputContentType.VIDEO,
+//                            new Rect(left, top, right, bottom));
+//                        input_1.renderMode = ZegoMixRenderMode.FILL;
+//                        inputList.add(input_1);
+//                    }
+//                } else if (streamList.size() == 4) {
+//                    for (int i = 0; i < streamList.size(); i++) {
+//                        int left = (videoConfig.width / 2) * (i % 2);
+//                        int top = (videoConfig.height / 2) * (i < 2 ? 0 : 1);
+//                        int right = left + videoConfig.width / 2;
+//                        int bottom = top + videoConfig.height / 2;
+//                        ZegoMixerInput input_1 = new ZegoMixerInput(streamList.get(i), ZegoMixerInputContentType.VIDEO,
+//                            new Rect(left, top, right, bottom));
+//                        input_1.renderMode = ZegoMixRenderMode.FILL;
+//                        inputList.add(input_1);
+//                    }
+//                }
+//                return inputList;
+//            }
+//        });
     }
 
     @Override
@@ -152,18 +176,18 @@ public class LiveStreamingActivity extends AppCompatActivity {
                         binding.mainHostVideo.setUserID(zegosdkUser.userID);
                         binding.mainHostVideoIcon.setLetter(zegosdkUser.userName);
                         binding.mainHostVideo.setStreamID(zegosdkUser.getMainStreamID());
-                        if (ZEGOLiveStreamingManager.getInstance().getPKInfo() == null) {
+                        if (ZEGOLiveStreamingManager.getInstance().getPKBattleInfo() == null) {
                             binding.mainHostVideo.setVisibility(View.VISIBLE);
                             binding.mainHostVideoLayout.setVisibility(View.VISIBLE);
                             binding.mainHostVideo.startPlayRemoteAudioVideo();
                         }
                     } else {
-                        if (ZEGOLiveStreamingManager.getInstance().getPKInfo() == null) {
+                        if (ZEGOLiveStreamingManager.getInstance().getPKBattleInfo() == null) {
                             coHostUserList.add(zegosdkUser);
                         }
                     }
                 }
-                if (ZEGOLiveStreamingManager.getInstance().getPKInfo() == null) {
+                if (ZEGOLiveStreamingManager.getInstance().getPKBattleInfo() == null) {
                     binding.liveCohostView.addUser(coHostUserList);
                 }
             }
@@ -198,7 +222,7 @@ public class LiveStreamingActivity extends AppCompatActivity {
                         binding.mainHostVideo.setUserID(currentUser.userID);
                         binding.mainHostVideoIcon.setLetter(currentUser.userName);
                         binding.mainHostVideo.setStreamID(streamID);
-                        if (ZEGOLiveStreamingManager.getInstance().getPKInfo() == null) {
+                        if (ZEGOLiveStreamingManager.getInstance().getPKBattleInfo() == null) {
                             binding.mainHostVideoLayout.setVisibility(View.VISIBLE);
                         }
                     }
@@ -211,20 +235,6 @@ public class LiveStreamingActivity extends AppCompatActivity {
                         binding.mainHostVideoLayout.setVisibility(View.GONE);
                     } else {
                         binding.liveCohostView.removeUser(currentUser);
-                    }
-                }
-            }
-
-            @Override
-            public void onUserLeft(List<ZEGOSDKUser> userList) {
-                if (!ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
-                    PKInfo pkInfo = ZEGOLiveStreamingManager.getInstance().getPKInfo();
-                    if (pkInfo != null) {
-                        for (ZEGOSDKUser zegosdkUser : userList) {
-                            if (zegosdkUser.userID.equals(pkInfo.hostUserID)) {
-                                ZEGOLiveStreamingManager.getInstance().stopPKBattle();
-                            }
-                        }
                     }
                 }
             }
@@ -352,198 +362,33 @@ public class LiveStreamingActivity extends AppCompatActivity {
             }
         });
 
-        //        ZEGOSDKManager.getInstance().zimService.addIncomingRoomRequestListener(new IncomingRoomRequestListener() {
-        //            @Override
-        //            public void onInComingRoomRequestReceived(RoomRequest request) {
-        //                ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getcurrentUser();
-        //                if (ZEGOLiveStreamingManager.getInstance().isAudience(currentUser.userID)) {
-        //                    if (inviteCoHostDialog == null) {
-        //                        Builder builder = new Builder(LiveStreamingActivity.this);
-        //                        builder.setTitle("you received a new invitation");
-        //
-        //                        ZEGOSDKUser inviter = ZEGOSDKManager.getInstance().expressService.getUser(request.sender);
-        //                        if (inviter != null) {
-        //                            builder.setMessage(inviter.userName + " invite you to CoHost");
-        //                        }
-        //                        builder.setPositiveButton(R.string.ok, new OnClickListener() {
-        //                            @Override
-        //                            public void onClick(DialogInterface dialog, int which) {
-        //                                ExpressService expressService = ZEGOSDKManager.getInstance().expressService;
-        //                                expressService.openMicrophone(true);
-        //                                expressService.enableCamera(true);
-        //                                expressService.startPublishLocalAudioVideo();
-        //                                dialog.dismiss();
-        //                            }
-        //                        });
-        //                        builder.setNegativeButton(R.string.cancel, new OnClickListener() {
-        //                            @Override
-        //                            public void onClick(DialogInterface dialog, int which) {
-        //                                dialog.dismiss();
-        //                            }
-        //                        });
-        //                        inviteCoHostDialog = builder.create();
-        //                    }
-        //                    if (!inviteCoHostDialog.isShowing()) {
-        //                        inviteCoHostDialog.show();
-        //                    }
-        //                }
-        //            }
-        //
-        //            @Override
-        //            public void onInComingRoomRequestCancelled(RoomRequest request) {
-        //                if (inviteCoHostDialog != null && inviteCoHostDialog.isShowing()) {
-        //                    inviteCoHostDialog.dismiss();
-        //                }
-        //            }
-        //
-        //            @Override
-        //            public void onActionAcceptIncomingRoomRequest(int errorCode, RoomRequest request) {
-        //            }
-        //
-        //            @Override
-        //            public void onActionRejectIncomingRoomRequest(int errorCode, RoomRequest request) {
-        //            }
-        //        });
-
         ZEGOLiveStreamingManager.getInstance().addLiveStreamingListener(new LiveStreamingListener() {
-
-            @Override
-            public void onReceiveStartPKRequest(String requestID, String inviter, String inviterName, String roomId) {
-                if (startPKDialog != null && startPKDialog.isShowing()) {
-                    return;
-                }
-                AlertDialog.Builder startPKBuilder = new AlertDialog.Builder(LiveStreamingActivity.this);
-                startPKBuilder.setTitle(inviterName + " invite you pkbattle");
-                startPKBuilder.setPositiveButton(R.string.ok, new OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                        PKInfo pkInfo = new PKInfo(new ZEGOSDKUser(inviter, inviterName), roomId);
-                        ZEGOLiveStreamingManager.getInstance().setCurrentPKInfo(pkInfo);
-                        ZEGOLiveStreamingManager.getInstance().acceptPKBattleStartRequest(requestID);
-                    }
-                });
-                startPKBuilder.setNegativeButton(R.string.reject, new OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                        ZEGOLiveStreamingManager.getInstance().rejectPKBattleStartRequest(requestID);
-                    }
-                });
-                startPKDialog = startPKBuilder.create();
-                startPKDialog.setCanceledOnTouchOutside(false);
-                startPKDialog.show();
-            }
-
-            @Override
-            public void onReceiveStopPKRequest(String requestID) {
-                PKInfo pkInfo = ZEGOLiveStreamingManager.getInstance().getPKInfo();
-                ToastUtil.show(LiveStreamingActivity.this, pkInfo.pkUser.userName + " has Stopped PK");
-            }
-
-            @Override
-            public void onInComingStartPKRequestTimeout(String requestID) {
-                if (startPKDialog != null && startPKDialog.isShowing()) {
-                    startPKDialog.dismiss();
-                }
-            }
-
-            @Override
-            public void onInComingStartPKRequestCancelled(String requestID) {
-                if (startPKDialog != null && startPKDialog.isShowing()) {
-                    startPKDialog.dismiss();
-                }
-            }
-
-            @Override
-            public void onPKStarted() {
-                PKInfo pkInfo = ZEGOLiveStreamingManager.getInstance().getPKInfo();
-                onRoomPKStarted(pkInfo);
-            }
-
             @Override
             public void onPKEnded() {
                 onRoomPKEnded();
             }
 
             @Override
-            public void onPKSEITimeOut(String userID, boolean timeout) {
-                if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
-                    if (userID.equals(binding.pkOtherVideo.getUserID())) {
-                        if (timeout) {
-                            binding.pkOtherVideoTips.setVisibility(View.VISIBLE);
-                            binding.pkOtherVideoMute.setVisibility(View.GONE);
-                            binding.pkOtherVideo.mutePlayAudio(true);
-                            boolean pkUserMuted = ZEGOLiveStreamingManager.getInstance().isPKUserMuted();
-                            if (!pkUserMuted) {
-                                ZEGOLiveStreamingManager.getInstance().mutePKUser(true, new IZegoMixerStartCallback() {
-                                    @Override
-                                    public void onMixerStartResult(int errorCode, JSONObject extendedData) {
-                                        if (errorCode == 0) {
-                                            binding.pkOtherVideoMute.setText("Unmute user");
-                                        }
-                                    }
-                                });
-                            }
-                        } else {
-                            binding.pkOtherVideoTips.setVisibility(View.GONE);
-                            binding.pkOtherVideoMute.setVisibility(View.VISIBLE);
-                            binding.pkOtherVideo.mutePlayAudio(false);
-                            boolean pkUserMuted = ZEGOLiveStreamingManager.getInstance().isPKUserMuted();
-                            if (pkUserMuted) {
-                                ZEGOLiveStreamingManager.getInstance().mutePKUser(false, new IZegoMixerStartCallback() {
-                                    @Override
-                                    public void onMixerStartResult(int errorCode, JSONObject extendedData) {
-                                        if (errorCode == 0) {
-                                            binding.pkOtherVideoMute.setText("Mute user");
-                                        }
-                                    }
-                                });
-                            }
-                        }
-                    }
-                } else {
-                    if (ZEGOLiveStreamingManager.getInstance().isHost(userID)) {
-                        if (timeout) {
-                            if (binding.audienceMixSelfTips.getVisibility() != View.VISIBLE) {
-                                binding.audienceMixSelfTips.setVisibility(View.VISIBLE);
-                            }
-                        } else {
-                            if (binding.audienceMixSelfTips.getVisibility() != View.GONE) {
-                                binding.audienceMixSelfTips.setVisibility(View.GONE);
-                            }
-                        }
-                    } else if (ZEGOLiveStreamingManager.getInstance().isPKUser(userID)) {
-                        if (timeout) {
-                            if (binding.audienceMixOtherTips.getVisibility() != View.VISIBLE) {
-                                binding.audienceMixOtherTips.setVisibility(View.VISIBLE);
-                            }
-                        } else {
-                            if (binding.audienceMixOtherTips.getVisibility() != View.GONE) {
-                                binding.audienceMixOtherTips.setVisibility(View.GONE);
-                            }
-                        }
-                    }
-                }
+            public void onPKStarted() {
+                onRoomPKStarted();
             }
 
             @Override
-            public void onPKCameraOpen(String userID, boolean open) {
-                if (ZEGOLiveStreamingManager.getInstance().isPKUser(userID)) {
-                    onPKUserCameraUpdate(userID, open);
-                } else if (ZEGOLiveStreamingManager.getInstance().isHost(userID)) {
-                    onHostCameraUpdate(open);
+            public void onPKUserConnecting(String userID, long duration) {
+                if (duration >= 30_000) {
+                    ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+                    if (!Objects.equals(currentUser.userID, userID)) {
+                        ZEGOLiveStreamingManager.getInstance().removePKBattle(userID);
+                    } else {
+                        ZEGOLiveStreamingManager.getInstance().quitPKBattle();
+                    }
                 }
-            }
-
-            @Override
-            public void onPKMicrophoneOpen(String userID, boolean open) {
             }
         });
     }
 
     private void onRoomUserCameraOpen(String userID, boolean open) {
-        if (ZEGOLiveStreamingManager.getInstance().getPKInfo() == null) {
+        if (ZEGOLiveStreamingManager.getInstance().getPKBattleInfo() == null) {
             if (ZEGOLiveStreamingManager.getInstance().isHost(userID)) {
                 if (open) {
                     binding.mainHostVideo.setVisibility(View.VISIBLE);
@@ -553,64 +398,13 @@ public class LiveStreamingActivity extends AppCompatActivity {
                     binding.mainHostVideoIcon.setVisibility(View.VISIBLE);
                 }
             }
-        } else {
-            if (ZEGOLiveStreamingManager.getInstance().isHost(userID)) {
-                onHostCameraUpdate(open);
-            }
         }
     }
 
-    private void onRoomPKStarted(PKInfo pkInfo) {
-        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
-
+    private void onRoomPKStarted() {
         binding.liveCohostView.setVisibility(View.GONE);
         binding.pkVideoLayout.setVisibility(View.VISIBLE);
         binding.mainHostVideoLayout.setVisibility(View.GONE);
-
-        ZEGOSDKUser hostUser = ZEGOLiveStreamingManager.getInstance().getHostUser();
-        if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
-            binding.pkOtherVideoLayout.setVisibility(View.VISIBLE);
-            binding.pkSelfVideoLayout.setVisibility(View.VISIBLE);
-            binding.pkOtherVideo.setUserID(pkInfo.pkUser.userID);
-            binding.pkOtherVideoIcon.setLetter(pkInfo.pkUser.userName);
-            binding.pkOtherVideo.setStreamID(pkInfo.getPKStream());
-            binding.pkOtherVideo.startPlayRemoteAudioVideo();
-
-            binding.pkSelfVideo.setUserID(currentUser.userID);
-            binding.pkSelfVideoIcon.setLetter(currentUser.userName);
-            binding.pkSelfVideo.startPreviewOnly();
-        } else {
-
-            binding.pkOtherVideoLayout.setVisibility(View.INVISIBLE);
-            binding.pkSelfVideoLayout.setVisibility(View.INVISIBLE);
-
-            binding.audienceMixSelfIcon.setLetter(hostUser.userName);
-            binding.audienceMixOtherIcon.setLetter(pkInfo.pkUser.userName);
-
-            String streamID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID() + "_mix";
-            binding.audienceMixVideo.setStreamID(streamID);
-            binding.audienceMixVideo.startPlayRemoteAudioVideo();
-
-
-        }
-
-        onHostCameraUpdate(hostUser.isCameraOpen());
-
-        binding.pkOtherVideoMute.setOnClickListener(v -> {
-            boolean pkUserMuted = ZEGOLiveStreamingManager.getInstance().isPKUserMuted();
-            ZEGOLiveStreamingManager.getInstance().mutePKUser(!pkUserMuted, new IZegoMixerStartCallback() {
-                @Override
-                public void onMixerStartResult(int errorCode, JSONObject extendedData) {
-                    if (errorCode == 0) {
-                        if (pkUserMuted) {
-                            binding.pkOtherVideoMute.setText("Mute user");
-                        } else {
-                            binding.pkOtherVideoMute.setText("Unmute user");
-                        }
-                    }
-                }
-            });
-        });
     }
 
     private void onRoomPKEnded() {
@@ -622,16 +416,8 @@ public class LiveStreamingActivity extends AppCompatActivity {
         binding.liveCohostView.setVisibility(View.VISIBLE);
 
         if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
-            binding.pkOtherVideo.stopPlayRemoteAudioVideo();
-            binding.pkOtherVideo.setUserID("");
-            binding.pkOtherVideoIcon.setLetter("");
-            binding.pkOtherVideo.setStreamID("");
-
             binding.mainHostVideo.startPreviewOnly();
         } else {
-            binding.audienceMixVideo.stopPlayRemoteAudioVideo();
-            binding.audienceMixVideo.setStreamID("");
-
             if (hostUser != null) {
                 String hostMainStreamID = hostUser.getMainStreamID();
                 if (hostMainStreamID != null) {
@@ -642,42 +428,6 @@ public class LiveStreamingActivity extends AppCompatActivity {
 
         if (hostUser != null) {
             onRoomUserCameraOpen(hostUser.userID, hostUser.isCameraOpen());
-        }
-    }
-
-    private void onPKUserCameraUpdate(String userID, boolean open) {
-        if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
-            if (open) {
-                binding.pkOtherVideoIcon.setVisibility(View.INVISIBLE);
-                binding.pkOtherVideo.setVisibility(View.VISIBLE);
-            } else {
-                binding.pkOtherVideoIcon.setVisibility(View.VISIBLE);
-                binding.pkOtherVideo.setVisibility(View.INVISIBLE);
-            }
-        } else {
-            if (open) {
-                binding.audienceMixOtherIcon.setVisibility(View.INVISIBLE);
-            } else {
-                binding.audienceMixOtherIcon.setVisibility(View.VISIBLE);
-            }
-        }
-    }
-
-    private void onHostCameraUpdate(boolean open) {
-        if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
-            if (open) {
-                binding.pkSelfVideoIcon.setVisibility(View.INVISIBLE);
-                binding.pkSelfVideo.setVisibility(View.VISIBLE);
-            } else {
-                binding.pkSelfVideoIcon.setVisibility(View.VISIBLE);
-                binding.pkSelfVideo.setVisibility(View.INVISIBLE);
-            }
-        } else {
-            if (open) {
-                binding.audienceMixSelfIcon.setVisibility(View.INVISIBLE);
-            } else {
-                binding.audienceMixSelfIcon.setVisibility(View.VISIBLE);
-            }
         }
     }
 

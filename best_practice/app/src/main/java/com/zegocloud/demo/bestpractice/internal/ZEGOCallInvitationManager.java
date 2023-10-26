@@ -14,7 +14,10 @@ import im.zego.zim.callback.ZIMCallInvitationSentCallback;
 import im.zego.zim.callback.ZIMCallRejectionSentCallback;
 import im.zego.zim.entity.ZIMCallAcceptConfig;
 import im.zego.zim.entity.ZIMCallCancelConfig;
+import im.zego.zim.entity.ZIMCallInvitationCancelledInfo;
+import im.zego.zim.entity.ZIMCallInvitationReceivedInfo;
 import im.zego.zim.entity.ZIMCallInvitationSentInfo;
+import im.zego.zim.entity.ZIMCallInvitationTimeoutInfo;
 import im.zego.zim.entity.ZIMCallInviteConfig;
 import im.zego.zim.entity.ZIMCallRejectConfig;
 import im.zego.zim.entity.ZIMError;
@@ -30,7 +33,7 @@ public class ZEGOCallInvitationManager {
         private static final ZEGOCallInvitationManager INSTANCE = new ZEGOCallInvitationManager();
     }
 
-    private ZEGOCallInvitationManager(){
+    private ZEGOCallInvitationManager() {
 
     }
 
@@ -45,8 +48,8 @@ public class ZEGOCallInvitationManager {
     public void init() {
         ZEGOSDKManager.getInstance().zimService.addEventHandler(new IZIMEventHandler() {
             @Override
-            public void onInComingUserRequestReceived(String requestID, String inviter, String extendedData) {
-                CallExtendedData callExtendedData = CallExtendedData.parse(extendedData);
+            public void onInComingUserRequestReceived(String requestID, ZIMCallInvitationReceivedInfo info) {
+                CallExtendedData callExtendedData = CallExtendedData.parse(info.extendedData);
                 if (callExtendedData != null) {
                     if (callExtendedData.isVideoCall() || callExtendedData.isVoiceCall()) {
                         boolean inCallRequest = sendCallRequest != null || recvCallRequest != null;
@@ -71,10 +74,10 @@ public class ZEGOCallInvitationManager {
                         }
                         recvCallRequest = new CallRequest();
                         recvCallRequest.requestID = requestID;
-                        recvCallRequest.targetUserID = inviter;
+                        recvCallRequest.targetUserID = info.inviter;
 
                         if (receiveCallListener != null) {
-                            receiveCallListener.onReceiveNewCall(requestID, inviter, callExtendedData.userName,
+                            receiveCallListener.onReceiveNewCall(requestID, info.inviter, callExtendedData.userName,
                                 callExtendedData.type);
                         }
                     }
@@ -82,14 +85,14 @@ public class ZEGOCallInvitationManager {
             }
 
             @Override
-            public void onInComingUserRequestTimeout(String requestID) {
+            public void onInComingUserRequestTimeout(String requestID, ZIMCallInvitationTimeoutInfo info) {
                 if (recvCallRequest != null && requestID.equals(recvCallRequest.requestID)) {
                     recvCallRequest = null;
                 }
             }
 
             @Override
-            public void onInComingUserRequestCancelled(String requestID, String inviter, String extendedData) {
+            public void onInComingUserRequestCancelled(String requestID, ZIMCallInvitationCancelledInfo info) {
                 if (recvCallRequest != null && requestID.equals(recvCallRequest.requestID)) {
                     recvCallRequest = null;
                 }

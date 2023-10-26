@@ -1,6 +1,11 @@
 package com.zegocloud.demo.bestpractice.internal.sdk.zim;
 
 import im.zego.zim.callback.ZIMEventHandler;
+import im.zego.zim.entity.ZIMCallInvitationCancelledInfo;
+import im.zego.zim.entity.ZIMCallInvitationEndedInfo;
+import im.zego.zim.entity.ZIMCallInvitationReceivedInfo;
+import im.zego.zim.entity.ZIMCallInvitationTimeoutInfo;
+import im.zego.zim.entity.ZIMCallUserStateChangeInfo;
 import java.util.List;
 import java.util.Map;
 
@@ -25,10 +30,10 @@ public abstract class IZIMEventHandler extends ZIMEventHandler {
     public void onCancelOutgoingRoomRequest(int errorCode, String requestID, String extendedData) {
     }
 
-    public void onOutgoingRoomRequestAccepted(String requestID,String extendedData) {
+    public void onOutgoingRoomRequestAccepted(String requestID, String extendedData) {
     }
 
-    public void onOutgoingRoomRequestRejected(String requestID,String extendedData) {
+    public void onOutgoingRoomRequestRejected(String requestID, String extendedData) {
     }
 
     public void onRoomAttributesUpdated2(List<Map<String, String>> setProperties,
@@ -36,13 +41,10 @@ public abstract class IZIMEventHandler extends ZIMEventHandler {
     }
     // ---------room end---
 
-    public void onInComingUserRequestReceived(String requestID, String inviter, String extendedData) {
+    public void onInComingUserRequestReceived(String requestID, ZIMCallInvitationReceivedInfo info) {
     }
 
-    public void onInComingUserRequestTimeout(String requestID) {
-    }
-
-    public void onInComingUserRequestCancelled(String requestID, String inviter, String extendedData) {
+    public void onInComingUserRequestCancelled(String requestID, ZIMCallInvitationCancelledInfo info) {
     }
 
     public void onOutgoingUserRequestTimeout(String requestID) {
@@ -52,6 +54,18 @@ public abstract class IZIMEventHandler extends ZIMEventHandler {
     }
 
     public void onOutgoingUserRequestRejected(String requestID, String invitee, String extendedData) {
+    }
+
+    public void onUserRequestStateChanged(ZIMCallUserStateChangeInfo info, String requestID) {
+
+    }
+
+    public void onUserRequestEnded(String requestID, ZIMCallInvitationEndedInfo info) {
+
+    }
+
+    public void onInComingUserRequestTimeout(String requestID, ZIMCallInvitationTimeoutInfo info) {
+
     }
 
     public void onUserAvatarUpdated(String userID, String url) {

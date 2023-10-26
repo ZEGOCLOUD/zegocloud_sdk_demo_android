@@ -4,8 +4,11 @@ import android.app.Application;
 import im.zego.zim.ZIM;
 import im.zego.zim.callback.ZIMCallAcceptanceSentCallback;
 import im.zego.zim.callback.ZIMCallCancelSentCallback;
+import im.zego.zim.callback.ZIMCallEndSentCallback;
 import im.zego.zim.callback.ZIMCallInvitationSentCallback;
+import im.zego.zim.callback.ZIMCallQuitSentCallback;
 import im.zego.zim.callback.ZIMCallRejectionSentCallback;
+import im.zego.zim.callback.ZIMCallingInvitationSentCallback;
 import im.zego.zim.callback.ZIMEventHandler;
 import im.zego.zim.callback.ZIMLogUploadedCallback;
 import im.zego.zim.callback.ZIMLoggedInCallback;
@@ -20,8 +23,11 @@ import im.zego.zim.callback.ZIMUsersInfoQueriedCallback;
 import im.zego.zim.entity.ZIMAppConfig;
 import im.zego.zim.entity.ZIMCallAcceptConfig;
 import im.zego.zim.entity.ZIMCallCancelConfig;
+import im.zego.zim.entity.ZIMCallEndConfig;
 import im.zego.zim.entity.ZIMCallInviteConfig;
+import im.zego.zim.entity.ZIMCallQuitConfig;
 import im.zego.zim.entity.ZIMCallRejectConfig;
+import im.zego.zim.entity.ZIMCallingInviteConfig;
 import im.zego.zim.entity.ZIMMessage;
 import im.zego.zim.entity.ZIMMessageSendConfig;
 import im.zego.zim.entity.ZIMRoomAdvancedConfig;
@@ -120,6 +126,11 @@ class ZIMProxy {
         ZIM.getInstance().callInvite(list, config, sentCallback);
     }
 
+    public void callingInvite(List<String> invitees, String callID, ZIMCallingInviteConfig config,
+        ZIMCallingInvitationSentCallback callback) {
+        ZIM.getInstance().callingInvite(invitees, callID, config, callback);
+    }
+
     public void callAccept(String callID, ZIMCallAcceptConfig config, ZIMCallAcceptanceSentCallback callback) {
         ZIM.getInstance().callAccept(callID, config, callback);
     }
@@ -131,6 +142,14 @@ class ZIMProxy {
     public void callCancel(List<String> list, String callID, ZIMCallCancelConfig config,
         ZIMCallCancelSentCallback callback) {
         ZIM.getInstance().callCancel(list, callID, config, callback);
+    }
+
+    public void callQuit(String callID, ZIMCallQuitConfig config, ZIMCallQuitSentCallback callback) {
+        ZIM.getInstance().callQuit(callID, config, callback);
+    }
+
+    public void callEnd(String callID, ZIMCallEndConfig config, ZIMCallEndSentCallback callback) {
+        ZIM.getInstance().callEnd(callID, config, callback);
     }
 
     public void sendMessage(ZIMMessage message, String toConversationID, ZIMConversationType conversationType,

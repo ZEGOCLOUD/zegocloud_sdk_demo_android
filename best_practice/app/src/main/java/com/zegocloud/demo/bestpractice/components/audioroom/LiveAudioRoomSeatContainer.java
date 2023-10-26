@@ -25,6 +25,7 @@ import com.zegocloud.demo.bestpractice.internal.business.audioroom.LiveAudioRoom
 import com.zegocloud.demo.bestpractice.internal.business.audioroom.LiveAudioRoomSeat;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
+import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
 import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
 import im.zego.zim.callback.ZIMRoomAttributesBatchOperatedCallback;
 import im.zego.zim.callback.ZIMRoomAttributesOperatedCallback;
@@ -60,6 +61,26 @@ public class LiveAudioRoomSeatContainer extends LinearLayout {
 
     private void initView() {
         setOrientation(LinearLayout.VERTICAL);
+        ZEGOSDKManager.getInstance().expressService.addEventHandler(new IExpressEngineEventHandler() {
+            @Override
+            public void onUserLeft(List<ZEGOSDKUser> userList) {
+                for (ZEGOSDKUser zegosdkUser : userList) {
+                    for (LiveAudioRoomSeat audioRoomSeat : ZEGOLiveAudioRoomManager.getInstance()
+                        .getAudioRoomSeatList()) {
+                        if (audioRoomSeat.isTakenByUser(zegosdkUser)) {
+                            ZEGOLiveAudioRoomManager.getInstance().leaveSeat(audioRoomSeat.seatIndex, new ZIMRoomAttributesOperatedCallback() {
+                                    @Override
+                                    public void onRoomAttributesOperated(String roomID, ArrayList<String> errorKeys,
+                                        ZIMError errorInfo) {
+
+                                    }
+                                });
+                        }
+                    }
+                }
+
+            }
+        });
         ZEGOLiveAudioRoomManager.getInstance().addLiveAudioRoomListener(new LiveAudioRoomListener() {
             @Override
             public void onHostChanged(ZEGOSDKUser hostUser) {

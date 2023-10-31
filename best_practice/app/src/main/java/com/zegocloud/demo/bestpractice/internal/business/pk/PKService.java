@@ -4,7 +4,7 @@ import android.graphics.Rect;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
-import androidx.annotation.NonNull;
+import android.util.Log;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
 import com.zegocloud.demo.bestpractice.internal.business.UserRequestCallback;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
@@ -114,6 +114,9 @@ public class PKService {
 
             @Override
             public void onInComingUserRequestReceived(String requestID, ZIMCallInvitationReceivedInfo info) {
+                Log.d(TAG,
+                    "onInComingUserRequestReceived() called with: requestID = [" + requestID + "], info = [" + info
+                        + "]");
                 PKExtendedData inviterExtendedData = PKExtendedData.parse(info.extendedData);
                 if (inviterExtendedData != null) {
                     if (inviterExtendedData.type == PKExtendedData.START_PK) {
@@ -158,8 +161,7 @@ public class PKService {
                         PKService.this.pkBattleInfo = pkInfo;
 
                         for (PKListener listener : listenerList) {
-                            listener.onReceivePKBattleRequest(requestID, info.inviter, inviterExtendedData.userName,
-                                inviterExtendedData.roomID);
+                            listener.onPKBattleReceived(requestID, info);
                         }
                     }
                 }
@@ -167,20 +169,26 @@ public class PKService {
 
             @Override
             public void onInComingUserRequestTimeout(String requestID, ZIMCallInvitationTimeoutInfo info) {
+                Log.d(TAG,
+                    "onInComingUserRequestTimeout() called with: requestID = [" + requestID + "], info = [" + info
+                        + "]");
                 if (pkBattleInfo != null && requestID.equals(pkBattleInfo.requestID)) {
                     pkBattleInfo = null;
                     for (PKListener listener : listenerList) {
-                        listener.onInComingPKBattleTimeout(requestID);
+                        listener.onInComingPKBattleTimeout(requestID, info);
                     }
                 }
             }
 
             @Override
             public void onInComingUserRequestCancelled(String requestID, ZIMCallInvitationCancelledInfo info) {
+                Log.d(TAG,
+                    "onInComingUserRequestCancelled() called with: requestID = [" + requestID + "], info = [" + info
+                        + "]");
                 if (pkBattleInfo != null && requestID.equals(pkBattleInfo.requestID)) {
                     pkBattleInfo = null;
                     for (PKListener listener : listenerList) {
-                        listener.onPKBattleCancelled(info.inviter, info.extendedData);
+                        listener.onPKBattleCancelled(requestID, info);
                     }
                 }
             }
@@ -195,6 +203,8 @@ public class PKService {
             @Override
             public void onUserRequestStateChanged(ZIMCallUserStateChangeInfo info, String requestID) {
                 super.onUserRequestStateChanged(info, requestID);
+                Log.d(TAG,
+                    "onUserRequestStateChanged() called with: info = [" + info + "], requestID = [" + requestID + "]");
                 if (pkBattleInfo != null && requestID.equals(pkBattleInfo.requestID)) {
                     ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
                     for (ZIMCallUserInfo userInfo : info.callUserList) {
@@ -250,7 +260,7 @@ public class PKService {
                             checkIfPKEnd(requestID, currentUser);
                         } else if (userInfo.state == ZIMCallUserState.TIMEOUT) {
                             for (PKListener listener : listenerList) {
-                                listener.onPKBattleTimeout(userInfo.userID, userInfo.extendedData);
+                                listener.onOutgoingPKBattleTimeout(userInfo.userID, userInfo.extendedData);
                             }
                             checkIfPKEnd(requestID, currentUser);
                         } else if (userInfo.state == ZIMCallUserState.QUITED) {
@@ -482,24 +492,29 @@ public class PKService {
         }
     }
 
-    @NonNull
-    private String getPKExtendedData(int type) {
+    private String getPKExtendedData(boolean needUserID, boolean autoAccept) {
         ZEGOSDKUser localUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
         String currentRoomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
         PKExtendedData data = new PKExtendedData();
         data.roomID = currentRoomID;
         data.userName = localUser.userName;
-        data.type = type;
+        data.type = PKExtendedData.START_PK;
+        if (needUserID) {
+            data.userID = localUser.userID;
+        }
+        if (autoAccept) {
+            data.autoAccept = true;
+        }
         return data.toString();
     }
 
     private static final String TAG = "PKService";
 
-    public void invitePKBattle(List<String> targetUserIDList, UserRequestCallback callback) {
+    public void invitePKBattle(List<String> targetUserIDList, boolean autoAccept, UserRequestCallback callback) {
         if (pkBattleInfo == null) {
             pkBattleInfo = new PKBattleInfo();
             ZEGOSDKUser localUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
-            String pkExtendedData = getPKExtendedData(PKExtendedData.START_PK);
+            String pkExtendedData = getPKExtendedData(true, autoAccept);
             try {
                 // inviter extended data will keep while different person invite each other,so
                 // we need recognize who's data when first invite
@@ -542,7 +557,7 @@ public class PKService {
 
     public void acceptPKBattle(String requestID) {
         if (pkBattleInfo != null && requestID.equals(pkBattleInfo.requestID)) {
-            String pkExtendedData = getPKExtendedData(PKExtendedData.START_PK);
+            String pkExtendedData = getPKExtendedData(false, false);
             acceptUserRequest(requestID, pkExtendedData, new ZIMCallAcceptanceSentCallback() {
                 @Override
                 public void onCallAcceptanceSent(String callID, ZIMError errorInfo) {
@@ -647,16 +662,16 @@ public class PKService {
     }
 
     public void rejectPKBattle(String requestID) {
-        String pkExtendedData = getPKExtendedData(PKExtendedData.START_PK);
+        String pkExtendedData = getPKExtendedData(false, false);
         rejectUserRequest(requestID, pkExtendedData, null);
         if (pkBattleInfo != null && requestID.equals(pkBattleInfo.requestID)) {
             pkBattleInfo = null;
         }
     }
 
-    public void cancelPKBattle(String requestID, String userID) {
+    public void cancelPKBattle(String requestID, List<String> userIDList) {
         if (pkBattleInfo != null && requestID.equals(pkBattleInfo.requestID)) {
-            cancelUserRequest(userID, requestID, "", null);
+            cancelUserRequest(userIDList, requestID, "", null);
             pkBattleInfo = null;
         }
     }
@@ -1031,12 +1046,11 @@ public class PKService {
         ZEGOSDKManager.getInstance().zimService.rejectUserRequest(requestID, config, callback);
     }
 
-    private void cancelUserRequest(String userID, String requestID, String extendedData,
+    private void cancelUserRequest(List<String> userIDList, String requestID, String extendedData,
         ZIMCallCancelSentCallback callback) {
         ZIMCallCancelConfig config = new ZIMCallCancelConfig();
         config.extendedData = extendedData;
-        ZEGOSDKManager.getInstance().zimService.cancelUserRequest(Collections.singletonList(userID), requestID, config,
-            callback);
+        ZEGOSDKManager.getInstance().zimService.cancelUserRequest(userIDList, requestID, config, callback);
     }
 
     private void quitUserRequest(String requestID, String extendedData, ZIMCallQuitSentCallback callback) {

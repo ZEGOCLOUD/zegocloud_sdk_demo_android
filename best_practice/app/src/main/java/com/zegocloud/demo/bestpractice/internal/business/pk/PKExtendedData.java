@@ -11,6 +11,7 @@ public class PKExtendedData {
     public String userName;
     public int type;
     public String userID;
+    public boolean autoAccept;
 
     public static final int START_PK = 91000;
 
@@ -24,6 +25,7 @@ public class PKExtendedData {
                     data.type = type;
                     data.roomID = jsonObject.getString("room_id");
                     data.userName = jsonObject.getString("user_name");
+                    data.autoAccept = jsonObject.getBoolean("auto_accept");
                     if (jsonObject.has("user_id")) {
                         data.userID = jsonObject.getString("user_id");
                     }
@@ -43,6 +45,7 @@ public class PKExtendedData {
             jsonObject.put("room_id", roomID);
             jsonObject.put("user_name", userName);
             jsonObject.put("type", type);
+            jsonObject.put("auto_accept", autoAccept);
             if (!TextUtils.isEmpty(userID)) {
                 jsonObject.put("user_id", userID);
             }

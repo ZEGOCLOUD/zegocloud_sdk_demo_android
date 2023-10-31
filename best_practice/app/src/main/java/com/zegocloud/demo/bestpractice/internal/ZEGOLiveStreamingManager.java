@@ -203,24 +203,24 @@ public class ZEGOLiveStreamingManager {
         coHostService.removeListener(listener);
     }
 
-    public void invitePKBattle(String targetUserID, UserRequestCallback callback) {
-        pkService.invitePKBattle(Collections.singletonList(targetUserID), callback);
+    public void invitePKBattle(String anotherHostID, UserRequestCallback callback) {
+        pkService.invitePKBattle(Collections.singletonList(anotherHostID), false, callback);
     }
 
     public void invitePKBattle(List<String> anotherHostIDList, UserRequestCallback callback) {
-        pkService.invitePKBattle(anotherHostIDList, callback);
+        pkService.invitePKBattle(anotherHostIDList, false, callback);
     }
 
     public void startPKBattle(String anotherHostID, UserRequestCallback callback) {
-
+        pkService.invitePKBattle(Collections.singletonList(anotherHostID), true, callback);
     }
 
     public void startPKBattle(List<String> anotherHostIDList, UserRequestCallback callback) {
-
+        pkService.invitePKBattle(anotherHostIDList, true, callback);
     }
 
-    public void cancelPKBattle(String requestID, String targetUserID) {
-        pkService.cancelPKBattle(requestID, targetUserID);
+    public void cancelPKBattle(String requestID, List<String> userIDList) {
+        pkService.cancelPKBattle(requestID, userIDList);
     }
 
     public void acceptPKBattle(String requestID) {

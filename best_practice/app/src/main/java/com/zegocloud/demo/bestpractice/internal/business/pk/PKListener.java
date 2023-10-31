@@ -1,14 +1,21 @@
 package com.zegocloud.demo.bestpractice.internal.business.pk;
 
+import im.zego.zim.entity.ZIMCallInvitationCancelledInfo;
+import im.zego.zim.entity.ZIMCallInvitationReceivedInfo;
+import im.zego.zim.entity.ZIMCallInvitationTimeoutInfo;
+
 public interface PKListener {
 
-    default void onPKStarted() {
+    default void onPKBattleReceived(String requestID, ZIMCallInvitationReceivedInfo info) {
     }
 
-    default void onPKEnded() {
+    default void onInComingPKBattleTimeout(String requestID, ZIMCallInvitationTimeoutInfo info) {
     }
 
-    default void onReceivePKBattleRequest(String requestID, String inviter, String inviterName, String roomId) {
+    default void onPKBattleCancelled(String requestID, ZIMCallInvitationCancelledInfo info) {
+    }
+
+    default void onOutgoingPKBattleTimeout(String userID, String extendedData) {
     }
 
 
@@ -16,16 +23,13 @@ public interface PKListener {
 
     }
 
-    default void onInComingPKBattleTimeout(String requestID) {
-    }
-
-    default void onPKBattleTimeout(String userID, String extendedData) {
-    }
-
-    default void onPKBattleCancelled(String userID, String extendedData) {
-    }
-
     default void onPKBattleRejected(String userID, String extendedData) {
+    }
+
+    default void onPKStarted() {
+    }
+
+    default void onPKEnded() {
     }
 
     default void onPKUserCameraOpen(String userID, boolean open) {

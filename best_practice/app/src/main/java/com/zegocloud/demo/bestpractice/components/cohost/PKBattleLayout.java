@@ -12,6 +12,7 @@ import com.zegocloud.demo.bestpractice.R;
 import com.zegocloud.demo.bestpractice.databinding.LayoutPkBattleBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager.LiveStreamingListener;
+import com.zegocloud.demo.bestpractice.internal.business.pk.PKExtendedData;
 import com.zegocloud.demo.bestpractice.internal.business.pk.PKService.PKBattleInfo;
 import com.zegocloud.demo.bestpractice.internal.business.pk.PKUser;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
@@ -19,6 +20,9 @@ import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
 import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
 import im.zego.zegoexpress.callback.IZegoMixerStartCallback;
+import im.zego.zim.entity.ZIMCallInvitationCancelledInfo;
+import im.zego.zim.entity.ZIMCallInvitationReceivedInfo;
+import im.zego.zim.entity.ZIMCallInvitationTimeoutInfo;
 import java.util.Objects;
 import org.json.JSONObject;
 
@@ -87,40 +91,47 @@ public class PKBattleLayout extends FrameLayout {
             }
 
             @Override
-            public void onReceivePKBattleRequest(String requestID, String inviter, String inviterName, String roomId) {
-                if (startPKDialog != null && startPKDialog.isShowing()) {
-                    return;
+            public void onPKBattleReceived(String requestID, ZIMCallInvitationReceivedInfo info) {
+                PKExtendedData inviterExtendedData = PKExtendedData.parse(info.extendedData);
+                if (!inviterExtendedData.autoAccept) {
+                    if (startPKDialog != null && startPKDialog.isShowing()) {
+                        return;
+                    }
+
+                    AlertDialog.Builder startPKBuilder = new AlertDialog.Builder(getContext());
+                    startPKBuilder.setTitle(inviterExtendedData.userName + " invite you pkbattle");
+                    startPKBuilder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                            ZEGOLiveStreamingManager.getInstance().acceptPKBattle(requestID);
+                        }
+                    });
+                    startPKBuilder.setNegativeButton(R.string.reject, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                            ZEGOLiveStreamingManager.getInstance().rejectPKBattle(requestID);
+                        }
+                    });
+                    startPKDialog = startPKBuilder.create();
+                    startPKDialog.setCanceledOnTouchOutside(false);
+                    startPKDialog.show();
+                } else {
+                    ZEGOLiveStreamingManager.getInstance().acceptPKBattle(requestID);
                 }
-                AlertDialog.Builder startPKBuilder = new AlertDialog.Builder(getContext());
-                startPKBuilder.setTitle(inviterName + " invite you pkbattle");
-                startPKBuilder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                        ZEGOLiveStreamingManager.getInstance().acceptPKBattle(requestID);
-                    }
-                });
-                startPKBuilder.setNegativeButton(R.string.reject, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                        ZEGOLiveStreamingManager.getInstance().rejectPKBattle(requestID);
-                    }
-                });
-                startPKDialog = startPKBuilder.create();
-                startPKDialog.setCanceledOnTouchOutside(false);
-                startPKDialog.show();
             }
 
             @Override
-            public void onInComingPKBattleTimeout(String requestID) {
+            public void onInComingPKBattleTimeout(String requestID, ZIMCallInvitationTimeoutInfo info) {
                 if (startPKDialog != null && startPKDialog.isShowing()) {
                     startPKDialog.dismiss();
                 }
             }
 
+
             @Override
-            public void onPKBattleCancelled(String requestID, String extendedData) {
+            public void onPKBattleCancelled(String requestID, ZIMCallInvitationCancelledInfo info) {
                 if (startPKDialog != null && startPKDialog.isShowing()) {
                     startPKDialog.dismiss();
                 }

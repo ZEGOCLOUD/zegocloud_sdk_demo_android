@@ -16,9 +16,14 @@ import androidx.annotation.Nullable;
 import com.zegocloud.demo.bestpractice.databinding.DialogPkInviteBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
 import com.zegocloud.demo.bestpractice.internal.business.UserRequestCallback;
+import com.zegocloud.demo.bestpractice.internal.business.pk.PKService.PKBattleInfo;
+import com.zegocloud.demo.bestpractice.internal.business.pk.PKUser;
+import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
+import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class PKInviteDialog extends Dialog {
 
@@ -71,13 +76,24 @@ public class PKInviteDialog extends Dialog {
                         }
                     }
                 });
-            }else {
-                ToastUtil.show(getContext(),"please input userID to invite");
+            } else {
+                ToastUtil.show(getContext(), "please input userID to invite");
             }
             dismiss();
         });
 
         binding.endPk.setOnClickListener(v -> {
+            //            PKBattleInfo pkBattleInfo = ZEGOLiveStreamingManager.getInstance().getPKBattleInfo();
+            //            if (pkBattleInfo != null) {
+            //                List<String> cancelUsers = new ArrayList<>();
+            //                for (PKUser pkUser : pkBattleInfo.pkUserList) {
+            //                    ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+            //                    if (!Objects.equals(currentUser.userID, pkUser.userID)) {
+            //                        cancelUsers.add(pkUser.userID);
+            //                    }
+            //                }
+            //                ZEGOLiveStreamingManager.getInstance().cancelPKBattle(pkBattleInfo.requestID, cancelUsers);
+            //            }
             ZEGOLiveStreamingManager.getInstance().endPKBattle();
             dismiss();
         });

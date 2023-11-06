@@ -20,6 +20,7 @@ import im.zego.zegoexpress.entity.ZegoCustomVideoProcessConfig;
 import im.zego.zegoexpress.entity.ZegoEngineProfile;
 import im.zego.zegoexpress.entity.ZegoMixerTask;
 import im.zego.zegoexpress.entity.ZegoPlayerConfig;
+import im.zego.zegoexpress.entity.ZegoPublisherConfig;
 import im.zego.zegoexpress.entity.ZegoRoomConfig;
 import im.zego.zegoexpress.entity.ZegoUser;
 import im.zego.zegoexpress.entity.ZegoVideoConfig;
@@ -73,6 +74,10 @@ class ExpressEngineProxy {
         ZegoExpressEngine.getEngine().startPublishingStream(streamID, channel);
     }
 
+    public void startPublishingStream(String streamID, ZegoPublisherConfig config, ZegoPublishChannel channel) {
+        ZegoExpressEngine.getEngine().startPublishingStream(streamID, config, channel);
+    }
+
     public void stopPublishingStream() {
         ZegoExpressEngine.getEngine().stopPublishingStream();
     }
@@ -84,6 +89,11 @@ class ExpressEngineProxy {
     public void startPlayingStream(String streamID, ZegoCanvas canvas) {
         ZegoExpressEngine.getEngine().startPlayingStream(streamID, canvas);
     }
+
+    public void startPlayingStream(String streamID, ZegoCanvas canvas, ZegoPlayerConfig config) {
+        ZegoExpressEngine.getEngine().startPlayingStream(streamID, canvas, config);
+    }
+
 
     public void startPlayingStream(String streamID, ZegoPlayerConfig config) {
         ZegoExpressEngine.getEngine().startPlayingStream(streamID, config);

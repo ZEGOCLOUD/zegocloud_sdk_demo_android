@@ -48,4 +48,8 @@ public interface PKListener {
     default void onPKUserJoin(String userID, String extendedData) {
 
     }
+
+    default void onPKUserUpdate() {
+
+    }
 }

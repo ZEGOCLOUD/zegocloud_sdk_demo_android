@@ -23,7 +23,10 @@ import im.zego.zegoexpress.callback.IZegoMixerStartCallback;
 import im.zego.zim.entity.ZIMCallInvitationCancelledInfo;
 import im.zego.zim.entity.ZIMCallInvitationReceivedInfo;
 import im.zego.zim.entity.ZIMCallInvitationTimeoutInfo;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import org.json.JSONObject;
 
 public class PKBattleLayout extends FrameLayout {
@@ -50,6 +53,7 @@ public class PKBattleLayout extends FrameLayout {
 
     private LayoutPkBattleBinding binding;
     private AlertDialog startPKDialog;
+    private Map<String, Boolean> timeoutPKUsers = new ConcurrentHashMap<>();
 
     private static final String TAG = "PKBattleLayout";
 
@@ -157,7 +161,7 @@ public class PKBattleLayout extends FrameLayout {
 
             @Override
             public void onPKUserJoin(String userID, String extendedData) {
-                onRoomPKUserJoin();
+                updateAllPKUsers();
             }
 
             @Override
@@ -168,6 +172,15 @@ public class PKBattleLayout extends FrameLayout {
             @Override
             public void onPKUserConnecting(String userID, long duration) {
                 boolean timeout = duration > 5000;
+                boolean stateChanged = false;
+                if (timeoutPKUsers.containsKey(userID)) {
+                    boolean lastState = timeoutPKUsers.get(userID);
+                    stateChanged = (timeout != lastState);
+                }
+                timeoutPKUsers.put(userID, timeout);
+                if (!stateChanged) {
+                    return;
+                }
                 int childCount = binding.pkBattleUserLayout.getChildCount();
                 for (int i = 0; i < childCount; i++) {
                     PKBattleView pkBattleView = (PKBattleView) binding.pkBattleUserLayout.getChildAt(i);
@@ -178,27 +191,29 @@ public class PKBattleLayout extends FrameLayout {
                                 boolean pkUserMuted = ZEGOLiveStreamingManager.getInstance().isPKUserMuted(userID);
                                 if (!pkUserMuted) {
                                     ZEGOLiveStreamingManager.getInstance()
-                                        .mutePKUser(true, new IZegoMixerStartCallback() {
-                                            @Override
-                                            public void onMixerStartResult(int errorCode, JSONObject extendedData) {
-                                                if (errorCode == 0) {
-                                                    pkBattleView.mutePlayAudio(true);
+                                        .mutePKUser(Collections.singletonList(userID), true,
+                                            new IZegoMixerStartCallback() {
+                                                @Override
+                                                public void onMixerStartResult(int errorCode, JSONObject extendedData) {
+                                                    if (errorCode == 0) {
+                                                        pkBattleView.mutePlayAudio(true);
+                                                    }
                                                 }
-                                            }
-                                        });
+                                            });
                                 }
                             } else {
                                 boolean pkUserMuted = ZEGOLiveStreamingManager.getInstance().isPKUserMuted(userID);
                                 if (pkUserMuted) {
                                     ZEGOLiveStreamingManager.getInstance()
-                                        .mutePKUser(false, new IZegoMixerStartCallback() {
-                                            @Override
-                                            public void onMixerStartResult(int errorCode, JSONObject extendedData) {
-                                                if (errorCode == 0) {
-                                                    pkBattleView.mutePlayAudio(false);
+                                        .mutePKUser(Collections.singletonList(userID), false,
+                                            new IZegoMixerStartCallback() {
+                                                @Override
+                                                public void onMixerStartResult(int errorCode, JSONObject extendedData) {
+                                                    if (errorCode == 0) {
+                                                        pkBattleView.mutePlayAudio(false);
+                                                    }
                                                 }
-                                            }
-                                        });
+                                            });
                                 }
                             }
                         }
@@ -220,13 +235,12 @@ public class PKBattleLayout extends FrameLayout {
             @Override
             public void onPKUserQuit(String userID, String extendedData) {
                 PKBattleInfo pkInfo = ZEGOLiveStreamingManager.getInstance().getPKBattleInfo();
-                boolean isCurrentUserHost = ZEGOLiveStreamingManager.getInstance().isCurrentUserHost();
 
                 int childCount = binding.pkBattleUserLayout.getChildCount();
                 for (int i = 0; i < childCount; i++) {
                     PKBattleView pkBattleView = (PKBattleView) binding.pkBattleUserLayout.getChildAt(i);
                     if (Objects.equals(pkBattleView.getPkUser().userID, userID)) {
-                        pkBattleView.setPKUser(null, false);
+                        pkBattleView.setPKUser(null, binding.pkBattleUserLayout);
                         break;
                     }
                 }
@@ -235,70 +249,58 @@ public class PKBattleLayout extends FrameLayout {
                 for (PKUser pkUser : pkInfo.pkUserList) {
                     if (pkUser.hasAccepted()) {
                         PKBattleView pkBattleView = new PKBattleView(getContext());
-                        pkBattleView.setPKUser(pkUser, isCurrentUserHost);
+                        pkBattleView.setPKUser(pkUser, binding.pkBattleUserLayout);
                         binding.pkBattleUserLayout.addView(pkBattleView);
                     }
                 }
+                timeoutPKUsers.remove(userID);
+            }
+
+            @Override
+            public void onPKUserUpdate() {
+                updateAllPKUsers();
             }
         });
     }
 
-    private void onRoomPKUserJoin() {
+    private void updateAllPKUsers() {
         PKBattleInfo pkInfo = ZEGOLiveStreamingManager.getInstance().getPKBattleInfo();
-        boolean isCurrentUserHost = ZEGOLiveStreamingManager.getInstance().isCurrentUserHost();
 
         binding.pkBattleUserLayout.removeAllViews();
         for (PKUser pkUser : pkInfo.pkUserList) {
             if (pkUser.hasAccepted()) {
                 PKBattleView pkBattleView = new PKBattleView(getContext());
-                pkBattleView.setPKUser(pkUser, isCurrentUserHost);
+                pkBattleView.setPKUser(pkUser, binding.pkBattleUserLayout);
                 binding.pkBattleUserLayout.addView(pkBattleView);
             }
         }
     }
 
     /**
-     * a video view background to show mix-steam when is audience a framelayout to show cell view of pk battle. contains
+     * a video view background to show mix-steam when is audience a frameLayout to show cell view of pk battle. contains
      * a video view in each cell when is host
      */
     private void onRoomPKStarted() {
         boolean isCurrentUserHost = ZEGOLiveStreamingManager.getInstance().isCurrentUserHost();
-        // onRoomPKStarted will be called later,no need to add view here
-        //        for (PKUser pkUser : pkInfo.pkUserList) {
-        //            PKBattleView pkBattleView = new PKBattleView(getContext());
-        //            pkBattleView.setPKUser(pkUser, isCurrentUserHost);
-        //            binding.pkBattleUserLayout.addView(pkBattleView);
-        //        }
+
         if (!isCurrentUserHost) {
             String mixStreamID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID() + "_mix";
             binding.pkBattleVideoMixLayout.setStreamID(mixStreamID);
             binding.pkBattleVideoMixLayout.startPlayRemoteAudioVideo();
         }
-        //        binding.pkOtherVideoMute.setOnClickListener(v -> {
-        //            boolean pkUserMuted = ZEGOLiveStreamingManager.getInstance().isPKUserMuted();
-        //            ZEGOLiveStreamingManager.getInstance().mutePKUser(!pkUserMuted, new IZegoMixerStartCallback() {
-        //                @Override
-        //                public void onMixerStartResult(int errorCode, JSONObject extendedData) {
-        //                    if (errorCode == 0) {
-        //                        if (pkUserMuted) {
-        //                            binding.pkOtherVideoMute.setText("Mute user");
-        //                        } else {
-        //                            binding.pkOtherVideoMute.setText("Unmute user");
-        //                        }
-        //                    }
-        //                }
-        //            });
-        //        });
     }
 
     private void onRoomPKEnded() {
+        if (startPKDialog != null && startPKDialog.isShowing()) {
+            startPKDialog.dismiss();
+        }
         ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
 
         int childCount = binding.pkBattleUserLayout.getChildCount();
         for (int i = 0; i < childCount; i++) {
             PKBattleView pkBattleView = (PKBattleView) binding.pkBattleUserLayout.getChildAt(i);
             if (!Objects.equals(pkBattleView.getPkUser().userID, currentUser.userID)) {
-                pkBattleView.setPKUser(null, false);
+                pkBattleView.setPKUser(null, binding.pkBattleUserLayout);
             }
         }
         binding.pkBattleUserLayout.removeAllViews();

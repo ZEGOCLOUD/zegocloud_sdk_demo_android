@@ -189,8 +189,8 @@ public class ZEGOLiveStreamingManager {
         return pkService.isPKUserMuted(userID);
     }
 
-    public void mutePKUser(boolean mute, IZegoMixerStartCallback callback) {
-        pkService.mutePKUser(Collections.singletonList(1), mute, callback);
+    public void mutePKUser(List<String> muteUserList, boolean mute, IZegoMixerStartCallback callback) {
+        pkService.mutePKUser(muteUserList, mute, callback);
     }
 
     public void addLiveStreamingListener(LiveStreamingListener listener) {
@@ -231,7 +231,7 @@ public class ZEGOLiveStreamingManager {
         pkService.rejectPKBattle(requestID);
     }
 
-    public void removePKBattle(String userID) {
+    public void removeUserFromPKBattle(String userID) {
         PKBattleInfo pkBattleInfo = pkService.getPKBattleInfo();
         if (pkBattleInfo != null) {
             pkService.removePKBattle(userID);

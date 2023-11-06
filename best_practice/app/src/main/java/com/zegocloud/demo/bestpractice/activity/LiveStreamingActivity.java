@@ -375,10 +375,10 @@ public class LiveStreamingActivity extends AppCompatActivity {
 
             @Override
             public void onPKUserConnecting(String userID, long duration) {
-                if (duration >= 30_000) {
+                if (duration >= 60_000) {
                     ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
                     if (!Objects.equals(currentUser.userID, userID)) {
-                        ZEGOLiveStreamingManager.getInstance().removePKBattle(userID);
+                        ZEGOLiveStreamingManager.getInstance().removeUserFromPKBattle(userID);
                     } else {
                         ZEGOLiveStreamingManager.getInstance().quitPKBattle();
                     }

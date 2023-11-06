@@ -42,7 +42,6 @@ public class MainActivity extends AppCompatActivity {
         binding.liveUserinfoUserid.setText(localUser.userID);
         binding.liveUserinfoUsername.setText(localUser.userName);
 
-        binding.liveIdStreaming.getEditText().setText(Build.MANUFACTURER.toLowerCase());
         binding.startLiveStreaming.setOnClickListener(v -> {
             String liveID = binding.liveIdStreaming.getEditText().getText().toString();
             if (TextUtils.isEmpty(liveID)) {

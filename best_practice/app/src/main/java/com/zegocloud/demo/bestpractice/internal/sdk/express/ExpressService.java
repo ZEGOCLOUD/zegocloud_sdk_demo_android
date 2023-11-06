@@ -3,6 +3,7 @@ package com.zegocloud.demo.bestpractice.internal.sdk.express;
 import android.app.Application;
 import android.text.TextUtils;
 import android.view.TextureView;
+import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import com.zegocloud.demo.bestpractice.internal.utils.LogUtil;
 import im.zego.zegoexpress.ZegoExpressEngine;
@@ -19,8 +20,10 @@ import im.zego.zegoexpress.constants.ZegoPlayerState;
 import im.zego.zegoexpress.constants.ZegoPublishChannel;
 import im.zego.zegoexpress.constants.ZegoPublisherState;
 import im.zego.zegoexpress.constants.ZegoRemoteDeviceState;
+import im.zego.zegoexpress.constants.ZegoRoomMode;
 import im.zego.zegoexpress.constants.ZegoRoomStateChangedReason;
 import im.zego.zegoexpress.constants.ZegoScenario;
+import im.zego.zegoexpress.constants.ZegoStreamEvent;
 import im.zego.zegoexpress.constants.ZegoUpdateType;
 import im.zego.zegoexpress.constants.ZegoViewMode;
 import im.zego.zegoexpress.entity.ZegoCanvas;
@@ -28,6 +31,7 @@ import im.zego.zegoexpress.entity.ZegoCustomVideoProcessConfig;
 import im.zego.zegoexpress.entity.ZegoEngineConfig;
 import im.zego.zegoexpress.entity.ZegoMixerTask;
 import im.zego.zegoexpress.entity.ZegoPlayerConfig;
+import im.zego.zegoexpress.entity.ZegoPublisherConfig;
 import im.zego.zegoexpress.entity.ZegoRoomConfig;
 import im.zego.zegoexpress.entity.ZegoRoomExtraInfo;
 import im.zego.zegoexpress.entity.ZegoStream;
@@ -366,6 +370,20 @@ public class ExpressService {
             return;
         }
         engineProxy.startPublishingStream(streamID, channel);
+    }
+
+    public void startPublishingStream(String streamID, String roomID) {
+        ZegoPublisherConfig publisherConfig = new ZegoPublisherConfig();
+        publisherConfig.roomID = roomID;
+        startPublishingStream(streamID, publisherConfig, ZegoPublishChannel.MAIN);
+    }
+
+    public void startPublishingStream(String streamID, ZegoPublisherConfig publisherConfig,
+        ZegoPublishChannel channel) {
+        if (engineProxy.getExpressEngine() == null || currentUser == null) {
+            return;
+        }
+        engineProxy.startPublishingStream(streamID, publisherConfig, channel);
     }
 
     public void stopPublishingStream() {

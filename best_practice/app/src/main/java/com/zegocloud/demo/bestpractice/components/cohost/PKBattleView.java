@@ -25,6 +25,10 @@ import java.util.Collections;
 import java.util.Objects;
 import org.json.JSONObject;
 
+/**
+ * cell view of each pk host,you can modify to add your custom widget
+ *
+ */
 public class PKBattleView extends FrameLayout {
 
     private FrameLayout connectTipsView;

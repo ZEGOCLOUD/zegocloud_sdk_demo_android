@@ -2,6 +2,7 @@ package com.zegocloud.demo.bestpractice.components.cohost;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.widget.FrameLayout;
@@ -27,6 +28,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 public class PKBattleLayout extends FrameLayout {
@@ -131,6 +133,7 @@ public class PKBattleLayout extends FrameLayout {
                 if (startPKDialog != null && startPKDialog.isShowing()) {
                     startPKDialog.dismiss();
                 }
+                ToastUtil.show(getContext(), "received pk battle,but no answer time out");
             }
 
 
@@ -138,6 +141,13 @@ public class PKBattleLayout extends FrameLayout {
             public void onPKBattleCancelled(String requestID, ZIMCallInvitationCancelledInfo info) {
                 if (startPKDialog != null && startPKDialog.isShowing()) {
                     startPKDialog.dismiss();
+                }
+                PKBattleInfo pkInfo = ZEGOLiveStreamingManager.getInstance().getPKBattleInfo();
+                for (PKUser pkUser : pkInfo.pkUserList) {
+                    if (Objects.equals(pkUser.userID, info.inviter)) {
+                        ToastUtil.show(getContext(), pkUser.userName + " cancelled the pk battle");
+                        break;
+                    }
                 }
             }
 
@@ -151,6 +161,51 @@ public class PKBattleLayout extends FrameLayout {
                         break;
                     }
                 }
+            }
+
+            @Override
+            public void onPKMixStreamError(int errorCode, String data) {
+                ToastUtil.show(getContext(), "mix stream error,errorCode:" + errorCode + "," + data);
+            }
+
+            @Override
+            public void onPKBattleRejected(String userID, String extendedData) {
+                PKBattleInfo pkInfo = ZEGOLiveStreamingManager.getInstance().getPKBattleInfo();
+
+                for (PKUser pkUser : pkInfo.pkUserList) {
+                    if (Objects.equals(pkUser.userID, userID)) {
+                        String tips = pkUser.userName + " reject the pk battle";
+                        try {
+                            JSONObject jsonObject = new JSONObject(extendedData);
+                            if (jsonObject.has("reason")) {
+                                String reason = jsonObject.getString("reason");
+                                if (!TextUtils.isEmpty(extendedData)) {
+                                    PKExtendedData userData = PKExtendedData.parse(extendedData);
+                                    if (userData != null) {
+                                        pkUser.userName = userData.userName;
+                                        pkUser.roomID = userData.roomID;
+                                    }
+                                }
+                                if ("room".equals(reason)) {
+                                    tips = pkUser.userName + " is not in any room";
+                                } else if ("host".equals(reason)) {
+                                    tips = pkUser.userName + " is not host";
+                                } else if ("busy".equals(reason)) {
+                                    tips = pkUser.userName + " is busy";
+                                }
+                            }
+                        } catch (JSONException e) {
+                            throw new RuntimeException(e);
+                        }
+                        ToastUtil.show(getContext(), tips);
+                        break;
+                    }
+                }
+            }
+
+            @Override
+            public void onOutgoingPKBattleTimeout(String userID, String extendedData) {
+                ToastUtil.show(getContext(), "no host answered the pk battle");
             }
 
 
@@ -239,8 +294,10 @@ public class PKBattleLayout extends FrameLayout {
                 int childCount = binding.pkBattleUserLayout.getChildCount();
                 for (int i = 0; i < childCount; i++) {
                     PKBattleView pkBattleView = (PKBattleView) binding.pkBattleUserLayout.getChildAt(i);
-                    if (Objects.equals(pkBattleView.getPkUser().userID, userID)) {
+                    PKUser pkUser = pkBattleView.getPkUser();
+                    if (Objects.equals(pkUser.userID, userID)) {
                         pkBattleView.setPKUser(null, binding.pkBattleUserLayout);
+                        ToastUtil.show(getContext(), pkUser.userName + " has quited the pk battle");
                         break;
                     }
                 }

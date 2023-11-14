@@ -117,11 +117,16 @@ public class PKService {
                 if (inviterExtendedData != null) {
                     if (inviterExtendedData.type == PKExtendedData.START_PK) {
                         String currentRoomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
-                        boolean userNotHost =
-                            TextUtils.isEmpty(currentRoomID) || (!ZEGOLiveStreamingManager.getInstance()
-                                .isCurrentUserHost());
-                        if (userNotHost || pkBattleInfo != null) {
-                            rejectPKBattle(requestID);
+                        if (TextUtils.isEmpty(currentRoomID)) {
+                            busyRejectPKBattle(requestID, "room");
+                            return;
+                        }
+                        if (!ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
+                            busyRejectPKBattle(requestID, "host");
+                            return;
+                        }
+                        if (pkBattleInfo != null) {
+                            busyRejectPKBattle(requestID, "busy");
                             return;
                         }
                         ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
@@ -356,6 +361,9 @@ public class PKService {
                 }
             }
             if (!hasWaitingUser) {
+                for (PKListener listener : listenerList) {
+                    listener.onPKUserQuit(userInfo.userID, userInfo.extendedData);
+                }
                 quitPKBattle(requestID, null);
                 stopPKBattle();
             }
@@ -407,6 +415,9 @@ public class PKService {
                             isPKStarted = false;
                             if (pkBattleInfo != null) {
                                 quitPKBattle(pkBattleInfo.requestID, null);
+                            }
+                            for (PKListener listener : listenerList) {
+                                listener.onPKMixStreamError(errorCode, mixData.toString());
                             }
                         }
                     }
@@ -664,6 +675,18 @@ public class PKService {
         }
     }
 
+    public void busyRejectPKBattle(String requestID, String reason) {
+        String pkExtendedData = getPKExtendedData(false, false);
+        try {
+            JSONObject jsonObject = new JSONObject(pkExtendedData);
+            jsonObject.put("reason", reason);
+            rejectUserRequest(requestID, jsonObject.toString(), null);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
     public void cancelPKBattle(String requestID, List<String> userIDList) {
         if (pkBattleInfo != null && requestID.equals(pkBattleInfo.requestID)) {
             cancelUserRequest(userIDList, requestID, "", null);
@@ -849,7 +872,8 @@ public class PKService {
                             PKUser pkUser = pkBattleInfo.pkUserList.get(i);
                             if (Objects.equals(pkUser.userID, userID)) {
                                 pkUser.setMuted(mute);
-                                ZEGOSDKManager.getInstance().expressService.mutePlayStreamAudio(pkUser.getPKUserStream(), mute);
+                                ZEGOSDKManager.getInstance().expressService.mutePlayStreamAudio(
+                                    pkUser.getPKUserStream(), mute);
                             }
                         }
                     }

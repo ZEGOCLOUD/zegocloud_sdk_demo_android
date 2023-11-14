@@ -23,9 +23,15 @@ public class PKExtendedData {
                 if (type == START_PK) {
                     PKExtendedData data = new PKExtendedData();
                     data.type = type;
-                    data.roomID = jsonObject.getString("room_id");
-                    data.userName = jsonObject.getString("user_name");
-                    data.autoAccept = jsonObject.getBoolean("auto_accept");
+                    if (jsonObject.has("room_id")) {
+                        data.roomID = jsonObject.getString("room_id");
+                    }
+                    if (jsonObject.has("user_name")) {
+                        data.userName = jsonObject.getString("user_name");
+                    }
+                    if (jsonObject.has("auto_accept")) {
+                        data.autoAccept = jsonObject.getBoolean("auto_accept");
+                    }
                     if (jsonObject.has("user_id")) {
                         data.userID = jsonObject.getString("user_id");
                     }

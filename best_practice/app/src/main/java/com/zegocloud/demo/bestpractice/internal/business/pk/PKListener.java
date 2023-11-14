@@ -49,6 +49,10 @@ public interface PKListener {
 
     }
 
+    default void onPKMixStreamError(int errorCode, String data) {
+
+    }
+
     default void onPKUserUpdate() {
 
     }

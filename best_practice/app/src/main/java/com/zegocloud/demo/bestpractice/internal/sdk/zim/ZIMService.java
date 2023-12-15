@@ -7,6 +7,7 @@ import im.zego.zim.callback.ZIMCallAcceptanceSentCallback;
 import im.zego.zim.callback.ZIMCallCancelSentCallback;
 import im.zego.zim.callback.ZIMCallEndSentCallback;
 import im.zego.zim.callback.ZIMCallInvitationSentCallback;
+import im.zego.zim.callback.ZIMCallJoinSentCallback;
 import im.zego.zim.callback.ZIMCallQuitSentCallback;
 import im.zego.zim.callback.ZIMCallRejectionSentCallback;
 import im.zego.zim.callback.ZIMCallingInvitationSentCallback;
@@ -31,6 +32,7 @@ import im.zego.zim.entity.ZIMCallInvitationReceivedInfo;
 import im.zego.zim.entity.ZIMCallInvitationRejectedInfo;
 import im.zego.zim.entity.ZIMCallInvitationTimeoutInfo;
 import im.zego.zim.entity.ZIMCallInviteConfig;
+import im.zego.zim.entity.ZIMCallJoinConfig;
 import im.zego.zim.entity.ZIMCallQuitConfig;
 import im.zego.zim.entity.ZIMCallRejectConfig;
 import im.zego.zim.entity.ZIMCallUserStateChangeInfo;
@@ -568,6 +570,13 @@ public class ZIMService {
             return;
         }
         zimProxy.callAccept(requestID, config, callback);
+    }
+
+    public void joinUserRequest(String requestID, ZIMCallJoinConfig config, ZIMCallJoinSentCallback callback) {
+        if (zimProxy.getZIM() == null || currentUser == null) {
+            return;
+        }
+        zimProxy.callJoin(requestID, config, callback);
     }
 
     public void rejectUserRequest(String requestID, ZIMCallRejectConfig config, ZIMCallRejectionSentCallback callback) {

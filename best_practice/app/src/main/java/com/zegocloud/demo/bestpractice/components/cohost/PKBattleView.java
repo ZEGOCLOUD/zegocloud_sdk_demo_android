@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat;
 import com.zegocloud.demo.bestpractice.R;
 import com.zegocloud.demo.bestpractice.components.LetterIconView;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
+import com.zegocloud.demo.bestpractice.internal.business.pk.PKService;
 import com.zegocloud.demo.bestpractice.internal.business.pk.PKUser;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
@@ -27,7 +28,6 @@ import org.json.JSONObject;
 
 /**
  * cell view of each pk host,you can modify to add your custom widget
- *
  */
 public class PKBattleView extends FrameLayout {
 
@@ -102,15 +102,18 @@ public class PKBattleView extends FrameLayout {
      */
     public void setPKUser(PKUser pkUser, ViewGroup parent) {
         this.pkUser = pkUser;
+        int mixVideoWidth = PKService.MIX_VIDEO_WIDTH;
+        int mixVideoHeight = PKService.MIX_VIDEO_HEIGHT;
         if (pkUser != null) {
-            float rateLeft = pkUser.rect.left / (1080.0f);
-            float rateTop = pkUser.rect.top / (960f);
+            float rateLeft = pkUser.rect.left / (mixVideoWidth * 1f);
+            float rateTop = pkUser.rect.top / (mixVideoHeight * 1f);
             int left = (int) (parent.getWidth() * rateLeft);
             int top = (int) (parent.getHeight() * rateTop);
 
-            int width = (int) (pkUser.rect.width() * parent.getWidth() / 1080f);
-            iconView.setCircleBackgroundRadius(width / 2);
-            int height = (int) (pkUser.rect.height() * parent.getHeight() / 960f);
+            int width = (int) (pkUser.rect.width() * parent.getWidth() / (mixVideoWidth * 1f));
+            iconView.setCircleBackgroundRadius(width / 3);
+
+            int height = (int) (pkUser.rect.height() * parent.getHeight() / (mixVideoHeight * 1f));
 
             //            Log.d(TAG, "setPKUser(0) called with: pkUser = [" + pkUser + "], parent = [" + getContext().getResources().getDisplayMetrics().density + "]");
             //            Log.d(TAG, "setPKUser(1) called with: getDisplayMetrics,widthPixels  = [" + getContext().getResources().getDisplayMetrics().widthPixels + "], heightPixels = [" + getContext().getResources().getDisplayMetrics().heightPixels + "]");

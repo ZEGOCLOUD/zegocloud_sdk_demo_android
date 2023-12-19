@@ -71,6 +71,10 @@ public class PKService {
     private IZIMEventHandler zimEventHandler;
     private List<PKListener> listenerList = new ArrayList<>();
     private boolean isPKStarted;
+    public static final int MIX_VIDEO_WIDTH = 864;
+    public static final int MIX_VIDEO_HEIGHT = 972;
+    public static final int MIX_VIDEO_BITRATE = 1500;
+    public static final int MIX_VIDEO_FPS = 15;
 
     public void initWhenUserLogin() {
         syncSEIRunnable = new Runnable() {
@@ -587,8 +591,10 @@ public class PKService {
             }
 
             ZegoMixerVideoConfig videoConfig = new ZegoMixerVideoConfig();
-            videoConfig.width = 1080;
-            videoConfig.height = 960;
+            videoConfig.width = MIX_VIDEO_WIDTH;
+            videoConfig.height = MIX_VIDEO_HEIGHT;
+            videoConfig.bitrate = MIX_VIDEO_BITRATE;
+            videoConfig.fps = MIX_VIDEO_FPS;
 
             MixLayoutProvider mixLayoutProvider = ZEGOLiveStreamingManager.getInstance().getMixLayoutProvider();
             ArrayList<ZegoMixerInput> mixVideoInputs;
@@ -645,10 +651,84 @@ public class PKService {
                 input.renderMode = ZegoMixRenderMode.FILL;
                 inputList.add(input);
             }
-        } else {
+        } else if (streamList.size() == 3) {
+            for (int i = 0; i < streamList.size(); i++) {
+                int left, top, right, bottom;
+                if (i == 0) {
+                    left = 0;
+                    top = 0;
+                    right = videoConfig.width / 2;
+                    bottom = videoConfig.height;
+                } else if (i == 1) {
+                    left = videoConfig.width / 2;
+                    top = 0;
+                    right = left + videoConfig.width / 2;
+                    bottom = top + videoConfig.height / 2;
+                } else {
+                    left = videoConfig.width / 2;
+                    top = videoConfig.height / 2;
+                    right = left + videoConfig.width / 2;
+                    bottom = top + videoConfig.height / 2;
+                }
+                ZegoMixerInput input = new ZegoMixerInput(streamList.get(i), ZegoMixerInputContentType.VIDEO,
+                    new Rect(left, top, right, bottom));
+                input.renderMode = ZegoMixRenderMode.FILL;
+                inputList.add(input);
+            }
+        } else if (streamList.size() == 4 || streamList.size() == 6) {
             int row = 2;
             int maxCellCount = streamList.size() % 2 == 0 ? streamList.size() : (streamList.size() + 1);
             int column = maxCellCount / row;
+            int cellWidth = videoConfig.width / column;
+            int cellHeight = videoConfig.height / row;
+            int left, top, right, bottom;
+            for (int i = 0; i < streamList.size(); i++) {
+                left = cellWidth * (i % column);
+                top = cellHeight * (i < column ? 0 : 1);
+                right = left + cellWidth;
+                bottom = top + cellHeight;
+                ZegoMixerInput input = new ZegoMixerInput(streamList.get(i), ZegoMixerInputContentType.VIDEO,
+                    new Rect(left, top, right, bottom));
+                input.renderMode = ZegoMixRenderMode.FILL;
+                inputList.add(input);
+            }
+        } else if (streamList.size() == 5) {
+            for (int i = 0; i < streamList.size(); i++) {
+                int left, top, right, bottom;
+                if (i == 0) {
+                    left = 0;
+                    top = 0;
+                    right = videoConfig.width / 2;
+                    bottom = videoConfig.height / 2;
+                } else if (i == 1) {
+                    left = videoConfig.width / 2;
+                    top = 0;
+                    right = left + videoConfig.width / 2;
+                    bottom = top + videoConfig.height / 2;
+                } else if (i == 2) {
+                    left = 0;
+                    top = videoConfig.height / 2;
+                    right = left + videoConfig.width / 3;
+                    bottom = top + videoConfig.height / 2;
+                } else if (i == 3) {
+                    left = videoConfig.width / 3;
+                    top = videoConfig.height / 2;
+                    right = left + videoConfig.width / 3;
+                    bottom = top + videoConfig.height / 2;
+                } else {
+                    left = (videoConfig.width / 3) * 2;
+                    top = videoConfig.height / 2;
+                    right = left + videoConfig.width / 3;
+                    bottom = top + videoConfig.height / 2;
+                }
+                ZegoMixerInput input = new ZegoMixerInput(streamList.get(i), ZegoMixerInputContentType.VIDEO,
+                    new Rect(left, top, right, bottom));
+                input.renderMode = ZegoMixRenderMode.FILL;
+                inputList.add(input);
+            }
+        } else {
+            int row = 3;
+            int column = 3;
             int cellWidth = videoConfig.width / column;
             int cellHeight = videoConfig.height / row;
             int left, top, right, bottom;

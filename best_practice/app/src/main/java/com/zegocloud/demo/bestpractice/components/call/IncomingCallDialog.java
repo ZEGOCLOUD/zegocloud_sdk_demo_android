@@ -62,10 +62,10 @@ public class IncomingCallDialog extends AppCompatActivity {
 
         binding.dialogCallName.setText(callInfo.callerUserName);
         if (callInfo.isVideoCall()) {
-            binding.dialogCallType.setText("ZEGO VIDEO CALL");
+            binding.dialogCallType.setText(R.string.zego_video_call);
             binding.dialogCallAccept.setImageResource(R.drawable.call_icon_dialog_video_accept);
         } else {
-            binding.dialogCallType.setText("ZEGO VOICE CALL");
+            binding.dialogCallType.setText(R.string.zego_voice_call);
             binding.dialogCallAccept.setImageResource(R.drawable.call_icon_dialog_voice_accept);
         }
 

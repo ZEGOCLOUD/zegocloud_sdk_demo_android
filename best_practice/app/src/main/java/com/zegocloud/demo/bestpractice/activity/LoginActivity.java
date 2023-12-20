@@ -12,6 +12,8 @@ import com.zegocloud.demo.bestpractice.databinding.ActivityLoginBinding;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKCallBack;
 import java.util.Random;
+import timber.log.Timber;
+import timber.log.Timber.DebugTree;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -22,6 +24,8 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        Timber.plant(new DebugTree());
 
         binding.liveLoginUserid.getEditText().setText(Build.MANUFACTURER.toLowerCase());
         binding.liveLoginName.getEditText().setText(Build.MANUFACTURER.toLowerCase());

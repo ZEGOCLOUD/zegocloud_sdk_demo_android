@@ -45,6 +45,7 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.json.JSONException;
 import org.json.JSONObject;
+import timber.log.Timber;
 
 public class ExpressService {
 
@@ -73,7 +74,7 @@ public class ExpressService {
             public void onRoomStreamUpdate(String roomID, ZegoUpdateType updateType, ArrayList<ZegoStream> streamList,
                 JSONObject extendedData) {
                 super.onRoomStreamUpdate(roomID, updateType, streamList, extendedData);
-                LogUtil.d("onRoomStreamUpdate() called with: roomID = [" + roomID + "], updateType = [" + updateType
+                Timber.d("onRoomStreamUpdate() called with: roomID = [" + roomID + "], updateType = [" + updateType
                     + "], streamList = [" + streamList + "], extendedData = [" + extendedData + "]");
                 List<ZEGOSDKUser> userList = new ArrayList<>();
                 List<ZEGOSDKUser> needNotifyCameraChangeUserList = new ArrayList<>();
@@ -161,7 +162,7 @@ public class ExpressService {
             public void onPublisherStateUpdate(String streamID, ZegoPublisherState state, int errorCode,
                 JSONObject extendedData) {
                 super.onPublisherStateUpdate(streamID, state, errorCode, extendedData);
-                LogUtil.d("onPublisherStateUpdate: " + streamID + ", state:" + state + ", code:" + errorCode + ", data:"
+                Timber.d("onPublisherStateUpdate: " + streamID + ", state:" + state + ", code:" + errorCode + ", data:"
                     + extendedData);
                 ArrayList<ZegoStream> streamList = new ArrayList<>(1);
                 ZegoStream zegoStream = new ZegoStream();
@@ -272,7 +273,7 @@ public class ExpressService {
             public void onRoomStateChanged(String roomID, ZegoRoomStateChangedReason reason, int errorCode,
                 JSONObject extendedData) {
                 super.onRoomStateChanged(roomID, reason, errorCode, extendedData);
-                LogUtil.d("onRoomStateChanged() called with: roomID = [" + roomID + "], reason = [" + reason
+                Timber.d("onRoomStateChanged() called with: roomID = [" + roomID + "], reason = [" + reason
                     + "], errorCode = [" + errorCode + "], extendedData = [" + extendedData + "]");
             }
 
@@ -304,11 +305,11 @@ public class ExpressService {
             public void onPlayerStateUpdate(String streamID, ZegoPlayerState state, int errorCode,
                 JSONObject extendedData) {
                 super.onPlayerStateUpdate(streamID, state, errorCode, extendedData);
-                LogUtil.d("onPlayerStateUpdate: " + streamID + ", state:" + state + ", code:" + errorCode + ", data:"
+                Timber.d("onPlayerStateUpdate: " + streamID + ", state:" + state + ", code:" + errorCode + ", data:"
                     + extendedData);
             }
         };
-        LogUtil.d(
+        Timber.d(
             "initSDK() called with: application = [" + application + "], appID = [" + appID + "], appSign = [" + appSign
                 + "], scenario = [" + scenario + "]");
         engineProxy.addEventHandler(initEventHandler);
@@ -518,7 +519,7 @@ public class ExpressService {
         removeUserData();
         removeUserListeners();
         // keep initEventHandler not cleared when user logout account
-        LogUtil.d("disconnectUser: ");
+        Timber.d("disconnectUser: ");
     }
 
     public ZEGOSDKUser getCurrentUser() {

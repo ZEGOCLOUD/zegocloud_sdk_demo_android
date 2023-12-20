@@ -5,7 +5,6 @@ import com.zegocloud.demo.bestpractice.internal.sdk.basic.MergeCallBack;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKCallBack;
 import com.zegocloud.demo.bestpractice.internal.sdk.express.ExpressService;
 import com.zegocloud.demo.bestpractice.internal.sdk.zim.ZIMService;
-import com.zegocloud.demo.bestpractice.internal.utils.LogUtil;
 import im.zego.zegoexpress.callback.IZegoRoomLoginCallback;
 import im.zego.zegoexpress.callback.IZegoRoomLogoutCallback;
 import im.zego.zegoexpress.callback.IZegoUploadLogResultCallback;
@@ -189,9 +188,5 @@ public class ZEGOSDKManager {
                 mergeCallBack.setResult2(errorInfo);
             }
         });
-    }
-
-    public void setDebugMode(boolean debugMode) {
-        LogUtil.setDebug(debugMode);
     }
 }

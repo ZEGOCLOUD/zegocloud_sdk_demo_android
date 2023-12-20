@@ -15,26 +15,26 @@ import com.zegocloud.demo.bestpractice.R;
 import com.zegocloud.demo.bestpractice.databinding.ActivityCallWaitBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOCallInvitationManager;
 import com.zegocloud.demo.bestpractice.internal.business.UserRequestCallback;
+import com.zegocloud.demo.bestpractice.internal.business.call.CallChangedListener;
+import com.zegocloud.demo.bestpractice.internal.business.call.CallExtendedData;
+import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteUser;
 import com.zegocloud.demo.bestpractice.internal.business.call.FullCallInfo;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
-import com.zegocloud.demo.bestpractice.internal.sdk.zim.IZIMEventHandler;
-import com.zegocloud.demo.bestpractice.internal.utils.LogUtil;
 import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
 import im.zego.zegoexpress.callback.IZegoRoomLoginCallback;
 import im.zego.zegoexpress.constants.ZegoScenario;
-import im.zego.zim.entity.ZIMCallInvitationCancelledInfo;
-import im.zego.zim.entity.ZIMCallInvitationTimeoutInfo;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.json.JSONObject;
+import timber.log.Timber;
 
 public class CallWaitActivity extends AppCompatActivity {
 
     private ActivityCallWaitBinding binding;
     private FullCallInfo callInfo;
-    private IZIMEventHandler zimEventHandler;
+    private CallChangedListener listener;
 
     public static void startActivity(Context context, FullCallInfo fullCallInfo) {
         Intent intent = new Intent(context, CallWaitActivity.class);
@@ -50,7 +50,7 @@ public class CallWaitActivity extends AppCompatActivity {
 
         getSupportActionBar().setTitle("CallWaitActivity");
         callInfo = FullCallInfo.parse(getIntent().getStringExtra("callInfo"));
-        LogUtil.d("onCreate: " + callInfo);
+        Timber.d("onCreate: " + callInfo);
 
         if (callInfo.isOutgoingCall) {
             binding.incomingCallAcceptButton.setVisibility(View.GONE);
@@ -121,11 +121,11 @@ public class CallWaitActivity extends AppCompatActivity {
             ZEGOCallInvitationManager.getInstance().rejectCallRequest(callInfo.callID, new UserRequestCallback() {
                 @Override
                 public void onUserRequestSend(int errorCode, String requestID) {
-                    if (errorCode == 0) {
-                        finish();
-                    } else {
+                    if (errorCode != 0) {
                         ToastUtil.show(CallWaitActivity.this, "send reject failed :" + errorCode);
                     }
+                    finish();
+                    ZEGOCallInvitationManager.getInstance().removeCallData();
                 }
             });
         });
@@ -135,40 +135,65 @@ public class CallWaitActivity extends AppCompatActivity {
                 .cancelCallRequest(callInfo.callID, callInfo.calleeUserID, new UserRequestCallback() {
                     @Override
                     public void onUserRequestSend(int errorCode, String requestID) {
-                        if (errorCode == 0) {
-                            finish();
-                        } else {
-                            ToastUtil.show(CallWaitActivity.this, "send reject failed :" + errorCode);
+                        if (errorCode != 0) {
+                            ToastUtil.show(CallWaitActivity.this, "send cancel failed :" + errorCode);
                         }
+                        finish();
+                        ZEGOCallInvitationManager.getInstance().removeCallData();
                     }
                 });
         });
 
-        zimEventHandler = new IZIMEventHandler() {
+        listener = new CallChangedListener() {
+            @Override
+            public void onReceiveNewCall(String requestID, String inviterUserID, CallExtendedData originalExtendedData,
+                List<CallInviteUser> userList) {
+
+            }
 
             @Override
-            public void onInComingUserRequestTimeout(String requestID, ZIMCallInvitationTimeoutInfo info) {
+            public void onBusyRejectCall(String requestID) {
+
+            }
+
+            @Override
+            public void onInvitedUserRejected(String requestID, CallInviteUser rejectUser) {
+
+            }
+
+            @Override
+            public void onCallEnded(String requestID) {
                 if (requestID.equals(callInfo.callID)) {
                     finish();
                 }
             }
 
             @Override
-            public void onInComingUserRequestCancelled(String requestID, ZIMCallInvitationCancelledInfo info) {
+            public void onCallCancelled(String requestID) {
                 if (requestID.equals(callInfo.callID)) {
                     finish();
                 }
             }
 
             @Override
-            public void onOutgoingUserRequestTimeout(String requestID) {
+            public void onCallTimeout(String requestID) {
                 if (requestID.equals(callInfo.callID)) {
                     finish();
                 }
             }
 
             @Override
-            public void onOutgoingUserRequestAccepted(String requestID, String invitee, String extendedData) {
+            public void onInvitedUserTimeout(String requestID, CallInviteUser timeoutUser) {
+
+            }
+
+            @Override
+            public void onInvitedUserQuit(String requestID, CallInviteUser quitUser) {
+
+            }
+
+            @Override
+            public void onInvitedUserAccepted(String requestID, CallInviteUser acceptUser) {
                 if (requestID.equals(callInfo.callID)) {
                     if (callInfo.isVideoCall()) {
                         ZEGOSDKManager.getInstance().expressService.setRoomScenario(ZegoScenario.STANDARD_VIDEO_CALL);
@@ -180,22 +205,17 @@ public class CallWaitActivity extends AppCompatActivity {
                             @Override
                             public void onRoomLoginResult(int errorCode, JSONObject extendedData) {
                                 if (errorCode == 0) {
-                                    finish();
                                     CallInvitationActivity.startActivity(CallWaitActivity.this, callInfo);
+                                } else {
+                                    ToastUtil.show(CallWaitActivity.this, "Join Room failed,errorCode:" + errorCode);
                                 }
+                                finish();
                             }
                         });
                 }
             }
-
-            @Override
-            public void onOutgoingUserRequestRejected(String requestID, String invitee, String extendedData) {
-                if (requestID.equals(callInfo.callID)) {
-                    finish();
-                }
-            }
         };
-        ZEGOSDKManager.getInstance().zimService.addEventHandler(zimEventHandler);
+        ZEGOCallInvitationManager.getInstance().addCallListener(listener);
     }
 
     @Override
@@ -207,7 +227,7 @@ public class CallWaitActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         if (isFinishing()) {
-            ZEGOSDKManager.getInstance().zimService.removeEventHandler(zimEventHandler);
+            ZEGOCallInvitationManager.getInstance().removeCallListener(listener);
             ZEGOSDKManager.getInstance().expressService.openCamera(false);
             ZEGOSDKManager.getInstance().expressService.stopPreview();
         }

@@ -68,6 +68,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.json.JSONException;
 import org.json.JSONObject;
+import timber.log.Timber;
 
 public class ZIMService {
 
@@ -90,7 +91,7 @@ public class ZIMService {
             public void onConnectionStateChanged(ZIM zim, ZIMConnectionState state, ZIMConnectionEvent event,
                 JSONObject extendedData) {
                 super.onConnectionStateChanged(zim, state, event, extendedData);
-                LogUtil.d(
+                Timber.d(
                     "onConnectionStateChanged() called with: zim = [" + zim + "], state = [" + state + "], event = ["
                         + event + "], extendedData = [" + extendedData + "]");
             }
@@ -99,7 +100,7 @@ public class ZIMService {
             public void onRoomStateChanged(ZIM zim, ZIMRoomState state, ZIMRoomEvent event, JSONObject extendedData,
                 String roomID) {
                 super.onRoomStateChanged(zim, state, event, extendedData, roomID);
-                LogUtil.d(
+                Timber.d(
                     "onRoomStateChanged() called with: zim = [" + zim + "], state = [" + state + "], event = [" + event
                         + "], extendedData = [" + extendedData + "], roomID = [" + roomID + "]");
             }

@@ -6,6 +6,7 @@ import org.json.JSONObject;
 
 public class CallExtendedData {
 
+    public String userID;
     public String userName;
     public int type;
     public static final int VIDEO_CALL = 10000;
@@ -20,6 +21,7 @@ public class CallExtendedData {
                     CallExtendedData data = new CallExtendedData();
                     data.type = type;
                     data.userName = jsonObject.getString("user_name");
+                    data.userID = jsonObject.getString("userID");
                     return data;
                 }
             }
@@ -44,6 +46,7 @@ public class CallExtendedData {
             //            jsonObject.put("room_id", roomID);
             jsonObject.put("user_name", userName);
             jsonObject.put("type", type);
+            jsonObject.put("userID", userID);
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }

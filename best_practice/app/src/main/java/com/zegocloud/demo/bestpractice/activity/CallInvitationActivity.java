@@ -16,6 +16,9 @@ import com.zegocloud.demo.bestpractice.R;
 import com.zegocloud.demo.bestpractice.components.ZEGOAudioVideoView;
 import com.zegocloud.demo.bestpractice.databinding.ActivityCallInvitationBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOCallInvitationManager;
+import com.zegocloud.demo.bestpractice.internal.business.call.CallChangedListener;
+import com.zegocloud.demo.bestpractice.internal.business.call.CallExtendedData;
+import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteUser;
 import com.zegocloud.demo.bestpractice.internal.business.call.FullCallInfo;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
@@ -25,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import timber.log.Timber;
 
 public class CallInvitationActivity extends AppCompatActivity {
 
@@ -47,7 +51,7 @@ public class CallInvitationActivity extends AppCompatActivity {
 
         callInfo = FullCallInfo.parse(getIntent().getStringExtra("callInfo"));
 
-        listenExpressEvent();
+        listenSDKEvent();
 
         if (callInfo.isVideoCall()) {
             binding.callCameraBtn.open();
@@ -133,10 +137,71 @@ public class CallInvitationActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        ZEGOCallInvitationManager.getInstance().endCall();
+        if (isFinishing()) {
+            ZEGOCallInvitationManager.getInstance().endCall();
+            ZEGOCallInvitationManager.getInstance().removeCallData();
+        }
     }
 
-    public void listenExpressEvent() {
+    public void listenSDKEvent() {
+        ZEGOCallInvitationManager.getInstance().addCallListener(new CallChangedListener() {
+            @Override
+            public void onReceiveNewCall(String requestID, String inviterUserID, CallExtendedData originalExtendedData,
+                List<CallInviteUser> userList) {
+                Timber.d(
+                    "onReceiveNewCall() called with: requestID = [" + requestID + "], inviterUserID = [" + inviterUserID
+                        + "], userList = [" + userList + "]");
+            }
+
+            @Override
+            public void onBusyRejectCall(String requestID) {
+                Timber.d("onBusyRejectCall() called with: requestID = [" + requestID + "]");
+            }
+
+            @Override
+            public void onInvitedUserRejected(String requestID, CallInviteUser rejectUser) {
+                Timber.d(
+                    "onInvitedUserRejected() called with: requestID = [" + requestID + "], rejectUser = [" + rejectUser
+                        + "]");
+            }
+
+            @Override
+            public void onCallEnded(String requestID) {
+                Timber.d("onCallEnded() called with: requestID = [" + requestID + "]");
+                finish();
+            }
+
+            @Override
+            public void onCallCancelled(String requestID) {
+                Timber.d("onCallCancelled() called with: requestID = [" + requestID + "]");
+            }
+
+            @Override
+            public void onCallTimeout(String requestID) {
+                Timber.d("onCallTimeout() called with: requestID = [" + requestID + "]");
+            }
+
+            @Override
+            public void onInvitedUserTimeout(String requestID, CallInviteUser timeoutUser) {
+                Timber.d(
+                    "onInvitedUserTimeout() called with: requestID = [" + requestID + "], timeoutUser = [" + timeoutUser
+                        + "]");
+            }
+
+            @Override
+            public void onInvitedUserQuit(String requestID, CallInviteUser quitUser) {
+                Timber.d(
+                    "onInvitedUserQuit() called with: requestID = [" + requestID + "], quitUser = [" + quitUser + "]");
+            }
+
+            @Override
+            public void onInvitedUserAccepted(String requestID, CallInviteUser acceptUser) {
+                Timber.d(
+                    "onInvitedUserAccepted() called with: requestID = [" + requestID + "], acceptUser = [" + acceptUser
+                        + "]");
+            }
+        });
+
         ZEGOSDKManager.getInstance().expressService.addEventHandler(new IExpressEngineEventHandler() {
 
             @Override

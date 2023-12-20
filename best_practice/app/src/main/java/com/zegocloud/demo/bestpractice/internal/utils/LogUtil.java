@@ -1,6 +1,6 @@
 package com.zegocloud.demo.bestpractice.internal.utils;
 
-import android.util.Log;
+import timber.log.Timber;
 
 public class LogUtil {
 
@@ -17,7 +17,7 @@ public class LogUtil {
 
     public static void d(String message) {
         if (PRINT_LOGCAT) {
-            Log.d(TAG, message);
+            Timber.d(message);
         }
     }
 }

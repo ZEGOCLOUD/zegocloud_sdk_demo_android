@@ -57,14 +57,19 @@ public class HomePageActivity extends AppCompatActivity {
                             if (allGranted) {
                                 Toast.makeText(HomePageActivity.this, "All permissions have been granted.",
                                     Toast.LENGTH_SHORT).show();
-                                Intent intent = new Intent(HomePageActivity.this, LivePageActivity.class);
-                                String userID = generateRandomID();
-                                String userName = "user_" + userID;
-                                intent.putExtra("userID", userID);
-                                intent.putExtra("userName", userName);
-                                intent.putExtra("roomID", roomID);
-                                intent.putExtra("isHost", true);
-                                startActivity(intent);
+                                if(hasCreatedEngine){
+                                    Intent intent = new Intent(HomePageActivity.this, LivePageActivity.class);
+                                    String userID = generateRandomID();
+                                    String userName = "user_" + userID;
+                                    intent.putExtra("userID", userID);
+                                    intent.putExtra("userName", userName);
+                                    intent.putExtra("roomID", roomID);
+                                    intent.putExtra("isHost", true);
+                                    startActivity(intent);
+                                }else {
+                                    Toast.makeText(HomePageActivity.this, "Please ensure .so files has copy completed",
+                                        Toast.LENGTH_SHORT).show();
+                                }
                             } else {
                                 Toast.makeText(HomePageActivity.this, "Some permissions have not been granted.",
                                     Toast.LENGTH_LONG).show();
@@ -159,6 +164,8 @@ public class HomePageActivity extends AppCompatActivity {
         ZegoExpressEngine.createEngine(profile, null);
 
         hasCreatedEngine = true;
+
+        Log.d(TAG, "createEngine() success");
     }
 
 

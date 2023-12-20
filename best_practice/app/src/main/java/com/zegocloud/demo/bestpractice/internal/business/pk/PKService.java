@@ -56,6 +56,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import timber.log.Timber;
 
 public class PKService {
 
@@ -442,7 +443,7 @@ public class PKService {
     }
 
     private void onReceivePKRoomAttribute(Map<String, String> roomProperties) {
-        Log.d(TAG, "onReceivePKRoomAttribute() called with: roomProperties = [" + roomProperties + "]");
+        Timber.d("onReceivePKRoomAttribute() called with: roomProperties = [" + roomProperties + "]");
         String request_id = roomProperties.get("request_id");
         List<PKUser> pkUserList = new ArrayList<>();
         try {

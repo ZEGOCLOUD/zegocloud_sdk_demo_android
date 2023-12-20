@@ -16,7 +16,7 @@ import java.util.List;
 
 public class LoadLibraryUtil {
 
-    private static final String TAG = "Tinker.LoadLibrary";
+    private static final String TAG = "LoadLibrary";
 
     /**
      * you can reflect your current abi to classloader library path as you don't need to use load*Library method above

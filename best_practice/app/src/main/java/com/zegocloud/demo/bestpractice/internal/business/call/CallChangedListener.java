@@ -1,10 +1,10 @@
 package com.zegocloud.demo.bestpractice.internal.business.call;
 
-import java.util.List;
-
 public interface CallChangedListener {
 
-    void onReceiveNewCall(String requestID, String inviterUserID, CallExtendedData originalExtendedData, List<CallInviteUser> userList);
+    void onReceiveNewCall(String requestID);
+
+    void onInviteNewUser(String requestID, CallInviteUser inviteUser);
 
     void onBusyRejectCall(String requestID);
 
@@ -22,6 +22,7 @@ public interface CallChangedListener {
 
     /**
      * i received a call,and don't response util the call timeout
+     *
      * @param requestID
      */
     void onCallTimeout(String requestID);

@@ -5,7 +5,6 @@ import im.zego.zim.enums.ZIMCallUserState;
 public class CallInviteUser {
 
     private String userID;
-    public String userName;
     private String extendedData;
     private ZIMCallUserState callUserState;
 
@@ -47,7 +46,6 @@ public class CallInviteUser {
     public String toString() {
         return "CallInviteUser{" +
             "userID='" + userID + '\'' +
-            ", userName='" + userName + '\'' +
             ", extendedData='" + extendedData + '\'' +
             ", callUserState=" + callUserState +
             '}';

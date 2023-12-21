@@ -1,11 +1,13 @@
 package com.zegocloud.demo.bestpractice.internal.sdk.zim;
 
+import im.zego.zim.ZIM;
 import im.zego.zim.callback.ZIMEventHandler;
 import im.zego.zim.entity.ZIMCallInvitationCancelledInfo;
 import im.zego.zim.entity.ZIMCallInvitationEndedInfo;
 import im.zego.zim.entity.ZIMCallInvitationReceivedInfo;
 import im.zego.zim.entity.ZIMCallInvitationTimeoutInfo;
 import im.zego.zim.entity.ZIMCallUserStateChangeInfo;
+import im.zego.zim.entity.ZIMUserFullInfo;
 import java.util.List;
 import java.util.Map;
 
@@ -67,10 +69,6 @@ public abstract class IZIMEventHandler extends ZIMEventHandler {
     public void onInComingUserRequestTimeout(String requestID, ZIMCallInvitationTimeoutInfo info) {
 
     }
-
-    public void onUserAvatarUpdated(String userID, String url) {
-    }
-
 
     public void onSendRoomCommand(int errorCode, String command) {
 

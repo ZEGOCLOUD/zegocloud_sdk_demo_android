@@ -6,8 +6,6 @@ import org.json.JSONObject;
 
 public class CallExtendedData {
 
-    public String userID;
-    public String userName;
     public int type;
     public static final int VIDEO_CALL = 10000;
     public static final int VOICE_CALL = 10001;
@@ -20,8 +18,6 @@ public class CallExtendedData {
                 if (type == VIDEO_CALL || type == VOICE_CALL) {
                     CallExtendedData data = new CallExtendedData();
                     data.type = type;
-                    data.userName = jsonObject.getString("user_name");
-                    data.userID = jsonObject.getString("userID");
                     return data;
                 }
             }
@@ -43,10 +39,7 @@ public class CallExtendedData {
     public String toString() {
         JSONObject jsonObject = new JSONObject();
         try {
-            //            jsonObject.put("room_id", roomID);
-            jsonObject.put("user_name", userName);
             jsonObject.put("type", type);
-            jsonObject.put("userID", userID);
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }

@@ -1,10 +1,9 @@
 package com.zegocloud.demo.bestpractice.activity;
 
 import android.Manifest.permission;
-import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import androidx.annotation.NonNull;
@@ -17,9 +16,8 @@ import com.zegocloud.demo.bestpractice.components.ZEGOAudioVideoView;
 import com.zegocloud.demo.bestpractice.databinding.ActivityCallInvitationBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOCallInvitationManager;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallChangedListener;
-import com.zegocloud.demo.bestpractice.internal.business.call.CallExtendedData;
+import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteInfo;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteUser;
-import com.zegocloud.demo.bestpractice.internal.business.call.FullCallInfo;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
@@ -33,13 +31,6 @@ import timber.log.Timber;
 public class CallInvitationActivity extends AppCompatActivity {
 
     private ActivityCallInvitationBinding binding;
-    private FullCallInfo callInfo;
-
-    public static void startActivity(Context context, FullCallInfo callInfo) {
-        Intent intent = new Intent(context, CallInvitationActivity.class);
-        intent.putExtra("callInfo", callInfo.toString());
-        context.startActivity(intent);
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,11 +40,10 @@ public class CallInvitationActivity extends AppCompatActivity {
 
         getSupportActionBar().setTitle("CallInvitationActivity");
 
-        callInfo = FullCallInfo.parse(getIntent().getStringExtra("callInfo"));
-
         listenSDKEvent();
 
-        if (callInfo.isVideoCall()) {
+        CallInviteInfo callInviteInfo = ZEGOCallInvitationManager.getInstance().getCallInviteInfo();
+        if (callInviteInfo.isVideoCall()) {
             binding.callCameraBtn.open();
             binding.callCameraBtn.setVisibility(View.VISIBLE);
             binding.callCameraSwitchBtn.setVisibility(View.VISIBLE);
@@ -71,7 +61,7 @@ public class CallInvitationActivity extends AppCompatActivity {
         binding.callSpeakerBtn.open();
 
         List<String> permissions;
-        if (callInfo.isVideoCall()) {
+        if (callInviteInfo.isVideoCall()) {
             permissions = Arrays.asList(permission.CAMERA, permission.RECORD_AUDIO);
         } else {
             permissions = Collections.singletonList(permission.RECORD_AUDIO);
@@ -81,16 +71,16 @@ public class CallInvitationActivity extends AppCompatActivity {
             public void onResult(boolean allGranted, @NonNull List<String> grantedList,
                 @NonNull List<String> deniedList) {
                 // my video show in small view
-                if (callInfo.isOutgoingCall) {
-                    binding.selfVideoView.setUserID(callInfo.callerUserID);
-                    binding.otherVideoView.setUserID(callInfo.calleeUserID);
+                if (callInviteInfo.isOutgoingCall) {
+                    binding.selfVideoView.setUserID(callInviteInfo.inviter);
+                    binding.otherVideoView.setUserID(callInviteInfo.userList.get(0).getUserID());
                 } else {
-                    binding.selfVideoView.setUserID(callInfo.calleeUserID);
-                    binding.otherVideoView.setUserID(callInfo.callerUserID);
+                    binding.selfVideoView.setUserID(callInviteInfo.userList.get(0).getUserID());
+                    binding.otherVideoView.setUserID(callInviteInfo.inviter);
                 }
 
                 binding.selfVideoView.startPreviewOnly();
-                if (callInfo.isVideoCall()) {
+                if (callInviteInfo.isVideoCall()) {
                     binding.selfVideoView.showVideoView();
                 } else {
                     binding.selfVideoView.showAudioView();
@@ -108,12 +98,9 @@ public class CallInvitationActivity extends AppCompatActivity {
         });
 
         binding.selfVideoView.setOnClickListener(v -> {
-            if (callInfo.isVideoCall()) {
-
-            }
             ViewGroup selfVideoViewParent = (ViewGroup) binding.selfVideoView.getParent();
             ViewGroup otherVideoViewParent = (ViewGroup) binding.otherVideoView.getParent();
-            if (otherVideoViewParent.getVisibility() != View.VISIBLE || callInfo.isVoiceCall()) {
+            if (otherVideoViewParent.getVisibility() != View.VISIBLE || callInviteInfo.isVoiceCall()) {
                 return;
             }
             selfVideoViewParent.removeView(binding.selfVideoView);
@@ -124,7 +111,7 @@ public class CallInvitationActivity extends AppCompatActivity {
         binding.otherVideoView.setOnClickListener(v -> {
             ViewGroup selfVideoViewParent = (ViewGroup) binding.selfVideoView.getParent();
             ViewGroup otherVideoViewParent = (ViewGroup) binding.otherVideoView.getParent();
-            if (selfVideoViewParent.getVisibility() != View.VISIBLE || callInfo.isVoiceCall()) {
+            if (selfVideoViewParent.getVisibility() != View.VISIBLE || callInviteInfo.isVoiceCall()) {
                 return;
             }
             selfVideoViewParent.removeView(binding.selfVideoView);
@@ -146,11 +133,14 @@ public class CallInvitationActivity extends AppCompatActivity {
     public void listenSDKEvent() {
         ZEGOCallInvitationManager.getInstance().addCallListener(new CallChangedListener() {
             @Override
-            public void onReceiveNewCall(String requestID, String inviterUserID, CallExtendedData originalExtendedData,
-                List<CallInviteUser> userList) {
-                Timber.d(
-                    "onReceiveNewCall() called with: requestID = [" + requestID + "], inviterUserID = [" + inviterUserID
-                        + "], userList = [" + userList + "]");
+            public void onReceiveNewCall(String requestID) {
+                Timber.d("onReceiveNewCall() called with: requestID = [" + requestID + "]");
+            }
+
+            @Override
+            public void onInviteNewUser(String requestID, CallInviteUser inviteUser) {
+                Timber.d("onInviteNewUser() called with: requestID = [" + requestID + "], inviteUser = [" + inviteUser
+                    + "]");
             }
 
             @Override

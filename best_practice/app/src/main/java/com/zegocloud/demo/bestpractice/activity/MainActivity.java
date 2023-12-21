@@ -3,7 +3,6 @@ package com.zegocloud.demo.bestpractice.activity;
 import android.Manifest.permission;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import androidx.annotation.NonNull;
@@ -14,10 +13,8 @@ import com.permissionx.guolindev.callback.RequestCallback;
 import com.zegocloud.demo.bestpractice.R;
 import com.zegocloud.demo.bestpractice.components.call.CallBackgroundService;
 import com.zegocloud.demo.bestpractice.databinding.ActivityMainBinding;
-import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
 import com.zegocloud.demo.bestpractice.internal.ZEGOCallInvitationManager;
-import com.zegocloud.demo.bestpractice.internal.business.call.CallExtendedData;
-import com.zegocloud.demo.bestpractice.internal.business.call.FullCallInfo;
+import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import im.zego.zim.callback.ZIMCallInvitationSentCallback;
@@ -120,24 +117,17 @@ public class MainActivity extends AppCompatActivity {
                 public void onResult(boolean allGranted, @NonNull List<String> grantedList,
                     @NonNull List<String> deniedList) {
                     if (allGranted) {
-                        ZEGOCallInvitationManager.getInstance()
-                            .sendVideoCall(targetUserID, new ZIMCallInvitationSentCallback() {
-                                @Override
-                                public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info,
-                                    ZIMError errorInfo) {
-                                    if (errorInfo.code.value() == 0) {
-                                        ZEGOSDKUser localUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
-                                        FullCallInfo fullCallInfo = new FullCallInfo();
-                                        fullCallInfo.callID = requestID;
-                                        fullCallInfo.callType = CallExtendedData.VIDEO_CALL;
-                                        fullCallInfo.callerUserID = localUser.userID;
-                                        fullCallInfo.callerUserName = localUser.userName;
-                                        fullCallInfo.calleeUserID = targetUserID;
-                                        fullCallInfo.isOutgoingCall = true;
-                                        CallWaitActivity.startActivity(MainActivity.this, fullCallInfo);
+                        ZEGOCallInvitationManager.getInstance().sendVideoCall(Collections.singletonList(targetUserID),
+                                new ZIMCallInvitationSentCallback() {
+                                    @Override
+                                    public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info,
+                                        ZIMError errorInfo) {
+                                        if (errorInfo.code.value() == 0) {
+                                            Intent intent = new Intent(MainActivity.this, CallWaitActivity.class);
+                                            startActivity(intent);
+                                        }
                                     }
-                                }
-                            });
+                                });
                     }
                 }
             });
@@ -156,23 +146,17 @@ public class MainActivity extends AppCompatActivity {
                     @NonNull List<String> deniedList) {
                     if (allGranted) {
                         ZEGOCallInvitationManager.getInstance()
-                            .sendVoiceCall(targetUserID, new ZIMCallInvitationSentCallback() {
-                                @Override
-                                public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info,
-                                    ZIMError errorInfo) {
-                                    if (errorInfo.code.value() == 0) {
-                                        ZEGOSDKUser localUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
-                                        FullCallInfo fullCallInfo = new FullCallInfo();
-                                        fullCallInfo.callID = requestID;
-                                        fullCallInfo.callType = CallExtendedData.VOICE_CALL;
-                                        fullCallInfo.callerUserID = localUser.userID;
-                                        fullCallInfo.callerUserName = localUser.userName;
-                                        fullCallInfo.calleeUserID = targetUserID;
-                                        fullCallInfo.isOutgoingCall = true;
-                                        CallWaitActivity.startActivity(MainActivity.this, fullCallInfo);
+                            .sendVoiceCall(Collections.singletonList(targetUserID),
+                                new ZIMCallInvitationSentCallback() {
+                                    @Override
+                                    public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info,
+                                        ZIMError errorInfo) {
+                                        if (errorInfo.code.value() == 0) {
+                                            Intent intent = new Intent(MainActivity.this, CallWaitActivity.class);
+                                            startActivity(intent);
+                                        }
                                     }
-                                }
-                            });
+                                });
                     }
                 }
             });

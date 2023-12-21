@@ -20,8 +20,10 @@ import im.zego.zegoexpress.constants.ZegoStreamResourceMode;
 import im.zego.zegoexpress.constants.ZegoUpdateType;
 import im.zego.zegoexpress.entity.ZegoPlayerConfig;
 import im.zego.zegoexpress.entity.ZegoStream;
+import im.zego.zim.ZIM;
 import im.zego.zim.callback.ZIMRoomAttributesOperatedCallback;
 import im.zego.zim.entity.ZIMError;
+import im.zego.zim.entity.ZIMUserFullInfo;
 import java.util.ArrayList;
 import org.json.JSONObject;
 
@@ -118,9 +120,8 @@ public class LiveAudioRoomActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onUserAvatarUpdated(String userID, String url) {
-                super.onUserAvatarUpdated(userID, url);
-                binding.seatContainer.onUserAvatarUpdated(userID, url);
+            public void onUserInfoUpdated(ZIM zim, ZIMUserFullInfo info) {
+                binding.seatContainer.onUserAvatarUpdated(info.baseInfo.userID, info.userAvatarUrl);
             }
         });
     }

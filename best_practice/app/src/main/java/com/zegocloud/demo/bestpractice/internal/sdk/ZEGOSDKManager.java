@@ -1,6 +1,7 @@
 package com.zegocloud.demo.bestpractice.internal.sdk;
 
 import android.app.Application;
+import android.util.Log;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.MergeCallBack;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKCallBack;
 import com.zegocloud.demo.bestpractice.internal.sdk.express.ExpressService;
@@ -13,10 +14,12 @@ import im.zego.zim.callback.ZIMLogUploadedCallback;
 import im.zego.zim.callback.ZIMLoggedInCallback;
 import im.zego.zim.callback.ZIMRoomEnteredCallback;
 import im.zego.zim.callback.ZIMRoomLeftCallback;
+import im.zego.zim.callback.ZIMUserAvatarUrlUpdatedCallback;
 import im.zego.zim.entity.ZIMError;
 import im.zego.zim.entity.ZIMRoomFullInfo;
 import im.zego.zim.enums.ZIMErrorCode;
 import org.json.JSONObject;
+import timber.log.Timber;
 
 public class ZEGOSDKManager {
 
@@ -28,7 +31,7 @@ public class ZEGOSDKManager {
         private static final ZEGOSDKManager INSTANCE = new ZEGOSDKManager();
     }
 
-    private ZEGOSDKManager(){
+    private ZEGOSDKManager() {
 
     }
 
@@ -50,6 +53,14 @@ public class ZEGOSDKManager {
         zimService.connectUser(userID, userName, new ZIMLoggedInCallback() {
             @Override
             public void onLoggedIn(ZIMError errorInfo) {
+                ZEGOSDKManager.getInstance().zimService.updateUserAvatarUrl("https://robohash.org/${userID}?set=set4",
+                    new ZIMUserAvatarUrlUpdatedCallback() {
+                        @Override
+                        public void onUserAvatarUrlUpdated(String userAvatarUrl, ZIMError errorInfo) {
+                            Timber.d("onUserAvatarUrlUpdated() called with: userAvatarUrl = [" + userAvatarUrl
+                                + "], errorInfo = [" + errorInfo + "]");
+                        }
+                    });
                 if (callback != null) {
                     callback.onResult(errorInfo.code.value(), errorInfo.message);
                 }

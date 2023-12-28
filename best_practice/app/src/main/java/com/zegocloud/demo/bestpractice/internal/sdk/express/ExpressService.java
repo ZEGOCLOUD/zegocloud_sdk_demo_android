@@ -2,6 +2,7 @@ package com.zegocloud.demo.bestpractice.internal.sdk.express;
 
 import android.app.Application;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.TextureView;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
@@ -164,12 +165,12 @@ public class ExpressService {
                 super.onPublisherStateUpdate(streamID, state, errorCode, extendedData);
                 Timber.d("onPublisherStateUpdate: " + streamID + ", state:" + state + ", code:" + errorCode + ", data:"
                     + extendedData);
-                ArrayList<ZegoStream> streamList = new ArrayList<>(1);
-                ZegoStream zegoStream = new ZegoStream();
-                zegoStream.user = new ZegoUser(currentUser.userID, currentUser.userName);
-                zegoStream.streamID = streamID;
-                zegoStream.extraInfo = extendedData.toString();
-                streamList.add(zegoStream);
+                //                ArrayList<ZegoStream> streamList = new ArrayList<>(1);
+                //                ZegoStream zegoStream = new ZegoStream();
+                //                zegoStream.user = new ZegoUser(currentUser.userID, currentUser.userName);
+                //                zegoStream.streamID = streamID;
+                //                zegoStream.extraInfo = extendedData.toString();
+                //                streamList.add(zegoStream);
 
                 if (state == ZegoPublisherState.PUBLISHING) {
                     currentUser.setStreamID(streamID);
@@ -185,6 +186,9 @@ public class ExpressService {
                 for (ZegoStream zegoStream : streamList) {
                     if (!TextUtils.isEmpty(zegoStream.extraInfo)) {
                         ZEGOSDKUser liveUser = getUser(zegoStream.user.userID);
+                        if (liveUser == null) {
+                            return;
+                        }
                         try {
                             JSONObject jsonObject = new JSONObject(zegoStream.extraInfo);
                             if (jsonObject.has("cam")) {
@@ -206,6 +210,8 @@ public class ExpressService {
             @Override
             public void onRoomUserUpdate(String roomID, ZegoUpdateType updateType, ArrayList<ZegoUser> userList) {
                 super.onRoomUserUpdate(roomID, updateType, userList);
+                Timber.d("onRoomUserUpdate() called with: roomID = [" + roomID + "], updateType = [" + updateType
+                    + "], userList = [" + userList + "]");
                 List<ZEGOSDKUser> liveUserList = new ArrayList<>();
                 for (ZegoUser zegoUser : userList) {
                     ZEGOSDKUser liveUser = getUser(zegoUser.userID);
@@ -636,6 +642,16 @@ public class ExpressService {
             return currentUser;
         }
         return roomRemoteUserMap.get(userID);
+    }
+
+    public List<ZEGOSDKUser> getRoomUsers() {
+        List<ZEGOSDKUser> roomUsers = new ArrayList<>();
+        roomUsers.add(currentUser);
+        for (String userID : roomRemoteUserIDList) {
+            ZEGOSDKUser zegosdkUser = roomRemoteUserMap.get(userID);
+            roomUsers.add(zegosdkUser);
+        }
+        return roomUsers;
     }
 
 

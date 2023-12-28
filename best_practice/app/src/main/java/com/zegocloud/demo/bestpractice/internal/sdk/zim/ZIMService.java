@@ -640,7 +640,6 @@ public class ZIMService {
         zimProxy.callCancel(list, requestID, config, callback);
     }
 
-
     public void quitUserRequest(String callID, ZIMCallQuitConfig config, ZIMCallQuitSentCallback callback) {
         if (zimProxy.getZIM() == null || currentUser == null) {
             return;

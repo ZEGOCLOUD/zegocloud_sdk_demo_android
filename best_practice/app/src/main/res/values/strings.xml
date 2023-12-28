@@ -19,5 +19,6 @@
   <string name="settings">Settings</string>
   <string name="zego_video_call">ZEGO VIDEO CALL</string>
   <string name="zego_voice_call">ZEGO VOICE CALL</string>
+  <string name="calling">Calling...</string>
 
 </resources>

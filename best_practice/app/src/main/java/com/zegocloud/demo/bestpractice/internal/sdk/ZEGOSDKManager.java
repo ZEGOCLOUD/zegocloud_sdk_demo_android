@@ -53,14 +53,6 @@ public class ZEGOSDKManager {
         zimService.connectUser(userID, userName, new ZIMLoggedInCallback() {
             @Override
             public void onLoggedIn(ZIMError errorInfo) {
-                ZEGOSDKManager.getInstance().zimService.updateUserAvatarUrl("https://robohash.org/${userID}?set=set4",
-                    new ZIMUserAvatarUrlUpdatedCallback() {
-                        @Override
-                        public void onUserAvatarUrlUpdated(String userAvatarUrl, ZIMError errorInfo) {
-                            Timber.d("onUserAvatarUrlUpdated() called with: userAvatarUrl = [" + userAvatarUrl
-                                + "], errorInfo = [" + errorInfo + "]");
-                        }
-                    });
                 if (callback != null) {
                     callback.onResult(errorInfo.code.value(), errorInfo.message);
                 }

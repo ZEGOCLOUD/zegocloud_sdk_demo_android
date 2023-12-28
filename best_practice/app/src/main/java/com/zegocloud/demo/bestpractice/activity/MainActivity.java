@@ -15,8 +15,12 @@ import com.zegocloud.demo.bestpractice.components.call.CallBackgroundService;
 import com.zegocloud.demo.bestpractice.databinding.ActivityMainBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOCallInvitationManager;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
+import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteInfo;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
+import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
+import im.zego.zegoexpress.callback.IZegoRoomLoginCallback;
+import im.zego.zegoexpress.constants.ZegoScenario;
 import im.zego.zim.callback.ZIMCallInvitationSentCallback;
 import im.zego.zim.entity.ZIMCallInvitationSentInfo;
 import im.zego.zim.entity.ZIMError;
@@ -24,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -105,6 +110,7 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        binding.callUserId.getEditText().setText("samsung,vivo,xiaomi");
         binding.callUserVideo.setOnClickListener(v -> {
             String targetUserID = binding.callUserId.getEditText().getText().toString();
             if (TextUtils.isEmpty(targetUserID)) {
@@ -117,17 +123,22 @@ public class MainActivity extends AppCompatActivity {
                 public void onResult(boolean allGranted, @NonNull List<String> grantedList,
                     @NonNull List<String> deniedList) {
                     if (allGranted) {
-                        ZEGOCallInvitationManager.getInstance().sendVideoCall(Collections.singletonList(targetUserID),
-                                new ZIMCallInvitationSentCallback() {
-                                    @Override
-                                    public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info,
-                                        ZIMError errorInfo) {
-                                        if (errorInfo.code.value() == 0) {
+                        String[] split = targetUserID.split(",");
+                        ZEGOCallInvitationManager.getInstance().sendVideoCall(Arrays.asList(split), new ZIMCallInvitationSentCallback() {
+                                @Override
+                                public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info,
+                                    ZIMError errorInfo) {
+                                    if (errorInfo.code.value() == 0) {
+                                        if (split.length > 1) {
+                                            Intent intent = new Intent(MainActivity.this, CallInvitationActivity.class);
+                                            startActivity(intent);
+                                        } else {
                                             Intent intent = new Intent(MainActivity.this, CallWaitActivity.class);
                                             startActivity(intent);
                                         }
                                     }
-                                });
+                                }
+                            });
                     }
                 }
             });
@@ -145,26 +156,25 @@ public class MainActivity extends AppCompatActivity {
                 public void onResult(boolean allGranted, @NonNull List<String> grantedList,
                     @NonNull List<String> deniedList) {
                     if (allGranted) {
-                        ZEGOCallInvitationManager.getInstance()
-                            .sendVoiceCall(Collections.singletonList(targetUserID),
-                                new ZIMCallInvitationSentCallback() {
-                                    @Override
-                                    public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info,
-                                        ZIMError errorInfo) {
-                                        if (errorInfo.code.value() == 0) {
-                                            Intent intent = new Intent(MainActivity.this, CallWaitActivity.class);
-                                            startActivity(intent);
-                                        }
+                        ZEGOCallInvitationManager.getInstance().sendVoiceCall(Collections.singletonList(targetUserID),
+                            new ZIMCallInvitationSentCallback() {
+                                @Override
+                                public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info,
+                                    ZIMError errorInfo) {
+                                    if (errorInfo.code.value() == 0) {
+                                        Intent intent = new Intent(MainActivity.this, CallWaitActivity.class);
+                                        startActivity(intent);
                                     }
-                                });
+                                }
+                            });
                     }
                 }
             });
         });
 
-        // if LiveStreaming,init after user login,may receive pk request.
+        // if LiveStreaming,init after user login,can receive pk request.
         ZEGOLiveStreamingManager.getInstance().init();
-        // if Call invitation,init after user login,may receive call request.
+        // if Call invitation,init after user login,can receive call request.
         ZEGOCallInvitationManager.getInstance().init();
         Intent intent = new Intent(this, CallBackgroundService.class);
         startService(intent);
@@ -176,7 +186,6 @@ public class MainActivity extends AppCompatActivity {
             ZEGOSDKManager.getInstance().disconnectUser();
             ZEGOLiveStreamingManager.getInstance().removeUserData();
             ZEGOLiveStreamingManager.getInstance().removeUserListeners();
-            // if Call invitation,init after user login,may receive call request.
             ZEGOCallInvitationManager.getInstance().removeUserData();
             ZEGOCallInvitationManager.getInstance().removeUserListeners();
             Intent intent = new Intent(this, CallBackgroundService.class);

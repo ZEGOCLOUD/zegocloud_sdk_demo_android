@@ -1,29 +1,56 @@
 package com.zegocloud.demo.bestpractice.internal.business.call;
 
+import java.util.List;
+
 public interface CallChangedListener {
 
-    void onReceiveNewCall(String requestID);
+    /**
+     *
+     * @param requestID
+     * @param userList all users called in this call.
+     */
+    default void onReceiveNewCall(String requestID, List<CallInviteUser> userList) {
+    }
 
-    void onInviteNewUser(String requestID, CallInviteUser inviteUser);
+    default void onBusyRejectCall(String requestID) {
+    }
 
-    void onBusyRejectCall(String requestID);
+//
+//    default void onInviteNewUser(String requestID, CallInviteUser inviteUser) {
+//    }
 
-    void onInvitedUserRejected(String requestID, CallInviteUser rejectUser);
 
-    void onInvitedUserTimeout(String requestID, CallInviteUser timeoutUser);
+    default void onInvitedUserRejected(String requestID, CallInviteUser rejectUser) {
+    }
 
-    void onInvitedUserQuit(String requestID, CallInviteUser quitUser);
 
-    void onInvitedUserAccepted(String requestID, CallInviteUser acceptUser);
+    default void onInvitedUserTimeout(String requestID, CallInviteUser timeoutUser) {
+    }
 
-    void onCallEnded(String requestID);
 
-    void onCallCancelled(String requestID);
+    default void onInvitedUserQuit(String requestID, CallInviteUser quitUser) {
+    }
+
+
+    default void onInvitedUserAccepted(String requestID, CallInviteUser acceptUser) {
+    }
+
+
+    default void onCallEnded(String requestID) {
+    }
+
+
+    default void onCallCancelled(String requestID) {
+    }
+
 
     /**
      * i received a call,and don't response util the call timeout
      *
      * @param requestID
      */
-    void onCallTimeout(String requestID);
+    default void onCallTimeout(String requestID) {
+    }
+
+
 }

@@ -3,6 +3,9 @@ package com.zegocloud.demo.bestpractice.internal.sdk.basic;
 import android.text.TextUtils;
 import java.util.Objects;
 
+/**
+ * basic users ,for express SDK room users.
+ */
 public class ZEGOSDKUser {
 
     public String userID;
@@ -22,7 +25,7 @@ public class ZEGOSDKUser {
     }
 
     public boolean hasStream() {
-        return !TextUtils.isEmpty(mainStreamID) && !TextUtils.isEmpty(shareStreamID);
+        return !TextUtils.isEmpty(mainStreamID) || !TextUtils.isEmpty(shareStreamID);
     }
 
     public void setStreamID(String streamID) {

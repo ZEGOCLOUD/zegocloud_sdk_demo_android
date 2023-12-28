@@ -5,48 +5,10 @@
   android:layout_height="match_parent"
   android:background="@color/gray_666">
 
-  <FrameLayout
+  <com.zegocloud.demo.bestpractice.components.call.CallMainLayout
+    android:id="@+id/layout_main"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/gray_555"
-    android:visibility="gone">
-
-    <com.zegocloud.demo.bestpractice.components.ZEGOAudioVideoView
-      android:id="@+id/other_video_view"
-      android:layout_width="match_parent"
-      android:layout_height="match_parent" />
-  </FrameLayout>
-
-  <com.google.android.material.card.MaterialCardView
-    android:layout_width="96dp"
-    android:layout_height="128dp"
-    android:layout_marginStart="12dp"
-    android:layout_marginTop="48dp"
-    android:layout_marginEnd="12dp"
-    android:layout_marginBottom="72dp"
-    android:visibility="gone"
-    app:cardBackgroundColor="@color/gray_444"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintTop_toTopOf="parent">
-
-    <com.zegocloud.demo.bestpractice.components.ZEGOAudioVideoView
-      android:id="@+id/self_video_view"
-      android:layout_width="match_parent"
-      android:layout_height="match_parent" />
-  </com.google.android.material.card.MaterialCardView>
-
-  <com.zegocloud.demo.bestpractice.internal.sdk.components.express.SwitchCameraButton
-    android:id="@+id/call_camera_switch_btn"
-    android:layout_width="48dp"
-    android:layout_height="48dp"
-    android:layout_marginStart="16dp"
-    android:layout_marginBottom="36dp"
-    android:src="@drawable/call_icon_camera_flip"
-    app:layout_constraintBottom_toBottomOf="parent"
-    app:layout_constraintEnd_toStartOf="@+id/call_camera_btn"
-    app:layout_constraintHorizontal_bias="0.5"
-    app:layout_constraintHorizontal_chainStyle="spread_inside"
-    app:layout_constraintStart_toStartOf="parent" />
+    android:layout_height="match_parent" />
 
   <com.zegocloud.demo.bestpractice.internal.sdk.components.express.ToggleCameraButton
     android:id="@+id/call_camera_btn"
@@ -55,9 +17,22 @@
     android:layout_marginBottom="36dp"
     android:background="@drawable/call_icon_camera_on"
     app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintEnd_toStartOf="@+id/call_mic_btn"
+    app:layout_constraintHorizontal_bias="0.5"
+    app:layout_constraintHorizontal_chainStyle="spread"
+    app:layout_constraintStart_toStartOf="parent" />
+
+  <com.zegocloud.demo.bestpractice.internal.sdk.components.express.ToggleMicrophoneButton
+    android:id="@+id/call_mic_btn"
+    android:layout_width="48dp"
+    android:layout_height="48dp"
+    android:layout_marginBottom="36dp"
+    android:background="@drawable/call_icon_mic_on"
+    app:layout_constraintBottom_toBottomOf="parent"
     app:layout_constraintEnd_toStartOf="@+id/call_hangup_btn"
     app:layout_constraintHorizontal_bias="0.5"
-    app:layout_constraintStart_toEndOf="@+id/call_camera_switch_btn" />
+    app:layout_constraintStart_toEndOf="@+id/call_camera_btn" />
+
 
   <ImageView
     android:id="@+id/call_hangup_btn"
@@ -66,16 +41,17 @@
     android:layout_marginBottom="36dp"
     android:background="@drawable/call_icon_hangup"
     app:layout_constraintBottom_toBottomOf="parent"
-    app:layout_constraintEnd_toStartOf="@+id/call_mic_btn"
+    app:layout_constraintEnd_toStartOf="@+id/call_camera_switch_btn"
     app:layout_constraintHorizontal_bias="0.5"
-    app:layout_constraintStart_toEndOf="@+id/call_camera_btn" />
+    app:layout_constraintStart_toEndOf="@+id/call_mic_btn" />
 
-  <com.zegocloud.demo.bestpractice.internal.sdk.components.express.ToggleMicrophoneButton
-    android:id="@+id/call_mic_btn"
+
+  <com.zegocloud.demo.bestpractice.internal.sdk.components.express.SwitchCameraButton
+    android:id="@+id/call_camera_switch_btn"
     android:layout_width="48dp"
     android:layout_height="48dp"
     android:layout_marginBottom="36dp"
-    android:background="@drawable/call_icon_mic_on"
+    android:src="@drawable/call_icon_camera_flip"
     app:layout_constraintBottom_toBottomOf="parent"
     app:layout_constraintEnd_toStartOf="@+id/call_speaker_btn"
     app:layout_constraintHorizontal_bias="0.5"
@@ -91,6 +67,6 @@
     app:layout_constraintBottom_toBottomOf="parent"
     app:layout_constraintEnd_toEndOf="parent"
     app:layout_constraintHorizontal_bias="0.5"
-    app:layout_constraintStart_toEndOf="@+id/call_mic_btn" />
+    app:layout_constraintStart_toEndOf="@+id/call_camera_switch_btn" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

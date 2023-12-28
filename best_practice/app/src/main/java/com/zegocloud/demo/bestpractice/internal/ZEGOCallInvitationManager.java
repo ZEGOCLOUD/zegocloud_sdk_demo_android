@@ -2,6 +2,7 @@ package com.zegocloud.demo.bestpractice.internal;
 
 
 import android.text.TextUtils;
+import android.util.Log;
 import com.zegocloud.demo.bestpractice.internal.business.UserRequestCallback;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallChangedListener;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallExtendedData;
@@ -9,9 +10,13 @@ import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteInfo;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteUser;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
+import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
 import com.zegocloud.demo.bestpractice.internal.sdk.zim.IZIMEventHandler;
+import im.zego.zegoexpress.callback.IZegoRoomLoginCallback;
+import im.zego.zegoexpress.constants.ZegoScenario;
 import im.zego.zim.callback.ZIMCallAcceptanceSentCallback;
 import im.zego.zim.callback.ZIMCallCancelSentCallback;
+import im.zego.zim.callback.ZIMCallEndSentCallback;
 import im.zego.zim.callback.ZIMCallInvitationSentCallback;
 import im.zego.zim.callback.ZIMCallRejectionSentCallback;
 import im.zego.zim.callback.ZIMCallingInvitationSentCallback;
@@ -19,6 +24,7 @@ import im.zego.zim.callback.ZIMUsersInfoQueriedCallback;
 import im.zego.zim.entity.ZIMCallAcceptConfig;
 import im.zego.zim.entity.ZIMCallCancelConfig;
 import im.zego.zim.entity.ZIMCallEndConfig;
+import im.zego.zim.entity.ZIMCallEndedSentInfo;
 import im.zego.zim.entity.ZIMCallInvitationCancelledInfo;
 import im.zego.zim.entity.ZIMCallInvitationEndedInfo;
 import im.zego.zim.entity.ZIMCallInvitationReceivedInfo;
@@ -38,6 +44,8 @@ import im.zego.zim.enums.ZIMCallInvitationMode;
 import im.zego.zim.enums.ZIMCallUserState;
 import im.zego.zim.enums.ZIMErrorCode;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -63,6 +71,9 @@ public class ZEGOCallInvitationManager {
     private IZIMEventHandler zimEventHandler;
     private CallInviteInfo callInviteInfo;
     private CopyOnWriteArrayList<CallChangedListener> callListeners = new CopyOnWriteArrayList<>();
+    private CopyOnWriteArrayList<CallChangedListener> autoRemoveCallListeners = new CopyOnWriteArrayList<>();
+    private IExpressEngineEventHandler expressEventHandler;
+    private Comparator<CallInviteUser> callInviteUserComparator;
 
     public void init() {
         zimEventHandler = new IZIMEventHandler() {
@@ -92,6 +103,10 @@ public class ZEGOCallInvitationManager {
                                         for (CallChangedListener listener : callListeners) {
                                             listener.onBusyRejectCall(requestID);
                                         }
+                                        for (CallChangedListener listener : autoRemoveCallListeners) {
+                                            listener.onBusyRejectCall(requestID);
+                                        }
+
                                     }
 
                                 }
@@ -102,21 +117,22 @@ public class ZEGOCallInvitationManager {
                         callInviteInfo = new CallInviteInfo();
                         callInviteInfo.requestID = requestID;
                         callInviteInfo.inviter = info.inviter;
+                        callInviteInfo.firstInviter = info.inviter;
                         callInviteInfo.userList = new ArrayList<>();
                         callInviteInfo.type = originalExtendedData.type;
                         callInviteInfo.isOutgoingCall = false;
                         List<String> userIDList = new ArrayList<>();
-                        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+
                         for (ZIMCallUserInfo zimCallUserInfo : info.callUserList) {
                             CallInviteUser callInviteUser = new CallInviteUser(zimCallUserInfo.userID,
                                 zimCallUserInfo.state, zimCallUserInfo.extendedData);
 
-                            if (Objects.equals(currentUser.userID, zimCallUserInfo.userID)) {
-                                callInviteInfo.userList.add(0, callInviteUser);
-                            } else {
-                                callInviteInfo.userList.add(callInviteUser);
-                            }
+                            callInviteInfo.userList.add(callInviteUser);
                             userIDList.add(zimCallUserInfo.userID);
+                        }
+
+                        if (callInviteUserComparator != null) {
+                            Collections.sort(callInviteInfo.userList, callInviteUserComparator);
                         }
                         Timber.d("callInviteInfo.userList: " + callInviteInfo.userList);
 
@@ -126,7 +142,10 @@ public class ZEGOCallInvitationManager {
                                 public void onUsersInfoQueried(ArrayList<ZIMUserFullInfo> userList,
                                     ArrayList<ZIMErrorUserInfo> errorUserList, ZIMError errorInfo) {
                                     for (CallChangedListener listener : callListeners) {
-                                        listener.onReceiveNewCall(requestID);
+                                        listener.onReceiveNewCall(requestID, callInviteInfo.userList);
+                                    }
+                                    for (CallChangedListener listener : autoRemoveCallListeners) {
+                                        listener.onReceiveNewCall(requestID, callInviteInfo.userList);
                                     }
                                 }
                             });
@@ -159,49 +178,58 @@ public class ZEGOCallInvitationManager {
                             }
                         }
                         if (!ifAlreadyAdded) {
-                            if (Objects.equals(changedUser.getUserID(), currentUser.userID)) {
-                                callInviteInfo.userList.add(0, changedUser);
-                            } else {
-                                callInviteInfo.userList.add(changedUser);
-                            }
+                            callInviteInfo.userList.add(changedUser);
                         }
+                    }
+                    if (callInviteUserComparator != null) {
+                        Collections.sort(callInviteInfo.userList, callInviteUserComparator);
                     }
 
                     for (CallInviteUser stateChangedUser : stateChangedUsers) {
                         if (stateChangedUser.getCallUserState() == ZIMCallUserState.ACCEPTED) {
-                            if (Objects.equals(currentUser.userID, stateChangedUser.getUserID())) {
-                                break;
-                            }
                             for (CallChangedListener listener : callListeners) {
                                 listener.onInvitedUserAccepted(requestID, stateChangedUser);
                             }
-                        } else if (stateChangedUser.getCallUserState() == ZIMCallUserState.RECEIVED) {
-                            if (Objects.equals(currentUser.userID, stateChangedUser.getUserID())) {
-                                break;
+                            for (CallChangedListener listener : autoRemoveCallListeners) {
+                                listener.onInvitedUserAccepted(requestID, stateChangedUser);
                             }
-                            for (CallChangedListener listener : callListeners) {
-                                listener.onInviteNewUser(requestID, stateChangedUser);
-                            }
-                        } else if (stateChangedUser.getCallUserState() == ZIMCallUserState.REJECTED) {
+                        }
+                        //                        else if (stateChangedUser.getCallUserState() == ZIMCallUserState.INVITING) {
+                        //                            for (CallChangedListener listener : callListeners) {
+                        //                                listener.onInviteNewUser(requestID, stateChangedUser);
+                        //                            }
+                        //                            for (CallChangedListener listener : autoRemoveCallListeners) {
+                        //                                listener.onInviteNewUser(requestID, stateChangedUser);
+                        //                            }
+                        //                        }
+                        else if (stateChangedUser.getCallUserState() == ZIMCallUserState.REJECTED) {
                             for (CallChangedListener listener : callListeners) {
                                 listener.onInvitedUserRejected(requestID, stateChangedUser);
                             }
-                            if (checkIfSelfAccepted()) {
-                                checkIfCallEnded();
+                            for (CallChangedListener listener : autoRemoveCallListeners) {
+                                listener.onInvitedUserRejected(requestID, stateChangedUser);
                             }
+                            checkIfCallEnded();
                         } else if (stateChangedUser.getCallUserState() == ZIMCallUserState.TIMEOUT) {
                             for (CallChangedListener listener : callListeners) {
                                 listener.onInvitedUserTimeout(requestID, stateChangedUser);
                             }
-                            if (checkIfSelfAccepted()) {
-                                checkIfCallEnded();
+                            for (CallChangedListener listener : autoRemoveCallListeners) {
+                                listener.onInvitedUserTimeout(requestID, stateChangedUser);
                             }
+                            checkIfCallEnded();
                         } else if (stateChangedUser.getCallUserState() == ZIMCallUserState.QUITED) {
                             for (CallChangedListener listener : callListeners) {
                                 listener.onInvitedUserQuit(requestID, stateChangedUser);
                             }
-                            if (checkIfSelfAccepted()) {
-                                checkIfCallEnded();
+                            for (CallChangedListener listener : autoRemoveCallListeners) {
+                                listener.onInvitedUserQuit(requestID, stateChangedUser);
+                            }
+                            CallInviteUser selfInviteInfo = getSelfInviteInfo();
+                            if (selfInviteInfo != null) {
+                                if (selfInviteInfo.isAccepted() || selfInviteInfo.isWaiting()) {
+                                    checkIfCallEnded();
+                                }
                             }
                         }
                     }
@@ -216,7 +244,10 @@ public class ZEGOCallInvitationManager {
                     for (CallChangedListener listener : callListeners) {
                         listener.onCallEnded(requestID);
                     }
-                    callInviteInfo = null;
+                    for (CallChangedListener listener : autoRemoveCallListeners) {
+                        listener.onCallEnded(requestID);
+                    }
+                    removeCallData();
                 }
             }
 
@@ -226,7 +257,10 @@ public class ZEGOCallInvitationManager {
                     for (CallChangedListener listener : callListeners) {
                         listener.onCallTimeout(requestID);
                     }
-                    callInviteInfo = null;
+                    for (CallChangedListener listener : autoRemoveCallListeners) {
+                        listener.onCallTimeout(requestID);
+                    }
+                    removeCallData();
                 }
             }
 
@@ -236,7 +270,10 @@ public class ZEGOCallInvitationManager {
                     for (CallChangedListener listener : callListeners) {
                         listener.onCallCancelled(requestID);
                     }
-                    callInviteInfo = null;
+                    for (CallChangedListener listener : autoRemoveCallListeners) {
+                        listener.onCallCancelled(requestID);
+                    }
+                    removeCallData();
                 }
             }
         };
@@ -260,11 +297,30 @@ public class ZEGOCallInvitationManager {
         return accepted;
     }
 
+    private CallInviteUser getSelfInviteInfo() {
+        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+        if (currentUser == null) {
+            return null;
+        }
+        if (callInviteInfo != null && callInviteInfo.userList != null) {
+            for (CallInviteUser callInviteUser : callInviteInfo.userList) {
+                if (Objects.equals(callInviteUser.getUserID(), currentUser.userID)) {
+                    return callInviteUser;
+                }
+            }
+        }
+        return null;
+    }
+
     public CallInviteInfo getCallInviteInfo() {
         return callInviteInfo;
     }
 
     private void checkIfCallEnded() {
+        if (callInviteInfo == null) {
+            // already end
+            return;
+        }
         boolean shouldEndCall = true;
         ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
         for (CallInviteUser callInviteUser : callInviteInfo.userList) {
@@ -276,11 +332,13 @@ public class ZEGOCallInvitationManager {
             }
         }
         if (shouldEndCall) {
-            endCall();
             for (CallChangedListener listener : callListeners) {
                 listener.onCallEnded(callInviteInfo.requestID);
             }
-            removeCallData();
+            for (CallChangedListener listener : autoRemoveCallListeners) {
+                listener.onCallEnded(callInviteInfo.requestID);
+            }
+            quitCallAndLeaveRoom();
         }
     }
 
@@ -459,27 +517,63 @@ public class ZEGOCallInvitationManager {
             });
     }
 
-    public void endCall() {
-        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
-        if (callInviteInfo != null) {
-            if (Objects.equals(currentUser.userID, callInviteInfo.firstInviter)) {
-                ZEGOSDKManager.getInstance().zimService.endUserRequest(callInviteInfo.requestID, new ZIMCallEndConfig(),
-                    null);
-            } else {
-                ZEGOSDKManager.getInstance().zimService.quitUserRequest(callInviteInfo.requestID,
-                    new ZIMCallQuitConfig(), null);
-            }
+    public void endCallRequest(String requestID, UserRequestCallback callback) {
+        ZEGOSDKManager.getInstance().zimService.endUserRequest(requestID, new ZIMCallEndConfig(),
+            new ZIMCallEndSentCallback() {
+                @Override
+                public void onCallEndSent(String callID, ZIMCallEndedSentInfo info, ZIMError errorInfo) {
+                    if (errorInfo.code.value() == 0) {
+                        if (callInviteInfo != null && requestID.equals(callInviteInfo.requestID)) {
+                            callInviteInfo = null;
+                        }
+                    }
+                    if (callback != null) {
+                        callback.onUserRequestSend(errorInfo.code.value(), requestID);
+                    }
+                }
+            });
+    }
+
+    public void joinRoom(IZegoRoomLoginCallback callback) {
+        if (callInviteInfo.isVideoCall()) {
+            ZEGOSDKManager.getInstance().expressService.setRoomScenario(ZegoScenario.STANDARD_VIDEO_CALL);
+        } else {
+            ZEGOSDKManager.getInstance().expressService.setRoomScenario(ZegoScenario.STANDARD_VOICE_CALL);
         }
+        ZEGOSDKManager.getInstance().expressService.loginRoom(callInviteInfo.requestID, callback);
+    }
+
+    public void leaveRoom() {
+        autoRemoveCallListeners.clear();
         ZEGOSDKManager.getInstance().expressService.logoutRoom(null);
     }
 
+    public void quitCallAndLeaveRoom() {
+        Timber.d("quitCallAndLeaveRoom() called");
+        if (callInviteInfo != null) {
+            ZEGOSDKManager.getInstance().zimService.quitUserRequest(callInviteInfo.requestID, new ZIMCallQuitConfig(),
+                null);
+            removeCallData();
+        }
+        leaveRoom();
+    }
+
+    public void setCallInviteUserComparator(Comparator<CallInviteUser> comparator) {
+        this.callInviteUserComparator = comparator;
+        if (callInviteInfo != null && comparator != null) {
+            Collections.sort(callInviteInfo.userList, callInviteUserComparator);
+        }
+    }
+
     public void removeUserListeners() {
+        Timber.d("removeUserListeners() called");
         ZEGOSDKManager.getInstance().zimService.removeEventHandler(zimEventHandler);
         callListeners.clear();
+        autoRemoveCallListeners.clear();
     }
 
     public void removeUserData() {
-        callInviteInfo = null;
+        removeCallData();
     }
 
     public void removeCallData() {
@@ -487,10 +581,25 @@ public class ZEGOCallInvitationManager {
     }
 
     public void addCallListener(CallChangedListener listener) {
-        callListeners.add(listener);
+        addCallListener(listener, true);
+    }
+
+    /**
+     * @param listener
+     * @param autoRemove if true, the listener will be removed when leave room(End Call).
+     */
+    public void addCallListener(CallChangedListener listener, boolean autoRemove) {
+        Timber.d("addCallListener() called with: listener = [" + listener + "], autoRemove = [" + autoRemove + "]");
+        if (autoRemove) {
+            autoRemoveCallListeners.add(listener);
+        } else {
+            callListeners.add(listener);
+        }
     }
 
     public void removeCallListener(CallChangedListener listener) {
+        Timber.d("removeCallListener() called with: listener = [" + listener + "]");
         callListeners.remove(listener);
+        autoRemoveCallListeners.remove(listener);
     }
 }

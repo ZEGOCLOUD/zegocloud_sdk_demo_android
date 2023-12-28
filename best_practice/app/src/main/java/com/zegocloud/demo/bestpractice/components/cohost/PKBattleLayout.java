@@ -31,6 +31,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+/**
+ * a mix layout in the bottom ,used when audience in room to pull host videos.
+ * some cells in the top,used when
+ * 1. live host to pull other host videos.
+ * 2. host and audience to show status views or decorate views.
+ *
+ */
 public class PKBattleLayout extends FrameLayout {
 
     public PKBattleLayout(@NonNull Context context) {

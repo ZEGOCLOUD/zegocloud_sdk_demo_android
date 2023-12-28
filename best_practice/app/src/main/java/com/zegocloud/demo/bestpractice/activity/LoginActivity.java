@@ -11,6 +11,8 @@ import com.zegocloud.demo.bestpractice.ZEGOSDKKeyCenter;
 import com.zegocloud.demo.bestpractice.databinding.ActivityLoginBinding;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKCallBack;
+import im.zego.zim.callback.ZIMUserAvatarUrlUpdatedCallback;
+import im.zego.zim.entity.ZIMError;
 import java.util.Random;
 import timber.log.Timber;
 import timber.log.Timber.DebugTree;
@@ -74,7 +76,26 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void signInZEGOSDK(String userID, String userName, ZEGOSDKCallBack callback) {
-        ZEGOSDKManager.getInstance().connectUser(userID, userName, callback);
+        ZEGOSDKManager.getInstance().connectUser(userID, userName, new ZEGOSDKCallBack() {
+            @Override
+            public void onResult(int errorCode, String message) {
+                if (errorCode == 0) {
+                    String url = "https://robohash.org/" + userID + "?set=set4";
+                    ZEGOSDKManager.getInstance().zimService.updateUserAvatarUrl(url,
+                        new ZIMUserAvatarUrlUpdatedCallback() {
+                            @Override
+                            public void onUserAvatarUrlUpdated(String userAvatarUrl, ZIMError errorInfo) {
+                                Timber.d("onUserAvatarUrlUpdated() called with: userAvatarUrl = [" + userAvatarUrl
+                                    + "], errorInfo = [" + errorInfo + "]");
+                                if (callback != null) {
+                                    callback.onResult(errorCode, message);
+                                }
+                            }
+                        });
+                }
+
+            }
+        });
     }
 
 

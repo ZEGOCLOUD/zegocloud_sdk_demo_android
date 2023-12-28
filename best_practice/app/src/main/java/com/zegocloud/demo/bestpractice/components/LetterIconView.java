@@ -13,12 +13,15 @@ import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.utils.widget.ImageFilterView;
+import com.squareup.picasso.MemoryPolicy;
+import com.squareup.picasso.Picasso;
 
 public class LetterIconView extends FrameLayout {
 
     private ImageFilterView circleBackground;
     private TextView textView;
     private int circleBackgroundColor = Color.parseColor("#DBDDE3");
+    private ImageFilterView customAvatarView;
 
     public LetterIconView(@NonNull Context context) {
         super(context);
@@ -55,6 +58,10 @@ public class LetterIconView extends FrameLayout {
         LayoutParams textViewParams = new LayoutParams(-2, -2);
         textViewParams.gravity = Gravity.CENTER;
         addView(textView, textViewParams);
+
+        customAvatarView = new ImageFilterView(getContext());
+        customAvatarView.setRoundPercent(1.0f);
+        addView(customAvatarView, avatarParams);
     }
 
     public void setLetter(String letter) {
@@ -75,7 +82,7 @@ public class LetterIconView extends FrameLayout {
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
         int measuredWidth = circleBackground.getMeasuredWidth();
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_PX, measuredWidth / 2);
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_PX, measuredWidth / 2f);
     }
 
     public void setCircleBackgroundRadius(int radius) {
@@ -84,10 +91,19 @@ public class LetterIconView extends FrameLayout {
         layoutParams.height = radius * 2;
         circleBackground.setLayoutParams(layoutParams);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_PX, radius);
+        customAvatarView.setLayoutParams(layoutParams);
     }
 
     public void setCircleBackgroundColor(int color) {
         circleBackgroundColor = color;
         circleBackground.setBackgroundColor(color);
+    }
+
+    public void setIconUrl(String url) {
+        if (!TextUtils.isEmpty(url)) {
+            Picasso.get().load(url).fit().centerCrop().memoryPolicy(MemoryPolicy.NO_CACHE).into(customAvatarView);
+        } else {
+            customAvatarView.setImageDrawable(null);
+        }
     }
 }

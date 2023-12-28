@@ -15,21 +15,17 @@ import com.zegocloud.demo.bestpractice.databinding.ActivityCallWaitBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOCallInvitationManager;
 import com.zegocloud.demo.bestpractice.internal.business.UserRequestCallback;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallChangedListener;
-import com.zegocloud.demo.bestpractice.internal.business.call.CallExtendedData;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteInfo;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteUser;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
-import im.zego.zegoexpress.callback.IZegoRoomLoginCallback;
-import im.zego.zegoexpress.constants.ZegoScenario;
 import im.zego.zim.entity.ZIMUserFullInfo;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import org.json.JSONObject;
 import timber.log.Timber;
 
 public class CallWaitActivity extends AppCompatActivity {
@@ -60,7 +56,10 @@ public class CallWaitActivity extends AppCompatActivity {
             }
             ZIMUserFullInfo zimUserFullInfo = ZEGOSDKManager.getInstance().zimService.getUserInfo(
                 inviteUser.getUserID());
-            binding.waitingIcon.setLetter(zimUserFullInfo.baseInfo.userName);
+            if (zimUserFullInfo != null) {
+                binding.waitingIcon.setLetter(zimUserFullInfo.baseInfo.userName);
+                binding.waitingIcon.setIconUrl(zimUserFullInfo.userAvatarUrl);
+            }
         } else {
             binding.incomingCallAcceptButton.setVisibility(View.VISIBLE);
             binding.incomingCallRejectButton.setVisibility(View.VISIBLE);
@@ -68,7 +67,10 @@ public class CallWaitActivity extends AppCompatActivity {
 
             String inviter = callInviteInfo.inviter;
             ZIMUserFullInfo zimUserFullInfo = ZEGOSDKManager.getInstance().zimService.getUserInfo(inviter);
-            binding.waitingIcon.setLetter(zimUserFullInfo.baseInfo.userName);
+            if (zimUserFullInfo != null) {
+                binding.waitingIcon.setLetter(zimUserFullInfo.baseInfo.userName);
+                binding.waitingIcon.setIconUrl(zimUserFullInfo.userAvatarUrl);
+            }
         }
 
         List<String> permissions;
@@ -100,28 +102,9 @@ public class CallWaitActivity extends AppCompatActivity {
                     @Override
                     public void onUserRequestSend(int errorCode, String requestID) {
                         if (errorCode == 0) {
-                            if (callInviteInfo.isVideoCall()) {
-                                ZEGOSDKManager.getInstance().expressService.setRoomScenario(
-                                    ZegoScenario.STANDARD_VIDEO_CALL);
-                            } else {
-                                ZEGOSDKManager.getInstance().expressService.setRoomScenario(
-                                    ZegoScenario.STANDARD_VOICE_CALL);
-                            }
-                            ZEGOSDKManager.getInstance().expressService.loginRoom(callInviteInfo.requestID,
-                                new IZegoRoomLoginCallback() {
-                                    @Override
-                                    public void onRoomLoginResult(int errorCode, JSONObject extendedData) {
-                                        if (errorCode == 0) {
-                                            Intent intent = new Intent(CallWaitActivity.this,
-                                                CallInvitationActivity.class);
-                                            startActivity(intent);
-                                        } else {
-                                            ToastUtil.show(CallWaitActivity.this,
-                                                "joinExpressRoom failed :" + errorCode);
-                                        }
-                                        finish();
-                                    }
-                                });
+                            Intent intent = new Intent(CallWaitActivity.this, CallInvitationActivity.class);
+                            startActivity(intent);
+                            finish();
                         } else {
                             ToastUtil.show(CallWaitActivity.this, "send invite failed :" + errorCode);
                         }
@@ -143,44 +126,19 @@ public class CallWaitActivity extends AppCompatActivity {
         });
 
         binding.outgoingCallCancelButton.setOnClickListener(v -> {
-            List<String> userIDList = new ArrayList<>();
-            for (CallInviteUser callInviteUser : callInviteInfo.userList) {
-                userIDList.add(callInviteUser.getUserID());
-            }
-            ZEGOCallInvitationManager.getInstance()
-                .cancelCallRequest(callInviteInfo.requestID, userIDList, new UserRequestCallback() {
-                    @Override
-                    public void onUserRequestSend(int errorCode, String requestID) {
-                        if (errorCode != 0) {
-                            ToastUtil.show(CallWaitActivity.this, "send cancel failed :" + errorCode);
-                        }
-                        finish();
-                        ZEGOCallInvitationManager.getInstance().removeCallData();
+            ZEGOCallInvitationManager.getInstance().endCallRequest(callInviteInfo.requestID, new UserRequestCallback() {
+                @Override
+                public void onUserRequestSend(int errorCode, String requestID) {
+                    if (errorCode != 0) {
+                        ToastUtil.show(CallWaitActivity.this, "end call failed :" + errorCode);
                     }
-                });
+                    finish();
+                    ZEGOCallInvitationManager.getInstance().removeCallData();
+                }
+            });
         });
 
         listener = new CallChangedListener() {
-            @Override
-            public void onReceiveNewCall(String requestID) {
-
-            }
-
-            @Override
-            public void onInviteNewUser(String requestID, CallInviteUser inviteUser) {
-
-            }
-
-            @Override
-            public void onBusyRejectCall(String requestID) {
-
-            }
-
-            @Override
-            public void onInvitedUserRejected(String requestID, CallInviteUser rejectUser) {
-
-            }
-
             @Override
             public void onCallEnded(String requestID) {
                 if (requestID.equals(callInviteInfo.requestID)) {
@@ -203,36 +161,15 @@ public class CallWaitActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onInvitedUserTimeout(String requestID, CallInviteUser timeoutUser) {
-
-            }
-
-            @Override
-            public void onInvitedUserQuit(String requestID, CallInviteUser quitUser) {
-
-            }
-
-            @Override
             public void onInvitedUserAccepted(String requestID, CallInviteUser acceptUser) {
+                ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+                if (Objects.equals(acceptUser.getUserID(), currentUser.userID)) {
+                    return;
+                }
                 if (requestID.equals(callInviteInfo.requestID)) {
-                    if (callInviteInfo.isVideoCall()) {
-                        ZEGOSDKManager.getInstance().expressService.setRoomScenario(ZegoScenario.STANDARD_VIDEO_CALL);
-                    } else {
-                        ZEGOSDKManager.getInstance().expressService.setRoomScenario(ZegoScenario.STANDARD_VOICE_CALL);
-                    }
-                    ZEGOSDKManager.getInstance().expressService.loginRoom(callInviteInfo.requestID,
-                        new IZegoRoomLoginCallback() {
-                            @Override
-                            public void onRoomLoginResult(int errorCode, JSONObject extendedData) {
-                                if (errorCode == 0) {
-                                    Intent intent = new Intent(CallWaitActivity.this, CallInvitationActivity.class);
-                                    startActivity(intent);
-                                } else {
-                                    ToastUtil.show(CallWaitActivity.this, "Join Room failed,errorCode:" + errorCode);
-                                }
-                                finish();
-                            }
-                        });
+                    Intent intent = new Intent(CallWaitActivity.this, CallInvitationActivity.class);
+                    startActivity(intent);
+                    finish();
                 }
             }
         };

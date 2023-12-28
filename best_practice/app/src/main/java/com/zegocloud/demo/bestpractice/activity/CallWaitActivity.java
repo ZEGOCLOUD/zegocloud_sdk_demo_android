@@ -42,7 +42,6 @@ public class CallWaitActivity extends AppCompatActivity {
 
         getSupportActionBar().setTitle("CallWaitActivity");
         callInviteInfo = ZEGOCallInvitationManager.getInstance().getCallInviteInfo();
-        Timber.d("onCreate: " + callInviteInfo);
 
         if (callInviteInfo.isOutgoingCall) {
             binding.incomingCallAcceptButton.setVisibility(View.GONE);

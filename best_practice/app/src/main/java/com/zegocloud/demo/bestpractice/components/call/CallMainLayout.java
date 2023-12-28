@@ -84,7 +84,6 @@ public class CallMainLayout extends ConstraintLayout {
     }
 
     private void initSDKEvents() {
-        Timber.d("initSDKEvents() called");
         callChangedListener = new CallChangedListener() {
 
             @Override
@@ -259,9 +258,9 @@ public class CallMainLayout extends ConstraintLayout {
                         audioVideoView.setUserID("");
                         audioVideoView.setStreamID("");
                         ViewGroup parent = (ViewGroup) audioVideoView.getParent();
-                        if (parent != null) {
-                            if (parent instanceof CallCellView) {
-                                ViewGroup grandParent = (ViewGroup) parent.getParent();
+                        if (parent instanceof CallCellView) {
+                            ViewGroup grandParent = (ViewGroup) parent.getParent();
+                            if (grandParent != null) {
                                 grandParent.removeView(parent);
                             }
                         }
@@ -434,8 +433,6 @@ public class CallMainLayout extends ConstraintLayout {
     }
 
     public void onPermissionAnswered(boolean allGranted, List<String> grantedList, List<String> deniedList) {
-        Timber.d("onPermissionAnswered() called with: allGranted = [" + allGranted + "], grantedList = [" + grantedList
-            + "], deniedList = [" + deniedList + "]");
         CallInviteInfo callInviteInfo = ZEGOCallInvitationManager.getInstance().getCallInviteInfo();
 
         CallInviteUser inviteUser = callInviteInfo.userList.get(0);

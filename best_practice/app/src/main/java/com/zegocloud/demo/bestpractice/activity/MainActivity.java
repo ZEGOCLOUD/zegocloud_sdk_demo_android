@@ -11,16 +11,11 @@ import androidx.core.content.ContextCompat;
 import com.permissionx.guolindev.PermissionX;
 import com.permissionx.guolindev.callback.RequestCallback;
 import com.zegocloud.demo.bestpractice.R;
-import com.zegocloud.demo.bestpractice.components.call.CallBackgroundService;
 import com.zegocloud.demo.bestpractice.databinding.ActivityMainBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOCallInvitationManager;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
-import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteInfo;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
-import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
-import im.zego.zegoexpress.callback.IZegoRoomLoginCallback;
-import im.zego.zegoexpress.constants.ZegoScenario;
 import im.zego.zim.callback.ZIMCallInvitationSentCallback;
 import im.zego.zim.entity.ZIMCallInvitationSentInfo;
 import im.zego.zim.entity.ZIMError;
@@ -28,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -124,7 +118,8 @@ public class MainActivity extends AppCompatActivity {
                     @NonNull List<String> deniedList) {
                     if (allGranted) {
                         String[] split = targetUserID.split(",");
-                        ZEGOCallInvitationManager.getInstance().sendVideoCall(Arrays.asList(split), new ZIMCallInvitationSentCallback() {
+                        ZEGOCallInvitationManager.getInstance()
+                            .sendVideoCall(Arrays.asList(split), new ZIMCallInvitationSentCallback() {
                                 @Override
                                 public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info,
                                     ZIMError errorInfo) {
@@ -156,14 +151,19 @@ public class MainActivity extends AppCompatActivity {
                 public void onResult(boolean allGranted, @NonNull List<String> grantedList,
                     @NonNull List<String> deniedList) {
                     if (allGranted) {
-                        ZEGOCallInvitationManager.getInstance().sendVoiceCall(Collections.singletonList(targetUserID),
-                            new ZIMCallInvitationSentCallback() {
+                        String[] split = targetUserID.split(",");
+                        ZEGOCallInvitationManager.getInstance().sendVoiceCall(Arrays.asList(split), new ZIMCallInvitationSentCallback() {
                                 @Override
                                 public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info,
                                     ZIMError errorInfo) {
                                     if (errorInfo.code.value() == 0) {
-                                        Intent intent = new Intent(MainActivity.this, CallWaitActivity.class);
-                                        startActivity(intent);
+                                        if (split.length > 1) {
+                                            Intent intent = new Intent(MainActivity.this, CallInvitationActivity.class);
+                                            startActivity(intent);
+                                        } else {
+                                            Intent intent = new Intent(MainActivity.this, CallWaitActivity.class);
+                                            startActivity(intent);
+                                        }
                                     }
                                 }
                             });
@@ -175,9 +175,7 @@ public class MainActivity extends AppCompatActivity {
         // if LiveStreaming,init after user login,can receive pk request.
         ZEGOLiveStreamingManager.getInstance().init();
         // if Call invitation,init after user login,can receive call request.
-        ZEGOCallInvitationManager.getInstance().init();
-        Intent intent = new Intent(this, CallBackgroundService.class);
-        startService(intent);
+        ZEGOCallInvitationManager.getInstance().init(this);
     }
 
     protected void onPause() {
@@ -188,8 +186,6 @@ public class MainActivity extends AppCompatActivity {
             ZEGOLiveStreamingManager.getInstance().removeUserListeners();
             ZEGOCallInvitationManager.getInstance().removeUserData();
             ZEGOCallInvitationManager.getInstance().removeUserListeners();
-            Intent intent = new Intent(this, CallBackgroundService.class);
-            stopService(intent);
         }
     }
 

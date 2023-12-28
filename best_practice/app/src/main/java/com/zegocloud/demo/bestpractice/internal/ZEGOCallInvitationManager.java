@@ -1,8 +1,11 @@
 package com.zegocloud.demo.bestpractice.internal;
 
 
+import android.content.Context;
+import android.content.Intent;
 import android.text.TextUtils;
-import android.util.Log;
+import com.zegocloud.demo.bestpractice.activity.MainActivity;
+import com.zegocloud.demo.bestpractice.components.call.IncomingCallDialog;
 import com.zegocloud.demo.bestpractice.internal.business.UserRequestCallback;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallChangedListener;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallExtendedData;
@@ -74,8 +77,10 @@ public class ZEGOCallInvitationManager {
     private CopyOnWriteArrayList<CallChangedListener> autoRemoveCallListeners = new CopyOnWriteArrayList<>();
     private IExpressEngineEventHandler expressEventHandler;
     private Comparator<CallInviteUser> callInviteUserComparator;
+    private Context applicationContext;
 
-    public void init() {
+    public void init(Context context) {
+        applicationContext = context.getApplicationContext();
         zimEventHandler = new IZIMEventHandler() {
             @Override
             public void onInComingUserRequestReceived(String requestID, ZIMCallInvitationReceivedInfo info) {
@@ -141,6 +146,11 @@ public class ZEGOCallInvitationManager {
                                 @Override
                                 public void onUsersInfoQueried(ArrayList<ZIMUserFullInfo> userList,
                                     ArrayList<ZIMErrorUserInfo> errorUserList, ZIMError errorInfo) {
+
+                                    Intent intent = new Intent(applicationContext, IncomingCallDialog.class);
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    applicationContext.startActivity(intent);
+
                                     for (CallChangedListener listener : callListeners) {
                                         listener.onReceiveNewCall(requestID, callInviteInfo.userList);
                                     }

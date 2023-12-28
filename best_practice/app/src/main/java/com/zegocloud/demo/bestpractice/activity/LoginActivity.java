@@ -85,8 +85,6 @@ public class LoginActivity extends AppCompatActivity {
                         new ZIMUserAvatarUrlUpdatedCallback() {
                             @Override
                             public void onUserAvatarUrlUpdated(String userAvatarUrl, ZIMError errorInfo) {
-                                Timber.d("onUserAvatarUrlUpdated() called with: userAvatarUrl = [" + userAvatarUrl
-                                    + "], errorInfo = [" + errorInfo + "]");
                                 if (callback != null) {
                                     callback.onResult(errorCode, message);
                                 }
@@ -97,7 +95,6 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
     }
-
 
     private static String generateUserID() {
         StringBuilder builder = new StringBuilder();

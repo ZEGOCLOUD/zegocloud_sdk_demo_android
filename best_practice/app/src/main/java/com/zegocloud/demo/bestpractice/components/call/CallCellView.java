@@ -46,7 +46,7 @@ public class CallCellView extends FrameLayout {
     }
 
     private void initView() {
-        setBackgroundColor(ContextCompat.getColor(getContext(), R.color.gray_555));
+        setBackgroundResource(R.drawable.bg_gray_rect_stroke);
         audioVideoView = new ZEGOAudioVideoView(getContext());
         addView(audioVideoView);
         textView = new TextView(getContext());

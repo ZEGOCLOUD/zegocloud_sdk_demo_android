@@ -81,8 +81,7 @@ public class IncomingCallDialog extends AppCompatActivity {
         }
 
         binding.dialogCallAccept.setOnClickListener(v -> {
-            ZEGOCallInvitationManager.getInstance()
-                .acceptCallRequest(callInviteInfo.requestID, new UserRequestCallback() {
+            ZEGOCallInvitationManager.getInstance().acceptCallRequest(callInviteInfo.requestID, new UserRequestCallback() {
                     @Override
                     public void onUserRequestSend(int errorCode, String requestID) {
                         if (errorCode == 0) {

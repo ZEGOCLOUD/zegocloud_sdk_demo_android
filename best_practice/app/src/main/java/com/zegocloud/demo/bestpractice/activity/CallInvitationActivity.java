@@ -4,6 +4,8 @@ import android.Manifest.permission;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,6 +14,7 @@ import androidx.fragment.app.FragmentActivity;
 import com.permissionx.guolindev.PermissionX;
 import com.permissionx.guolindev.callback.RequestCallback;
 import com.zegocloud.demo.bestpractice.R;
+import com.zegocloud.demo.bestpractice.components.call.CallInviteDialog;
 import com.zegocloud.demo.bestpractice.databinding.ActivityCallInvitationBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOCallInvitationManager;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallChangedListener;
@@ -39,6 +42,7 @@ public class CallInvitationActivity extends AppCompatActivity {
         binding = ActivityCallInvitationBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        setSupportActionBar(binding.toolbar);
         getSupportActionBar().setTitle("CallInvitationActivity");
 
         ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
@@ -66,6 +70,26 @@ public class CallInvitationActivity extends AppCompatActivity {
             }
         });
         listenSDKEvent();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuItem add_new_user = menu.add("");
+        add_new_user.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+        add_new_user.setIcon(R.drawable.baseline_add_24);
+        //        TextView textView = new TextView(this);
+        //        textView.setText(R.string.add_new_user);
+        //        textView.setTextColor(Color.WHITE);
+        //        add_new_user.setActionView(textView);
+
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        CallInviteDialog callInviteDialog = new CallInviteDialog(this);
+        callInviteDialog.show();
+        return super.onOptionsItemSelected(item);
     }
 
     private void onRoomJoinSuccess() {

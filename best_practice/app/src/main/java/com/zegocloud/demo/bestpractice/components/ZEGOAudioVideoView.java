@@ -3,7 +3,6 @@ package com.zegocloud.demo.bestpractice.components;
 import android.content.Context;
 import android.text.TextUtils;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.TextureView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -79,6 +78,7 @@ public class ZEGOAudioVideoView extends ConstraintLayout {
         }
         ZIMUserFullInfo userInfo = ZEGOSDKManager.getInstance().zimService.getUserInfo(userID);
         if (userInfo != null) {
+            Timber.d("setUserID() called with: userInfo.userAvatarUrl = [" + userInfo.userAvatarUrl + "]");
             letterIconView.setIconUrl(userInfo.userAvatarUrl);
         } else {
             letterIconView.setIconUrl(null);
@@ -94,10 +94,10 @@ public class ZEGOAudioVideoView extends ConstraintLayout {
     }
 
     public void startPlayRemoteAudioVideo() {
+        Timber.d("startPlayRemoteAudioVideo() called,%s,%s,%s", userID, streamID, this);
         if (TextUtils.isEmpty(streamID)) {
             return;
         }
-        Timber.d("startPlayRemoteAudioVideo() called,%s,%s,%s",userID,streamID,this);
         ZEGOSDKManager.getInstance().expressService.startPlayingStream(textureView, streamID, ZegoViewMode.ASPECT_FILL);
     }
 

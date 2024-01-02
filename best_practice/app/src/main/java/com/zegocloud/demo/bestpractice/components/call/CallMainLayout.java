@@ -3,6 +3,7 @@ package com.zegocloud.demo.bestpractice.components.call;
 import android.content.Context;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -115,7 +116,9 @@ public class CallMainLayout extends ConstraintLayout {
 
             @Override
             public void onInvitedUserAccepted(String requestID, CallInviteUser acceptUser) {
+                updateLayoutVisibility();
 
+                updateCellViewParams();
             }
 
             @Override
@@ -138,6 +141,12 @@ public class CallMainLayout extends ConstraintLayout {
 
             @Override
             public void onCallTimeout(String requestID) {
+                updateLayoutVisibility();
+                updateCellViewParams();
+            }
+
+            @Override
+            public void onInviteNewUser(String requestID, CallInviteUser inviteUser) {
                 updateLayoutVisibility();
                 updateCellViewParams();
             }
@@ -196,6 +205,7 @@ public class CallMainLayout extends ConstraintLayout {
             @Override
             public void onCameraOpen(String userID, boolean open) {
                 super.onCameraOpen(userID, open);
+                Timber.d("onCameraOpen() called with: userID = [" + userID + "], open = [" + open + "]");
                 ZEGOAudioVideoView audioVideoView = getAudioVideoViewByUserID(userID);
                 if (audioVideoView == null) {
                     if (!isDisplayPip()) {
@@ -219,7 +229,7 @@ public class CallMainLayout extends ConstraintLayout {
                         if (ZEGOSDKManager.getInstance().expressService.isCurrentUser(userID)) {
                             audioVideoView.stopPreview();
                         } else {
-                            audioVideoView.stopPlayRemoteAudioVideo();
+                            //                            audioVideoView.stopPlayRemoteAudioVideo();
                         }
                         audioVideoView.showAudioView();
                     }
@@ -291,6 +301,7 @@ public class CallMainLayout extends ConstraintLayout {
 
             for (int i = 0; i < notFinishedUsers.size(); i++) {
                 CallInviteUser callInviteUser = notFinishedUsers.get(i);
+                callCellViews[i].dismissLoading();
                 callCellViews[i].setCallUser(callInviteUser);
                 if (!ZEGOSDKManager.getInstance().expressService.isCurrentUser(callInviteUser.getUserID())) {
                     if (callInviteUser.isWaiting()) {
@@ -361,7 +372,7 @@ public class CallMainLayout extends ConstraintLayout {
                                 binding.otherVideoView.showVideoView();
                             } else {
                                 binding.otherVideoView.showAudioView();
-                                binding.otherVideoView.stopPlayRemoteAudioVideo();
+                                //                                binding.otherVideoView.stopPlayRemoteAudioVideo();
                             }
                         }
                     } else {
@@ -381,6 +392,9 @@ public class CallMainLayout extends ConstraintLayout {
         }
     }
 
+    /**
+     * less than two person,use pip more,use flexLayout.
+     */
     private void updateLayoutVisibility() {
         CallInviteInfo callInviteInfo = ZEGOCallInvitationManager.getInstance().getCallInviteInfo();
         if (callInviteInfo == null) {

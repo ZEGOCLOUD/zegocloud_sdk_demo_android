@@ -5,21 +5,24 @@ import android.graphics.Color;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import com.github.ybq.android.spinkit.sprite.Sprite;
 import com.github.ybq.android.spinkit.style.ThreeBounce;
 import com.zegocloud.demo.bestpractice.R;
 import com.zegocloud.demo.bestpractice.components.ZEGOAudioVideoView;
+import com.zegocloud.demo.bestpractice.internal.ZEGOCallInvitationManager;
+import com.zegocloud.demo.bestpractice.internal.business.call.CallChangedListener;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteUser;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import im.zego.zim.entity.ZIMUserFullInfo;
+import java.util.ArrayList;
 import java.util.Objects;
 import timber.log.Timber;
 
@@ -68,11 +71,27 @@ public class CallCellView extends FrameLayout {
         addView(progressBarParent);
 
         dismissLoading();
+
+        ZEGOCallInvitationManager.getInstance().addCallListener(new CallChangedListener() {
+            @Override
+            public void onCallUserInfoUpdate(ArrayList<ZIMUserFullInfo> userList) {
+                if(callInviteUser != null){
+                    for (ZIMUserFullInfo userFullInfo : userList) {
+                        if (Objects.equals(userFullInfo.baseInfo.userID, callInviteUser.getUserID())) {
+                            audioVideoView.setUserID(callInviteUser.getUserID());
+                            ZIMUserFullInfo zimUserInfo = ZEGOSDKManager.getInstance().zimService.getUserInfo(callInviteUser.getUserID());
+                            if (zimUserInfo != null) {
+                                textView.setText(zimUserInfo.baseInfo.userName);
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 
+
     public void setCallUser(CallInviteUser callInviteUser) {
-        Timber.d("setCallUser() called with: callInviteUser = [" + callInviteUser + "]");
-        dismissLoading();
         this.callInviteUser = callInviteUser;
         audioVideoView.setUserID(callInviteUser.getUserID());
         ZIMUserFullInfo zimUserInfo = ZEGOSDKManager.getInstance().zimService.getUserInfo(callInviteUser.getUserID());
@@ -81,6 +100,8 @@ public class CallCellView extends FrameLayout {
         }
         ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
         ZEGOSDKUser zegosdkUser = ZEGOSDKManager.getInstance().expressService.getUser(callInviteUser.getUserID());
+        Timber.d("setCallUser() called with: callInviteUser = [" + callInviteUser + "],zegosdkUser:" + zegosdkUser);
+
         if (Objects.equals(currentUser.userID, callInviteUser.getUserID())) {
             if (currentUser.isCameraOpen()) {
                 audioVideoView.startPreviewOnly();
@@ -96,7 +117,7 @@ public class CallCellView extends FrameLayout {
                     audioVideoView.startPlayRemoteAudioVideo();
                     audioVideoView.showVideoView();
                 } else {
-                    audioVideoView.stopPlayRemoteAudioVideo();
+                    //                    audioVideoView.stopPlayRemoteAudioVideo();
                     audioVideoView.showAudioView();
                 }
             }

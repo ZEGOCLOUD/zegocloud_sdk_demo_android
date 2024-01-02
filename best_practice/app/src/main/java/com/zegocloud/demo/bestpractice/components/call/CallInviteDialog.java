@@ -1,4 +1,4 @@
-package com.zegocloud.demo.bestpractice.components.cohost;
+package com.zegocloud.demo.bestpractice.components.call;
 
 import android.app.Dialog;
 import android.content.Context;
@@ -8,31 +8,36 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.Gravity;
+import android.view.View;
 import android.view.Window;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.zegocloud.demo.bestpractice.databinding.DialogInviteBinding;
-import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
-import com.zegocloud.demo.bestpractice.internal.business.UserRequestCallback;
+import com.zegocloud.demo.bestpractice.internal.ZEGOCallInvitationManager;
+import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteInfo;
 import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
+import im.zego.zim.callback.ZIMCallInvitationSentCallback;
+import im.zego.zim.entity.ZIMCallInvitationSentInfo;
+import im.zego.zim.entity.ZIMError;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PKInviteDialog extends Dialog {
+public class CallInviteDialog extends Dialog {
 
     private DialogInviteBinding binding;
 
-    public PKInviteDialog(@NonNull Context context) {
+    public CallInviteDialog(@NonNull Context context) {
         super(context);
     }
 
-    public PKInviteDialog(@NonNull Context context, int themeResId) {
+    public CallInviteDialog(@NonNull Context context, int themeResId) {
         super(context, themeResId);
     }
 
-    protected PKInviteDialog(@NonNull Context context, boolean cancelable, @Nullable OnCancelListener cancelListener) {
+    protected CallInviteDialog(@NonNull Context context, boolean cancelable,
+        @Nullable OnCancelListener cancelListener) {
         super(context, cancelable, cancelListener);
     }
 
@@ -51,6 +56,9 @@ public class PKInviteDialog extends Dialog {
         registerClickListeners(binding.checkbox2, binding.edittext2);
         registerClickListeners(binding.checkbox3, binding.edittext3);
 
+        binding.quit.setVisibility(View.GONE);
+        binding.end.setVisibility(View.GONE);
+
         binding.invite.setOnClickListener(v -> {
             List<String> userIDList = new ArrayList<>();
             if (binding.checkbox1.isChecked() && !TextUtils.isEmpty(binding.edittext1.getText())) {
@@ -63,38 +71,33 @@ public class PKInviteDialog extends Dialog {
                 userIDList.add(binding.edittext3.getText().toString());
             }
             if (!userIDList.isEmpty()) {
-                ZEGOLiveStreamingManager.getInstance().invitePKBattle(userIDList, new UserRequestCallback() {
-                    @Override
-                    public void onUserRequestSend(int errorCode, String requestID) {
-                        if (errorCode != 0) {
-                            ToastUtil.show(getContext(), "send pk request, return error :" + errorCode);
-                        }
-                    }
-                });
+                CallInviteInfo callInviteInfo = ZEGOCallInvitationManager.getInstance().getCallInviteInfo();
+                if (callInviteInfo.isVideoCall()) {
+                    ZEGOCallInvitationManager.getInstance().inviteVideoCall(userIDList,
+                        new ZIMCallInvitationSentCallback() {
+                            @Override
+                            public void onCallInvitationSent(String callID, ZIMCallInvitationSentInfo info,
+                                ZIMError errorInfo) {
+                                if (errorInfo.code.value() != 0) {
+                                    ToastUtil.show(getContext(), "inviteVideoCall, return error :" + errorInfo.code.value());
+                                }
+                            }
+                        });
+                } else {
+                    ZEGOCallInvitationManager.getInstance().inviteVoiceCall(userIDList,
+                        new ZIMCallInvitationSentCallback() {
+                            @Override
+                            public void onCallInvitationSent(String callID, ZIMCallInvitationSentInfo info,
+                                ZIMError errorInfo) {
+                                if (errorInfo.code.value() != 0) {
+                                    ToastUtil.show(getContext(), "inviteVoiceCall, return error :" + errorInfo.code.value());
+                                }
+                            }
+                        });
+                }
             } else {
                 ToastUtil.show(getContext(), "please input userID to invite");
             }
-            dismiss();
-        });
-
-        binding.end.setOnClickListener(v -> {
-            //            PKBattleInfo pkBattleInfo = ZEGOLiveStreamingManager.getInstance().getPKBattleInfo();
-            //            if (pkBattleInfo != null) {
-            //                List<String> cancelUsers = new ArrayList<>();
-            //                for (PKUser pkUser : pkBattleInfo.pkUserList) {
-            //                    ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
-            //                    if (!Objects.equals(currentUser.userID, pkUser.userID)) {
-            //                        cancelUsers.add(pkUser.userID);
-            //                    }
-            //                }
-            //                ZEGOLiveStreamingManager.getInstance().cancelPKBattle(pkBattleInfo.requestID, cancelUsers);
-            //            }
-            ZEGOLiveStreamingManager.getInstance().endPKBattle();
-            dismiss();
-        });
-
-        binding.quit.setOnClickListener(v -> {
-            ZEGOLiveStreamingManager.getInstance().quitPKBattle();
             dismiss();
         });
     }

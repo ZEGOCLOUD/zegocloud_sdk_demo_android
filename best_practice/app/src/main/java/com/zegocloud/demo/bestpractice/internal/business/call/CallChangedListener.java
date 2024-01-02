@@ -1,13 +1,14 @@
 package com.zegocloud.demo.bestpractice.internal.business.call;
 
+import im.zego.zim.entity.ZIMUserFullInfo;
+import java.util.ArrayList;
 import java.util.List;
 
 public interface CallChangedListener {
 
     /**
-     *
      * @param requestID
-     * @param userList all users called in this call.
+     * @param userList  all users called in this call.
      */
     default void onReceiveNewCall(String requestID, List<CallInviteUser> userList) {
     }
@@ -15,9 +16,9 @@ public interface CallChangedListener {
     default void onBusyRejectCall(String requestID) {
     }
 
-//
-//    default void onInviteNewUser(String requestID, CallInviteUser inviteUser) {
-//    }
+
+    default void onInviteNewUser(String requestID, CallInviteUser inviteUser) {
+    }
 
 
     default void onInvitedUserRejected(String requestID, CallInviteUser rejectUser) {
@@ -43,6 +44,8 @@ public interface CallChangedListener {
     default void onCallCancelled(String requestID) {
     }
 
+    default void onCallUserInfoUpdate(ArrayList<ZIMUserFullInfo> userList) {
+    }
 
     /**
      * i received a call,and don't response util the call timeout
@@ -51,6 +54,4 @@ public interface CallChangedListener {
      */
     default void onCallTimeout(String requestID) {
     }
-
-
 }

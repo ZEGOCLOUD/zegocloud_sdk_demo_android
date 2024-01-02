@@ -119,7 +119,6 @@ public class CallWaitActivity extends AppCompatActivity {
                             ToastUtil.show(CallWaitActivity.this, "send reject failed :" + errorCode);
                         }
                         finish();
-                        ZEGOCallInvitationManager.getInstance().removeCallData();
                     }
                 });
         });
@@ -132,7 +131,7 @@ public class CallWaitActivity extends AppCompatActivity {
                         ToastUtil.show(CallWaitActivity.this, "end call failed :" + errorCode);
                     }
                     finish();
-                    ZEGOCallInvitationManager.getInstance().removeCallData();
+
                 }
             });
         });

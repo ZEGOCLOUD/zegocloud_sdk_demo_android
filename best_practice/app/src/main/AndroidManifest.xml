@@ -50,10 +50,6 @@
       android:exported="true"
       android:screenOrientation="portrait" />
 
-    <service
-      android:name=".components.call.CallBackgroundService"
-      android:enabled="true"
-      android:exported="true" />
     <activity
       android:name=".activity.CallWaitActivity"
       android:exported="false"
@@ -61,6 +57,7 @@
     <activity
       android:name=".activity.CallInvitationActivity"
       android:exported="false"
+      android:theme="@style/Theme.MaterialComponents.Light.NoActionBar"
       android:screenOrientation="portrait" />
     <activity
       android:name=".components.call.IncomingCallDialog"

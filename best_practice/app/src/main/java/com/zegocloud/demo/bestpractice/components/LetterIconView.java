@@ -101,7 +101,7 @@ public class LetterIconView extends FrameLayout {
 
     public void setIconUrl(String url) {
         if (!TextUtils.isEmpty(url)) {
-            Picasso.get().load(url).fit().centerCrop().memoryPolicy(MemoryPolicy.NO_CACHE).into(customAvatarView);
+            Picasso.get().load(url).fit().centerCrop().into(customAvatarView);
         } else {
             customAvatarView.setImageDrawable(null);
         }

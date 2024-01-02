@@ -492,6 +492,7 @@ public class ZIMService {
     }
 
     public void updateUserAvatarUrl(String url, ZIMUserAvatarUrlUpdatedCallback callback) {
+        Timber.d("updateUserAvatarUrl() called with: url = [" + url + "], callback = [" + callback + "]");
         if (zimProxy.getZIM() == null || currentUser == null) {
             return;
         }

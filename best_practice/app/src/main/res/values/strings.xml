@@ -20,5 +20,6 @@
   <string name="zego_video_call">ZEGO VIDEO CALL</string>
   <string name="zego_voice_call">ZEGO VOICE CALL</string>
   <string name="calling">Calling...</string>
+  <string name="add_new_user">Add New User</string>
 
 </resources>

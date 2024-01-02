@@ -104,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        binding.callUserId.getEditText().setText("samsung,vivo,xiaomi");
+        binding.callUserId.getEditText().setText("samsung");
         binding.callUserVideo.setOnClickListener(v -> {
             String targetUserID = binding.callUserId.getEditText().getText().toString();
             if (TextUtils.isEmpty(targetUserID)) {
@@ -118,8 +118,7 @@ public class MainActivity extends AppCompatActivity {
                     @NonNull List<String> deniedList) {
                     if (allGranted) {
                         String[] split = targetUserID.split(",");
-                        ZEGOCallInvitationManager.getInstance()
-                            .sendVideoCall(Arrays.asList(split), new ZIMCallInvitationSentCallback() {
+                        ZEGOCallInvitationManager.getInstance().inviteVideoCall(Arrays.asList(split), new ZIMCallInvitationSentCallback() {
                                 @Override
                                 public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info,
                                     ZIMError errorInfo) {
@@ -152,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
                     @NonNull List<String> deniedList) {
                     if (allGranted) {
                         String[] split = targetUserID.split(",");
-                        ZEGOCallInvitationManager.getInstance().sendVoiceCall(Arrays.asList(split), new ZIMCallInvitationSentCallback() {
+                        ZEGOCallInvitationManager.getInstance().inviteVoiceCall(Arrays.asList(split), new ZIMCallInvitationSentCallback() {
                                 @Override
                                 public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info,
                                     ZIMError errorInfo) {

@@ -4,7 +4,6 @@ package com.zegocloud.demo.bestpractice.internal;
 import android.content.Context;
 import android.content.Intent;
 import android.text.TextUtils;
-import com.zegocloud.demo.bestpractice.activity.MainActivity;
 import com.zegocloud.demo.bestpractice.components.call.IncomingCallDialog;
 import com.zegocloud.demo.bestpractice.internal.business.UserRequestCallback;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallChangedListener;
@@ -122,7 +121,7 @@ public class ZEGOCallInvitationManager {
                         callInviteInfo = new CallInviteInfo();
                         callInviteInfo.requestID = requestID;
                         callInviteInfo.inviter = info.inviter;
-                        callInviteInfo.firstInviter = info.inviter;
+                        callInviteInfo.firstInviter = info.caller;
                         callInviteInfo.userList = new ArrayList<>();
                         callInviteInfo.type = originalExtendedData.type;
                         callInviteInfo.isOutgoingCall = false;
@@ -168,8 +167,8 @@ public class ZEGOCallInvitationManager {
                 super.onUserRequestStateChanged(info, requestID);
                 Timber.d(
                     "onUserRequestStateChanged() called with: info = [" + info + "], requestID = [" + requestID + "]");
+
                 if (callInviteInfo != null && requestID.equals(callInviteInfo.requestID)) {
-                    ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
                     List<CallInviteUser> stateChangedUsers = new ArrayList<>();
                     for (ZIMCallUserInfo userInfo : info.callUserList) {
                         CallInviteUser changedUser = new CallInviteUser(userInfo.userID, userInfo.state,
@@ -195,6 +194,30 @@ public class ZEGOCallInvitationManager {
                         Collections.sort(callInviteInfo.userList, callInviteUserComparator);
                     }
 
+                    List<String> queryList = new ArrayList<>();
+                    for (ZIMCallUserInfo userInfo : info.callUserList) {
+                        ZIMUserFullInfo fullInfo = ZEGOSDKManager.getInstance().zimService.getUserInfo(userInfo.userID);
+                        if (fullInfo == null || userInfo.state == ZIMCallUserState.INVITING) {
+                            queryList.add(userInfo.userID);
+                        }
+                    }
+
+                    if (queryList.size() > 0) {
+                        ZEGOSDKManager.getInstance().zimService.queryUsersInfo(queryList,
+                            new ZIMUsersInfoQueriedCallback() {
+                                @Override
+                                public void onUsersInfoQueried(ArrayList<ZIMUserFullInfo> userList,
+                                    ArrayList<ZIMErrorUserInfo> errorUserList, ZIMError errorInfo) {
+                                    queryList.clear();
+                                    for (CallChangedListener listener : callListeners) {
+                                        listener.onCallUserInfoUpdate(userList);
+                                    }
+                                    for (CallChangedListener listener : autoRemoveCallListeners) {
+                                        listener.onCallUserInfoUpdate(userList);
+                                    }
+                                }
+                            });
+                    }
                     for (CallInviteUser stateChangedUser : stateChangedUsers) {
                         if (stateChangedUser.getCallUserState() == ZIMCallUserState.ACCEPTED) {
                             for (CallChangedListener listener : callListeners) {
@@ -203,16 +226,14 @@ public class ZEGOCallInvitationManager {
                             for (CallChangedListener listener : autoRemoveCallListeners) {
                                 listener.onInvitedUserAccepted(requestID, stateChangedUser);
                             }
-                        }
-                        //                        else if (stateChangedUser.getCallUserState() == ZIMCallUserState.INVITING) {
-                        //                            for (CallChangedListener listener : callListeners) {
-                        //                                listener.onInviteNewUser(requestID, stateChangedUser);
-                        //                            }
-                        //                            for (CallChangedListener listener : autoRemoveCallListeners) {
-                        //                                listener.onInviteNewUser(requestID, stateChangedUser);
-                        //                            }
-                        //                        }
-                        else if (stateChangedUser.getCallUserState() == ZIMCallUserState.REJECTED) {
+                        } else if (stateChangedUser.getCallUserState() == ZIMCallUserState.INVITING) {
+                            for (CallChangedListener listener : callListeners) {
+                                listener.onInviteNewUser(requestID, stateChangedUser);
+                            }
+                            for (CallChangedListener listener : autoRemoveCallListeners) {
+                                listener.onInviteNewUser(requestID, stateChangedUser);
+                            }
+                        } else if (stateChangedUser.getCallUserState() == ZIMCallUserState.REJECTED) {
                             for (CallChangedListener listener : callListeners) {
                                 listener.onInvitedUserRejected(requestID, stateChangedUser);
                             }
@@ -352,18 +373,11 @@ public class ZEGOCallInvitationManager {
         }
     }
 
-    public void startPublishingStream() {
-        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
-        String currentRoomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
-        String generateUserStreamID = generateUserStreamID(currentUser.userID, currentRoomID);
-        ZEGOSDKManager.getInstance().expressService.startPublishingStream(generateUserStreamID);
-    }
-
     public String generateUserStreamID(String userID, String roomID) {
-        return roomID + "_" + userID + "_main" + "_host";
+        return roomID + "_" + userID + "_main";
     }
 
-    public void sendVideoCall(List<String> userIDList, ZIMCallInvitationSentCallback callback) {
+    public void inviteVideoCall(List<String> userIDList, ZIMCallInvitationSentCallback callback) {
         ZEGOSDKManager.getInstance().zimService.queryUsersInfo(userIDList, new ZIMUsersInfoQueriedCallback() {
             @Override
             public void onUsersInfoQueried(ArrayList<ZIMUserFullInfo> userList,
@@ -381,7 +395,7 @@ public class ZEGOCallInvitationManager {
         });
     }
 
-    public void sendVoiceCall(List<String> userIDList, ZIMCallInvitationSentCallback callback) {
+    public void inviteVoiceCall(List<String> userIDList, ZIMCallInvitationSentCallback callback) {
         ZEGOSDKManager.getInstance().zimService.queryUsersInfo(userIDList, new ZIMUsersInfoQueriedCallback() {
             @Override
             public void onUsersInfoQueried(ArrayList<ZIMUserFullInfo> userList,
@@ -421,6 +435,7 @@ public class ZEGOCallInvitationManager {
                             callInviteInfo.userList = new ArrayList<>();
                             ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
                             callInviteInfo.inviter = currentUser.userID;
+                            callInviteInfo.firstInviter = currentUser.userID;
                             callInviteInfo.isOutgoingCall = true;
                             if (video) {
                                 callInviteInfo.type = CallExtendedData.VIDEO_CALL;

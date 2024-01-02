@@ -20,7 +20,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="Invite PK"
+        android:text="Invite"
         android:textSize="32sp" />
     </FrameLayout>
 
@@ -89,7 +89,7 @@
       android:layout_height="wrap_content">
 
       <com.google.android.material.button.MaterialButton
-        android:id="@+id/end_pk"
+        android:id="@+id/end"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
@@ -99,7 +99,7 @@
         android:text="End PK" />
 
       <com.google.android.material.button.MaterialButton
-        android:id="@+id/quit_pk"
+        android:id="@+id/quit"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
@@ -109,7 +109,7 @@
         android:text="Quit PK" />
 
       <com.google.android.material.button.MaterialButton
-        android:id="@+id/invite_pk"
+        android:id="@+id/invite"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"

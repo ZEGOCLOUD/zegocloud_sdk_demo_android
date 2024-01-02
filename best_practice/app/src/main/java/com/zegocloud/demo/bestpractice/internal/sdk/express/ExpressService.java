@@ -2,6 +2,7 @@ package com.zegocloud.demo.bestpractice.internal.sdk.express;
 
 import android.app.Application;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.TextureView;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import im.zego.zegoexpress.ZegoExpressEngine;
@@ -20,6 +21,7 @@ import im.zego.zegoexpress.constants.ZegoPublisherState;
 import im.zego.zegoexpress.constants.ZegoRemoteDeviceState;
 import im.zego.zegoexpress.constants.ZegoRoomStateChangedReason;
 import im.zego.zegoexpress.constants.ZegoScenario;
+import im.zego.zegoexpress.constants.ZegoStreamEvent;
 import im.zego.zegoexpress.constants.ZegoUpdateType;
 import im.zego.zegoexpress.constants.ZegoViewMode;
 import im.zego.zegoexpress.entity.ZegoCanvas;
@@ -303,6 +305,13 @@ public class ExpressService {
             }
 
             @Override
+            public void onPlayerStreamEvent(ZegoStreamEvent eventID, String streamID, String extraInfo) {
+                super.onPlayerStreamEvent(eventID, streamID, extraInfo);
+                Timber.d("onPlayerStreamEvent() called with: eventID = [" + eventID + "], streamID = [" + streamID
+                    + "], extraInfo = [" + extraInfo + "]");
+            }
+
+            @Override
             public void onPlayerStateUpdate(String streamID, ZegoPlayerState state, int errorCode,
                 JSONObject extendedData) {
                 super.onPlayerStateUpdate(streamID, state, errorCode, extendedData);
@@ -572,7 +581,7 @@ public class ExpressService {
         engineProxy.setStreamExtraInfo(extraInfo, null);
     }
 
-    public void syncCameraState(String userID, boolean open) {
+    private void syncCameraState(String userID, boolean open) {
         if (!userID.equals(currentUser.userID)) {
             ZEGOSDKUser zegosdkUser = getUser(userID);
             boolean changed = zegosdkUser.isCameraOpen() != open;

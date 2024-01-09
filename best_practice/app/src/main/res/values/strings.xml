@@ -21,5 +21,8 @@
   <string name="zego_voice_call">ZEGO VOICE CALL</string>
   <string name="calling">Calling...</string>
   <string name="add_new_user">Add New User</string>
+  <string name="select_user">Select User</string>
+  <string name="support_player_count">Support Players Count:%s</string>
+  <string name="game_invite_tips">Tips:When there are not enough players,robots will be used to fill the gap</string>
 
 </resources>

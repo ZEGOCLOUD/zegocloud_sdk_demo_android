@@ -5,12 +5,18 @@ import com.zegocloud.demo.bestpractice.internal.business.audioroom.LiveAudioRoom
 import com.zegocloud.demo.bestpractice.internal.business.audioroom.LiveAudioRoomExtraInfo.ValuePairUpdateListener;
 import com.zegocloud.demo.bestpractice.internal.business.audioroom.LiveAudioRoomLayoutConfig;
 import com.zegocloud.demo.bestpractice.internal.business.audioroom.LiveAudioRoomSeat;
+import com.zegocloud.demo.bestpractice.internal.business.audioroom.MiniGameService;
 import com.zegocloud.demo.bestpractice.internal.business.audioroom.RoomSeatService;
 import com.zegocloud.demo.bestpractice.internal.business.audioroom.RoomSeatServiceListener;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
+import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKCallBack;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
 import com.zegocloud.demo.bestpractice.internal.sdk.zim.IZIMEventHandler;
+import im.zego.minigameengine.ZegoGameInfo;
+import im.zego.minigameengine.ZegoGameInfoDetail;
+import im.zego.minigameengine.ZegoGameMode;
+import im.zego.zegoexpress.constants.ZegoScenario;
 import im.zego.zegoexpress.entity.ZegoRoomExtraInfo;
 import im.zego.zim.callback.ZIMRoomAttributesBatchOperatedCallback;
 import im.zego.zim.callback.ZIMRoomAttributesOperatedCallback;
@@ -30,9 +36,10 @@ public class ZEGOLiveAudioRoomManager {
         private static final ZEGOLiveAudioRoomManager INSTANCE = new ZEGOLiveAudioRoomManager();
     }
 
-    private ZEGOLiveAudioRoomManager(){
+    private ZEGOLiveAudioRoomManager() {
 
     }
+
     public static ZEGOLiveAudioRoomManager getInstance() {
         return Holder.INSTANCE;
     }
@@ -45,6 +52,7 @@ public class ZEGOLiveAudioRoomManager {
     private String hostUserID;
     private boolean lockSeat;
     private LiveAudioRoomExtraInfo audioRoomExtraInfo = new LiveAudioRoomExtraInfo();
+    private MiniGameService miniGameService = new MiniGameService();
 
     public void init(LiveAudioRoomLayoutConfig layoutConfig) {
         ZEGOSDKManager.getInstance().expressService.addEventHandler(new IExpressEngineEventHandler() {
@@ -76,6 +84,7 @@ public class ZEGOLiveAudioRoomManager {
             public void onRoomAttributesUpdated2(List<Map<String, String>> setProperties,
                 List<Map<String, String>> deleteProperties) {
                 seatService.onRoomAttributesUpdated(setProperties, deleteProperties);
+                miniGameService.onRoomAttributesUpdated(setProperties, deleteProperties);
             }
         });
 
@@ -110,6 +119,31 @@ public class ZEGOLiveAudioRoomManager {
             }
         });
         seatService.init(layoutConfig);
+
+        initMiniGame();
+    }
+
+    private void initMiniGame() {
+        miniGameService.init();
+    }
+
+    public void loginRoom(String roomID, ZEGOSDKCallBack callback) {
+        ZEGOSDKManager.getInstance().loginRoom(roomID, ZegoScenario.HIGH_QUALITY_CHATROOM, callback);
+    }
+
+    public void logoutRoom() {
+        removeRoomData();
+        removeRoomListeners();
+        miniGameService.unInit();
+        ZEGOSDKManager.getInstance().logoutRoom(null);
+    }
+
+    public void unloadGame() {
+        miniGameService.unloadGame();
+    }
+
+    public MiniGameService getMiniGameService() {
+        return miniGameService;
     }
 
     public void lockSeat(boolean lock) {
@@ -147,7 +181,7 @@ public class ZEGOLiveAudioRoomManager {
         ZEGOSDKManager.getInstance().expressService.startPublishingStream(streamID);
     }
 
-    public String generateUserStreamID(String userID, String roomID) {
+    private String generateUserStreamID(String userID, String roomID) {
         return roomID + "_" + userID + "_main" + "_host";
     }
 
@@ -216,29 +250,25 @@ public class ZEGOLiveAudioRoomManager {
         seatService.removeSpeakerFromSeat(userID, callback);
     }
 
-    public void removeRoomData() {
+    private void removeRoomData() {
         lockSeat = false;
         audioRoomExtraInfo.clear();
         hostUserID = null;
         seatService.removeRoomData();
     }
 
-    public void removeRoomListeners() {
+    private void removeRoomListeners() {
         audioRoomListenerList.clear();
         seatService.removeRoomListeners();
     }
 
-    public void leave() {
-        ZEGOLiveAudioRoomManager.getInstance().removeRoomData();
-        ZEGOLiveAudioRoomManager.getInstance().removeRoomListeners();
-        ZEGOSDKManager.getInstance().logoutRoom(null);
-    }
-
     public interface LiveAudioRoomListener extends RoomSeatServiceListener {
 
-        default void onHostChanged(ZEGOSDKUser hostUser){}
+        default void onHostChanged(ZEGOSDKUser hostUser) {
+        }
 
-        default void onLockSeatStatusChanged(boolean lock){}
+        default void onLockSeatStatusChanged(boolean lock) {
+        }
     }
 
 }

@@ -13,7 +13,6 @@ import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKCallBack;
 import im.zego.zim.callback.ZIMUserAvatarUrlUpdatedCallback;
 import im.zego.zim.entity.ZIMError;
-import java.util.Random;
 import timber.log.Timber;
 import timber.log.Timber.DebugTree;
 
@@ -97,18 +96,5 @@ public class LoginActivity extends AppCompatActivity {
 
             }
         });
-    }
-
-    private static String generateUserID() {
-        StringBuilder builder = new StringBuilder();
-        Random random = new Random();
-        while (builder.length() < 6) {
-            int nextInt = random.nextInt(10);
-            if (builder.length() == 0 && nextInt == 0) {
-                continue;
-            }
-            builder.append(nextInt);
-        }
-        return builder.toString();
     }
 }

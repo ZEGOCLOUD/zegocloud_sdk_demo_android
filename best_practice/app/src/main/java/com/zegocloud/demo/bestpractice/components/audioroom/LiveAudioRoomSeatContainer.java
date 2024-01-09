@@ -29,7 +29,10 @@ import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventH
 import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
 import im.zego.zim.callback.ZIMRoomAttributesBatchOperatedCallback;
 import im.zego.zim.callback.ZIMRoomAttributesOperatedCallback;
+import im.zego.zim.callback.ZIMUsersInfoQueriedCallback;
 import im.zego.zim.entity.ZIMError;
+import im.zego.zim.entity.ZIMErrorUserInfo;
+import im.zego.zim.entity.ZIMUserFullInfo;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -68,7 +71,8 @@ public class LiveAudioRoomSeatContainer extends LinearLayout {
                     for (LiveAudioRoomSeat audioRoomSeat : ZEGOLiveAudioRoomManager.getInstance()
                         .getAudioRoomSeatList()) {
                         if (audioRoomSeat.isTakenByUser(zegosdkUser)) {
-                            ZEGOLiveAudioRoomManager.getInstance().leaveSeat(audioRoomSeat.seatIndex, new ZIMRoomAttributesOperatedCallback() {
+                            ZEGOLiveAudioRoomManager.getInstance()
+                                .leaveSeat(audioRoomSeat.seatIndex, new ZIMRoomAttributesOperatedCallback() {
                                     @Override
                                     public void onRoomAttributesOperated(String roomID, ArrayList<String> errorKeys,
                                         ZIMError errorInfo) {
@@ -125,7 +129,22 @@ public class LiveAudioRoomSeatContainer extends LinearLayout {
             }
         }
         if (!speakerUserIDs.isEmpty()) {
-            ZEGOLiveAudioRoomManager.getInstance().queryUsersInfo(speakerUserIDs, null);
+            ZEGOLiveAudioRoomManager.getInstance().queryUsersInfo(speakerUserIDs, new ZIMUsersInfoQueriedCallback() {
+                @Override
+                public void onUsersInfoQueried(ArrayList<ZIMUserFullInfo> userList,
+                    ArrayList<ZIMErrorUserInfo> errorUserList, ZIMError errorInfo) {
+                    List<LiveAudioRoomSeat> seatList = ZEGOLiveAudioRoomManager.getInstance().getAudioRoomSeatList();
+                    for (LiveAudioRoomSeat seat : seatList) {
+                        ZEGOSDKUser seatUser = seat.getUser();
+                        if (seatUser != null && speakerUserIDs.contains(seatUser.userID)) {
+                            ZEGOLiveAudioRoomSeatView seatView = getSeatView(seat);
+                            ZIMUserFullInfo zimUserFullInfo = ZEGOSDKManager.getInstance().zimService.getUserInfo(
+                                seatUser.userID);
+                            seatView.onUserAvatarUpdated(zimUserFullInfo.userAvatarUrl);
+                        }
+                    }
+                }
+            });
         }
     }
 

@@ -1,7 +1,6 @@
 package com.zegocloud.demo.bestpractice.components.audioroom;
 
 import android.content.Context;
-import android.text.TextUtils;
 import android.text.TextUtils.TruncateAt;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
@@ -13,8 +12,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.RequestOptions;
 import com.zegocloud.demo.bestpractice.R;
 import com.zegocloud.demo.bestpractice.components.LetterIconView;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveAudioRoomManager;
@@ -24,7 +21,6 @@ import com.zegocloud.demo.bestpractice.internal.utils.Utils;
 public class ZEGOLiveAudioRoomSeatView extends LinearLayout {
 
     private ImageView seatIconBackground;
-    private ImageView userCustomAvatarView;
     private LetterIconView letterIconView;
     private ImageView hostTagView;
     private TextView userNameView;
@@ -64,13 +60,8 @@ public class ZEGOLiveAudioRoomSeatView extends LinearLayout {
 
         avatarParams.gravity = Gravity.CENTER;
         letterIconView = new LetterIconView(getContext());
-        letterIconView.setCircleBackgroundRadius(avatarParams.width / 2);
         letterIconView.setLetter("");
         contentLayout.addView(letterIconView, avatarParams);
-
-        userCustomAvatarView = new ImageView(getContext());
-        userCustomAvatarView.setLayoutParams(avatarParams);
-        contentLayout.addView(userCustomAvatarView);
 
         hostTagView = new ImageView(getContext());
         hostTagView.setImageResource(R.drawable.audioroom_icon_seat_host);
@@ -103,8 +94,8 @@ public class ZEGOLiveAudioRoomSeatView extends LinearLayout {
 
     private void removeUserFromSeat() {
         letterIconView.setLetter("");
+        letterIconView.setIconUrl("");
         userNameView.setText("");
-        userCustomAvatarView.setImageDrawable(null);
     }
 
     private void addUserToSeat(ZEGOSDKUser audioRoomUser) {
@@ -123,12 +114,7 @@ public class ZEGOLiveAudioRoomSeatView extends LinearLayout {
     }
 
     public void onUserAvatarUpdated(String url) {
-        if (TextUtils.isEmpty(url)) {
-            userCustomAvatarView.setImageDrawable(null);
-        } else {
-            RequestOptions requestOptions = new RequestOptions().circleCrop();
-            Glide.with(getContext()).load(url).apply(requestOptions).into(userCustomAvatarView);
-        }
+        letterIconView.setIconUrl(url);
     }
 
     public void showHostTag() {

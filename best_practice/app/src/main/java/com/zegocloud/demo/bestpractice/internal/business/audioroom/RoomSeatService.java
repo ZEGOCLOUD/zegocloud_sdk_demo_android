@@ -59,6 +59,8 @@ public class RoomSeatService {
         List<Map<String, String>> deleteProperties) {
         int seatIndexBefore = findMyRoomSeatIndex();
 
+        boolean set = false;
+        boolean delete = false;
         List<LiveAudioRoomSeat> changedSeats = new ArrayList<>();
         for (Map<String, String> setProperty : setProperties) {
             for (Map.Entry<String, String> entry : setProperty.entrySet()) {
@@ -75,6 +77,7 @@ public class RoomSeatService {
                         }
                         seat.setUser(cloudUser);
                         changedSeats.add(seat);
+                        set = true;
                     }
                 } catch (Exception e) {
 
@@ -84,25 +87,32 @@ public class RoomSeatService {
         for (Map<String, String> deleteProperty : deleteProperties) {
             for (Map.Entry<String, String> entry : deleteProperty.entrySet()) {
                 String key = entry.getKey();
-                int index = Integer.parseInt(key);
-                if (isSeatIndexValid(index)) {
-                    LiveAudioRoomSeat seat = seatList.get(index);
-                    seat.setUser(null);
-                    changedSeats.add(seat);
+                try {
+                    int index = Integer.parseInt(key);
+                    if (isSeatIndexValid(index)) {
+                        LiveAudioRoomSeat seat = seatList.get(index);
+                        seat.setUser(null);
+                        changedSeats.add(seat);
+                        delete = true;
+                    }
+                } catch (Exception e) {
+
                 }
             }
         }
 
-        int seatIndexAfter = findMyRoomSeatIndex();
-        if (seatIndexBefore >= 0 && seatIndexAfter == -1) {
-            ZEGOSDKManager.getInstance().expressService.openMicrophone(false);
-            ZEGOSDKManager.getInstance().expressService.stopPublishingStream();
-        } else if (seatIndexBefore == -1 && seatIndexAfter >= 0) {
-            ZEGOSDKManager.getInstance().expressService.openMicrophone(true);
-            ZEGOLiveAudioRoomManager.getInstance().startPublishingStream();
-        }
-        for (RoomSeatServiceListener listener : seatServiceListenerList) {
-            listener.onSeatChanged(changedSeats);
+        if (set || delete) {
+            int seatIndexAfter = findMyRoomSeatIndex();
+            if (seatIndexBefore >= 0 && seatIndexAfter == -1) {
+                ZEGOSDKManager.getInstance().expressService.openMicrophone(false);
+                ZEGOSDKManager.getInstance().expressService.stopPublishingStream();
+            } else if (seatIndexBefore == -1 && seatIndexAfter >= 0) {
+                ZEGOSDKManager.getInstance().expressService.openMicrophone(true);
+                ZEGOLiveAudioRoomManager.getInstance().startPublishingStream();
+            }
+            for (RoomSeatServiceListener listener : seatServiceListenerList) {
+                listener.onSeatChanged(changedSeats);
+            }
         }
     }
 

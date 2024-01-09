@@ -4,18 +4,19 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import androidx.appcompat.app.AppCompatActivity;
+import com.zegocloud.demo.bestpractice.custom.ZegoMiniGame;
 import com.zegocloud.demo.bestpractice.databinding.ActivityLiveAudioRoomBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveAudioRoomManager;
 import com.zegocloud.demo.bestpractice.internal.business.RoomRequestExtendedData;
 import com.zegocloud.demo.bestpractice.internal.business.RoomRequestType;
 import com.zegocloud.demo.bestpractice.internal.business.audioroom.LiveAudioRoomLayoutConfig;
+import com.zegocloud.demo.bestpractice.internal.business.audioroom.MiniGameService;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKCallBack;
 import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
 import com.zegocloud.demo.bestpractice.internal.sdk.zim.IZIMEventHandler;
 import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
 import com.zegocloud.demo.bestpractice.internal.utils.Utils;
-import im.zego.zegoexpress.constants.ZegoScenario;
 import im.zego.zegoexpress.constants.ZegoStreamResourceMode;
 import im.zego.zegoexpress.constants.ZegoUpdateType;
 import im.zego.zegoexpress.entity.ZegoPlayerConfig;
@@ -54,27 +55,15 @@ public class LiveAudioRoomActivity extends AppCompatActivity {
         seatLayoutConfig = new LiveAudioRoomLayoutConfig();
         seatLayoutConfig.rowSpacing = Utils.dp2px(8, getResources().getDisplayMetrics());
         ZEGOLiveAudioRoomManager.getInstance().init(seatLayoutConfig);
+        MiniGameService miniGameService = ZEGOLiveAudioRoomManager.getInstance().getMiniGameService();
+        miniGameService.setGameContainer(binding.miniGameContainer);
         binding.seatContainer.setLayoutConfig(seatLayoutConfig);
 
         ZEGOSDKManager.getInstance().expressService.openCamera(false);
-        ZEGOSDKManager.getInstance().expressService.addEventHandler(new IExpressEngineEventHandler() {
-            @Override
-            public void onRoomStreamUpdate(String roomID, ZegoUpdateType updateType, ArrayList<ZegoStream> streamList,
-                JSONObject extendedData) {
-                super.onRoomStreamUpdate(roomID, updateType, streamList, extendedData);
-                for (ZegoStream zegoStream : streamList) {
-                    if (updateType == ZegoUpdateType.ADD) {
-                        ZegoPlayerConfig config = new ZegoPlayerConfig();
-                        config.resourceMode = ZegoStreamResourceMode.ONLY_RTC;
-                        ZEGOSDKManager.getInstance().expressService.startPlayingStream(zegoStream.streamID, config);
-                    } else {
-                        ZEGOSDKManager.getInstance().expressService.stopPlayingStream(zegoStream.streamID);
-                    }
-                }
-            }
-        });
-        ZegoScenario chatRoom = ZegoScenario.HIGH_QUALITY_CHATROOM;
-        ZEGOSDKManager.getInstance().loginRoom(roomID, chatRoom, new ZEGOSDKCallBack() {
+
+        initSDKListener();
+
+        ZEGOLiveAudioRoomManager.getInstance().loginRoom(roomID, new ZEGOSDKCallBack() {
             @Override
             public void onResult(int errorCode, String message) {
                 if (errorCode != 0) {
@@ -91,13 +80,28 @@ public class LiveAudioRoomActivity extends AppCompatActivity {
                             }
                         });
                     }
-                    initListenerAfterLoginRoom();
                 }
             }
         });
     }
 
-    private void initListenerAfterLoginRoom() {
+    private void initSDKListener() {
+        ZEGOSDKManager.getInstance().expressService.addEventHandler(new IExpressEngineEventHandler() {
+            @Override
+            public void onRoomStreamUpdate(String roomID, ZegoUpdateType updateType, ArrayList<ZegoStream> streamList,
+                JSONObject extendedData) {
+                super.onRoomStreamUpdate(roomID, updateType, streamList, extendedData);
+                for (ZegoStream zegoStream : streamList) {
+                    if (updateType == ZegoUpdateType.ADD) {
+                        ZegoPlayerConfig config = new ZegoPlayerConfig();
+                        config.resourceMode = ZegoStreamResourceMode.ONLY_RTC;
+                        ZEGOSDKManager.getInstance().expressService.startPlayingStream(zegoStream.streamID, config);
+                    } else {
+                        ZEGOSDKManager.getInstance().expressService.stopPlayingStream(zegoStream.streamID);
+                    }
+                }
+            }
+        });
         ZEGOSDKManager.getInstance().zimService.addEventHandler(new IZIMEventHandler() {
             @Override
             public void onOutgoingRoomRequestAccepted(String requestID, String extendedData) {
@@ -130,7 +134,7 @@ public class LiveAudioRoomActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         if (isFinishing()) {
-            ZEGOLiveAudioRoomManager.getInstance().leave();
+            ZEGOLiveAudioRoomManager.getInstance().logoutRoom();
         }
     }
 }

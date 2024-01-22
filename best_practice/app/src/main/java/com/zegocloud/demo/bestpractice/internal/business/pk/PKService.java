@@ -72,8 +72,8 @@ public class PKService {
     private IZIMEventHandler zimEventHandler;
     private List<PKListener> listenerList = new ArrayList<>();
     private boolean isPKStarted;
-    public static final int MIX_VIDEO_WIDTH = 864;
-    public static final int MIX_VIDEO_HEIGHT = 972;
+    public static final int MIX_VIDEO_WIDTH = 972;
+    public static final int MIX_VIDEO_HEIGHT = 864;
     public static final int MIX_VIDEO_BITRATE = 1500;
     public static final int MIX_VIDEO_FPS = 15;
 
@@ -735,7 +735,7 @@ public class PKService {
             int left, top, right, bottom;
             for (int i = 0; i < streamList.size(); i++) {
                 left = cellWidth * (i % column);
-                top = cellHeight * (i < column ? 0 : 1);
+                top = cellHeight * (i / column);
                 right = left + cellWidth;
                 bottom = top + cellHeight;
                 ZegoMixerInput input = new ZegoMixerInput(streamList.get(i), ZegoMixerInputContentType.VIDEO,

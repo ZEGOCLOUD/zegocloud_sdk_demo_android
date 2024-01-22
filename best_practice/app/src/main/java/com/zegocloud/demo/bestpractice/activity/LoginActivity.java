@@ -75,6 +75,9 @@ public class LoginActivity extends AppCompatActivity {
         ZEGOSDKManager.getInstance().initSDK(getApplication(), ZEGOSDKKeyCenter.appID, ZEGOSDKKeyCenter.appSign);
     }
 
+    /**
+     * should be called only once after the user sign in to their own business account.
+     */
     private void signInZEGOSDK(String userID, String userName, ZEGOSDKCallBack callback) {
         ZEGOSDKManager.getInstance().connectUser(userID, userName, new ZEGOSDKCallBack() {
             @Override

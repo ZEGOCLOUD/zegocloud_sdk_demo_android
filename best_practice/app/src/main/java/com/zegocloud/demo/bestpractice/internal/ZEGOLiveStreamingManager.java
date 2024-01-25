@@ -35,18 +35,21 @@ public class ZEGOLiveStreamingManager {
     }
 
 
-    private PKService pkService;
-    private CoHostService coHostService;
+    private PKService pkService = new PKService();
+    private CoHostService coHostService = new CoHostService();
     private MixLayoutProvider mixLayoutProvider;
 
+    /**
+     * should be called only once after user signin
+     */
     public void init() {
-        pkService = new PKService();
-        coHostService = new CoHostService();
-
-        pkService.initWhenUserLogin();
+        pkService.addListenersForUserSignIn();
     }
 
-    public void addRoomListeners() {
+    /**
+     * should be called only once after user join room
+     */
+    public void addListenersForUserJoinRoom() {
         ZEGOSDKManager.getInstance().expressService.addEventHandler(new IExpressEngineEventHandler() {
             @Override
             public void onReceiveStreamAdd(List<ZEGOSDKUser> userList) {

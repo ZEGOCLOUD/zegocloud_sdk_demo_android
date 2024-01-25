@@ -4,7 +4,6 @@ import android.graphics.Rect;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
-import android.util.Log;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
 import com.zegocloud.demo.bestpractice.internal.business.UserRequestCallback;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
@@ -72,12 +71,13 @@ public class PKService {
     private IZIMEventHandler zimEventHandler;
     private List<PKListener> listenerList = new ArrayList<>();
     private boolean isPKStarted;
-    public static final int MIX_VIDEO_WIDTH = 810;
-    public static final int MIX_VIDEO_HEIGHT = 720;
+    public static final int MIX_VIDEO_WIDTH = 972;
+    public static final int MIX_VIDEO_HEIGHT = 864;
     public static final int MIX_VIDEO_BITRATE = 1500;
     public static final int MIX_VIDEO_FPS = 15;
 
-    public void initWhenUserLogin() {
+    public void addListenersForUserSignIn() {
+        Timber.d("initWhenUserLogin() called");
         syncSEIRunnable = new Runnable() {
             @Override
             public void run() {
@@ -278,6 +278,10 @@ public class PKService {
                 }
             }
         };
+
+        /**
+         * listen to zim call events to get PK invitation states.
+         */
         ZEGOSDKManager.getInstance().zimService.addEventHandler(zimEventHandler, false);
     }
 
@@ -818,6 +822,10 @@ public class PKService {
             hashMap.put("host_user_id", ZEGOLiveStreamingManager.getInstance().getHostUser().userID);
         }
 
+        if (pkBattleInfo == null) {
+            Timber.e("updatePKRoomAttributes: pkBattleInfo == null ");
+            return;
+        }
         hashMap.put("request_id", pkBattleInfo.requestID);
 
         List<PKUser> acceptedUsers = new ArrayList<>();
@@ -966,6 +974,15 @@ public class PKService {
         });
     }
 
+    /**
+     * While pushing the stream to transmit the audio and video stream data,the stream media supplementary enhancement
+     * information(SEI) is sent to synchronize some other additional information.
+     * <p>
+     * syncDeviceStatus will call ZegoExpressEngine.getEngine().sendSEI() every 500 ms to sync user devices states and
+     * connect state.
+     * <p>
+     * others will receive data by onPlayerSyncRecvSEI() callback.
+     */
     public void syncDeviceStatus() {
         handler.removeCallbacks(syncSEIRunnable);
         handler.post(syncSEIRunnable);
@@ -975,6 +992,11 @@ public class PKService {
         handler.removeCallbacks(syncSEIRunnable);
     }
 
+    /**
+     * check the data received by onPlayerSyncRecvSEI() callback every 1000 ms and trigger
+     * PKListener.onPKUserConnecting() to notify the duration from last check. if any host is disconnected,you can check
+     * his connection states here.
+     */
     public void checkPKUserSEI() {
         handler.removeCallbacks(checkSEIRunnable);
         handler.post(checkSEIRunnable);
@@ -1036,6 +1058,13 @@ public class PKService {
         }
     }
 
+    /**
+     * trigger by other host call ZegoExpressEngine.getEngine().sendSEI(), if any host is disconnected,you can check his
+     * connection states by checkPKUserSEI.
+     *
+     * @param streamID
+     * @param data
+     */
     public void onPlayerSyncRecvSEI(String streamID, byte[] data) {
         try {
             JSONObject jsonObject = new JSONObject(new String(data));
@@ -1073,6 +1102,13 @@ public class PKService {
         }
     }
 
+    /**
+     * audience will receive zimService.onRoomAttributesUpdated when join PK room. depend on the attributes,will trigger
+     * PKListener.onPKStarted or PKListener.onPKEnded
+     *
+     * @param setProperties
+     * @param deleteProperties
+     */
     public void onRoomAttributesUpdated(List<Map<String, String>> setProperties,
         List<Map<String, String>> deleteProperties) {
         for (Map<String, String> deleteProperty : deleteProperties) {

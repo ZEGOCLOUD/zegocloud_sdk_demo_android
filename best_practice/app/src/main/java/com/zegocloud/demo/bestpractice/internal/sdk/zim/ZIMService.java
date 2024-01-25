@@ -194,6 +194,8 @@ public class ZIMService {
             @Override
             public void onCallInvitationReceived(ZIM zim, ZIMCallInvitationReceivedInfo info, String callID) {
                 super.onCallInvitationReceived(zim, info, callID);
+                Timber.d("onCallInvitationReceived() called with: zim = [" + zim + "], info = [" + info + "], callID = ["
+                        + callID + "]");
                 for (IZIMEventHandler handler : autoDeleteHandlerList) {
                     handler.onInComingUserRequestReceived(callID, info);
                 }
@@ -581,6 +583,9 @@ public class ZIMService {
     }
 
     public void addEventHandler(IZIMEventHandler zimEventHandler, boolean autoDelete) {
+        Timber.d(
+            "addEventHandler() called with: zimEventHandler = [" + zimEventHandler + "], autoDelete = [" + autoDelete
+                + "]");
         if (autoDelete) {
             autoDeleteHandlerList.add(zimEventHandler);
         } else {

@@ -64,7 +64,7 @@ public class LiveStreamingActivity extends AppCompatActivity {
 
         binding.liveAudioroomTopbar.setRoomID(liveID);
 
-        ZEGOLiveStreamingManager.getInstance().addRoomListeners();
+        ZEGOLiveStreamingManager.getInstance().addListenersForUserJoinRoom();
 
         listenSDKEvent();
 

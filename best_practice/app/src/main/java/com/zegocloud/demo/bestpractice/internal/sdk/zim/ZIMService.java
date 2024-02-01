@@ -677,13 +677,13 @@ public class ZIMService {
                 @Override
                 public void onMessageSent(ZIMMessage message, ZIMError errorInfo) {
                     if (callback != null) {
-                        callback.onSendRoomCommand(errorInfo.code.value(), errorInfo.message);
+                        callback.onSendRoomCommand(errorInfo.code.value(), errorInfo.message,command);
                     }
                     for (IZIMEventHandler handler : autoDeleteHandlerList) {
-                        handler.onSendRoomCommand(errorInfo.code.value(), errorInfo.message);
+                        handler.onSendRoomCommand(errorInfo.code.value(), errorInfo.message,command);
                     }
                     for (IZIMEventHandler handler : handlerList) {
-                        handler.onSendRoomCommand(errorInfo.code.value(), errorInfo.message);
+                        handler.onSendRoomCommand(errorInfo.code.value(), errorInfo.message,command);
                     }
                 }
             });

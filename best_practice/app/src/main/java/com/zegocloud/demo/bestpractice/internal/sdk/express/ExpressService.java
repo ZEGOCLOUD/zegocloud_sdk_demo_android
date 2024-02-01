@@ -2,19 +2,25 @@ package com.zegocloud.demo.bestpractice.internal.sdk.express;
 
 import android.app.Application;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.TextureView;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import im.zego.zegoexpress.ZegoExpressEngine;
+import im.zego.zegoexpress.ZegoMediaPlayer;
 import im.zego.zegoexpress.callback.IZegoCustomVideoProcessHandler;
 import im.zego.zegoexpress.callback.IZegoEventHandler;
 import im.zego.zegoexpress.callback.IZegoIMSendBarrageMessageCallback;
+import im.zego.zegoexpress.callback.IZegoMediaPlayerEventHandler;
+import im.zego.zegoexpress.callback.IZegoMediaPlayerLoadResourceCallback;
 import im.zego.zegoexpress.callback.IZegoMixerStartCallback;
 import im.zego.zegoexpress.callback.IZegoMixerStopCallback;
 import im.zego.zegoexpress.callback.IZegoRoomLoginCallback;
 import im.zego.zegoexpress.callback.IZegoRoomLogoutCallback;
 import im.zego.zegoexpress.callback.IZegoRoomSetRoomExtraInfoCallback;
 import im.zego.zegoexpress.callback.IZegoUploadLogResultCallback;
+import im.zego.zegoexpress.constants.ZegoAlphaLayoutType;
+import im.zego.zegoexpress.constants.ZegoMediaPlayerNetworkEvent;
+import im.zego.zegoexpress.constants.ZegoMediaPlayerState;
+import im.zego.zegoexpress.constants.ZegoMultimediaLoadType;
 import im.zego.zegoexpress.constants.ZegoPlayerState;
 import im.zego.zegoexpress.constants.ZegoPublishChannel;
 import im.zego.zegoexpress.constants.ZegoPublisherState;
@@ -27,6 +33,7 @@ import im.zego.zegoexpress.constants.ZegoViewMode;
 import im.zego.zegoexpress.entity.ZegoCanvas;
 import im.zego.zegoexpress.entity.ZegoCustomVideoProcessConfig;
 import im.zego.zegoexpress.entity.ZegoEngineConfig;
+import im.zego.zegoexpress.entity.ZegoMediaPlayerResource;
 import im.zego.zegoexpress.entity.ZegoMixerTask;
 import im.zego.zegoexpress.entity.ZegoPlayerConfig;
 import im.zego.zegoexpress.entity.ZegoPublisherConfig;
@@ -58,6 +65,9 @@ public class ExpressService {
     private List<IExpressEngineEventHandler> autoDeleteHandlerList = new CopyOnWriteArrayList<>();
     private ExpressEngineProxy engineProxy = new ExpressEngineProxy();
     private IZegoEventHandler initEventHandler;
+    private ZegoMediaPlayer mediaPlayer;
+    private Map<String, String> cachedMediaResourceMap = new HashMap<>();
+    private IZegoMediaPlayerEventHandler mediaPlayerEvent;
 
     public void initSDK(Application application, long appID, String appSign, ZegoScenario scenario) {
         ZegoEngineConfig config = new ZegoEngineConfig();
@@ -434,6 +444,68 @@ public class ExpressService {
         engineProxy.stopPlayingStream(streamID);
     }
 
+    public ZegoMediaPlayer getMediaPlayer() {
+        if (mediaPlayer == null) {
+            mediaPlayer = engineProxy.createMediaPlayer();
+            mediaPlayer.setEventHandler(new IZegoMediaPlayerEventHandler() {
+                @Override
+                public void onMediaPlayerStateUpdate(ZegoMediaPlayer mediaPlayer, ZegoMediaPlayerState state,
+                    int errorCode) {
+                    super.onMediaPlayerStateUpdate(mediaPlayer, state, errorCode);
+                    if (mediaPlayerEvent != null) {
+                        mediaPlayerEvent.onMediaPlayerStateUpdate(mediaPlayer, state, errorCode);
+                    }
+                }
+
+                @Override
+                public void onMediaPlayerLocalCache(ZegoMediaPlayer mediaPlayer, int errorCode, String resource,
+                    String cachedFile) {
+                    super.onMediaPlayerLocalCache(mediaPlayer, errorCode, resource, cachedFile);
+                    if (errorCode == 0) {
+                        cachedMediaResourceMap.put(resource, cachedFile);
+                    }
+                    if (mediaPlayerEvent != null) {
+                        mediaPlayerEvent.onMediaPlayerLocalCache(mediaPlayer, errorCode, resource, cachedFile);
+                    }
+                }
+
+                @Override
+                public void onMediaPlayerNetworkEvent(ZegoMediaPlayer mediaPlayer,
+                    ZegoMediaPlayerNetworkEvent networkEvent) {
+                    super.onMediaPlayerNetworkEvent(mediaPlayer, networkEvent);
+                    if (mediaPlayerEvent != null) {
+                        mediaPlayerEvent.onMediaPlayerNetworkEvent(mediaPlayer, networkEvent);
+                    }
+                }
+            });
+        }
+        return mediaPlayer;
+    }
+
+    public void setMediaPlayerEventHandler(IZegoMediaPlayerEventHandler mediaPlayerEvent) {
+        this.mediaPlayerEvent = mediaPlayerEvent;
+    }
+
+    public void loadResourceFile(String url, IZegoMediaPlayerLoadResourceCallback callback) {
+        ZegoMediaPlayer mediaPlayer = getMediaPlayer();
+        ZegoMediaPlayerResource resource = new ZegoMediaPlayerResource();
+        resource.loadType = ZegoMultimediaLoadType.FILE_PATH;
+        if (cachedMediaResourceMap.containsKey(url)) {
+            resource.filePath = cachedMediaResourceMap.get(url);
+        } else {
+            resource.filePath = url;
+        }
+        resource.alphaLayout = ZegoAlphaLayoutType.LEFT;
+        mediaPlayer.loadResourceWithConfig(resource, new IZegoMediaPlayerLoadResourceCallback() {
+            @Override
+            public void onLoadResourceCallback(int errorCode) {
+                if (callback != null) {
+                    callback.onLoadResourceCallback(errorCode);
+                }
+            }
+        });
+    }
+
     public void loginRoom(String roomID, IZegoRoomLoginCallback callback) {
         loginRoom(roomID, "", callback);
     }
@@ -503,6 +575,7 @@ public class ExpressService {
         roomRemoteUserMap.clear();
         roomRemoteUserIDList.clear();
         currentRoomID = null;
+        mediaPlayer = null;
         stopPreview();
         useFrontCamera(true);
         openCamera(false);

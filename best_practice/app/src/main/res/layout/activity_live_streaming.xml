@@ -34,6 +34,13 @@
     android:visibility="invisible"
     app:layout_constraintTop_toTopOf="@id/main_host_video_layout" />
 
+  <FrameLayout
+    android:id="@+id/gift_parent"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+  </FrameLayout>
+
   <com.google.android.material.button.MaterialButton
     android:id="@+id/preview_start"
     android:layout_width="wrap_content"

@@ -4,7 +4,9 @@ import android.Manifest.permission;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.pm.PackageManager;
+import android.graphics.PixelFormat;
 import android.os.Bundle;
+import android.view.SurfaceView;
 import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -26,10 +28,17 @@ import com.zegocloud.demo.bestpractice.internal.sdk.express.ExpressService;
 import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
 import com.zegocloud.demo.bestpractice.internal.sdk.zim.IZIMEventHandler;
 import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
+import im.zego.zegoexpress.ZegoMediaPlayer;
+import im.zego.zegoexpress.callback.IZegoMediaPlayerEventHandler;
+import im.zego.zegoexpress.callback.IZegoMediaPlayerLoadResourceCallback;
 import im.zego.zegoexpress.callback.IZegoRoomLoginCallback;
+import im.zego.zegoexpress.constants.ZegoMediaPlayerState;
 import im.zego.zegoexpress.constants.ZegoPublisherState;
 import im.zego.zegoexpress.constants.ZegoRoomStateChangedReason;
 import im.zego.zegoexpress.constants.ZegoScenario;
+import im.zego.zegoexpress.constants.ZegoVideoConfigPreset;
+import im.zego.zegoexpress.entity.ZegoCanvas;
+import im.zego.zegoexpress.entity.ZegoVideoConfig;
 import im.zego.zim.ZIM;
 import im.zego.zim.callback.ZIMLoggedInCallback;
 import im.zego.zim.callback.ZIMRoomEnteredCallback;
@@ -50,6 +59,7 @@ public class LiveStreamingActivity extends AppCompatActivity {
     private String liveID;
     //    private AlertDialog inviteCoHostDialog;
     private AlertDialog zimReconnectDialog;
+    private SurfaceView mediaPlayerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,7 +114,7 @@ public class LiveStreamingActivity extends AppCompatActivity {
     }
 
     private void onJoinRoomFailed(int errorCode) {
-        ToastUtil.show(this,"Join room Failed,errorCode: " + errorCode);
+        ToastUtil.show(this, "Join room Failed,errorCode: " + errorCode);
         finish();
     }
 
@@ -117,48 +127,110 @@ public class LiveStreamingActivity extends AppCompatActivity {
             ZEGOLiveStreamingManager.getInstance().startPublishingStream();
         }
 
+        ZegoVideoConfig videoConfig = new ZegoVideoConfig(ZegoVideoConfigPreset.PRESET_360P);
+        ZEGOSDKManager.getInstance().expressService.setVideoConfig(videoConfig);
+
         ZEGOSDKManager.getInstance().expressService.startSoundLevelMonitor();
 
         int width = binding.getRoot().getWidth() / 4;
         binding.mainHostVideoIcon.setCircleBackgroundRadius(width);
 
-//        ZEGOLiveStreamingManager.getInstance().setMixLayoutProvider(new MixLayoutProvider() {
-//            @Override
-//            public ArrayList<ZegoMixerInput> getMixVideoInputs(List<String> streamList,
-//                ZegoMixerVideoConfig videoConfig) {
-//                ArrayList<ZegoMixerInput> inputList = new ArrayList<>();
-//                if (streamList.size() < 4) {
-//                    for (int i = 0; i < streamList.size(); i++) {
-//                        int left = (videoConfig.width / streamList.size()) * i;
-//                        int top = 0;
-//                        int right = (videoConfig.width / streamList.size()) * (i + 1);
-//                        int bottom = videoConfig.height;
-//                        ZegoMixerInput input_1 = new ZegoMixerInput(streamList.get(i), ZegoMixerInputContentType.VIDEO,
-//                            new Rect(left, top, right, bottom));
-//                        input_1.renderMode = ZegoMixRenderMode.FILL;
-//                        inputList.add(input_1);
-//                    }
-//                } else if (streamList.size() == 4) {
-//                    for (int i = 0; i < streamList.size(); i++) {
-//                        int left = (videoConfig.width / 2) * (i % 2);
-//                        int top = (videoConfig.height / 2) * (i < 2 ? 0 : 1);
-//                        int right = left + videoConfig.width / 2;
-//                        int bottom = top + videoConfig.height / 2;
-//                        ZegoMixerInput input_1 = new ZegoMixerInput(streamList.get(i), ZegoMixerInputContentType.VIDEO,
-//                            new Rect(left, top, right, bottom));
-//                        input_1.renderMode = ZegoMixRenderMode.FILL;
-//                        inputList.add(input_1);
-//                    }
-//                }
-//                return inputList;
-//            }
-//        });
+        preparGiftView();
+
+        //        ZEGOLiveStreamingManager.getInstance().setMixLayoutProvider(new MixLayoutProvider() {
+        //            @Override
+        //            public ArrayList<ZegoMixerInput> getMixVideoInputs(List<String> streamList,
+        //                ZegoMixerVideoConfig videoConfig) {
+        //                ArrayList<ZegoMixerInput> inputList = new ArrayList<>();
+        //                if (streamList.size() < 4) {
+        //                    for (int i = 0; i < streamList.size(); i++) {
+        //                        int left = (videoConfig.width / streamList.size()) * i;
+        //                        int top = 0;
+        //                        int right = (videoConfig.width / streamList.size()) * (i + 1);
+        //                        int bottom = videoConfig.height;
+        //                        ZegoMixerInput input_1 = new ZegoMixerInput(streamList.get(i), ZegoMixerInputContentType.VIDEO,
+        //                            new Rect(left, top, right, bottom));
+        //                        input_1.renderMode = ZegoMixRenderMode.FILL;
+        //                        inputList.add(input_1);
+        //                    }
+        //                } else if (streamList.size() == 4) {
+        //                    for (int i = 0; i < streamList.size(); i++) {
+        //                        int left = (videoConfig.width / 2) * (i % 2);
+        //                        int top = (videoConfig.height / 2) * (i < 2 ? 0 : 1);
+        //                        int right = left + videoConfig.width / 2;
+        //                        int bottom = top + videoConfig.height / 2;
+        //                        ZegoMixerInput input_1 = new ZegoMixerInput(streamList.get(i), ZegoMixerInputContentType.VIDEO,
+        //                            new Rect(left, top, right, bottom));
+        //                        input_1.renderMode = ZegoMixRenderMode.FILL;
+        //                        inputList.add(input_1);
+        //                    }
+        //                }
+        //                return inputList;
+        //            }
+        //        });
+    }
+
+    private void preparGiftView() {
+        ZegoMediaPlayer mediaPlayer = ZEGOSDKManager.getInstance().expressService.getMediaPlayer();
+        mediaPlayerView = new SurfaceView(this);
+        mediaPlayerView.getHolder().setFormat(PixelFormat.TRANSLUCENT);
+        mediaPlayerView.setZOrderOnTop(true);
+
+        ZegoCanvas canvas = new ZegoCanvas(mediaPlayerView);
+        canvas.alphaBlend = true;
+        mediaPlayer.setPlayerCanvas(canvas);
+
+        String giftUrl = "https://storage.zego.im/sdk-doc/Pics/zegocloud/gift/music_box.mp4";
+        ZEGOSDKManager.getInstance().expressService.loadResourceFile(giftUrl,
+            new IZegoMediaPlayerLoadResourceCallback() {
+                @Override
+                public void onLoadResourceCallback(int errorCode) {
+                    // load success first ,and then can display gift animation
+                }
+            });
+
+        ZEGOSDKManager.getInstance().expressService.setMediaPlayerEventHandler(new IZegoMediaPlayerEventHandler() {
+
+            @Override
+            public void onMediaPlayerStateUpdate(ZegoMediaPlayer mediaPlayer, ZegoMediaPlayerState state,
+                int errorCode) {
+                super.onMediaPlayerStateUpdate(mediaPlayer, state, errorCode);
+                if (state == ZegoMediaPlayerState.PLAY_ENDED) {
+                    binding.giftParent.removeView(mediaPlayerView);
+                }
+            }
+        });
+
+        ZEGOSDKManager.getInstance().zimService.addEventHandler(new IZIMEventHandler() {
+            @Override
+            public void onRoomCommandReceived(String senderID, String command) {
+                super.onRoomCommandReceived(senderID, command);
+                if (command.contains("gift_type")) {
+                    if (mediaPlayerView.getParent() == null) {
+                        binding.giftParent.addView(mediaPlayerView);
+                        mediaPlayer.start();
+                    }
+                }
+            }
+
+            @Override
+            public void onSendRoomCommand(int errorCode, String errorMessage, String command) {
+                super.onSendRoomCommand(errorCode, errorMessage, command);
+                if (errorCode == 0 && command.contains("gift_type")) {
+                    if (mediaPlayerView.getParent() == null) {
+                        binding.giftParent.addView(mediaPlayerView);
+                        mediaPlayer.start();
+                    }
+                }
+            }
+        });
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         if (isFinishing()) {
+            ZEGOSDKManager.getInstance().expressService.setMediaPlayerEventHandler(null);
             ZEGOLiveStreamingManager.getInstance().leave();
         }
     }

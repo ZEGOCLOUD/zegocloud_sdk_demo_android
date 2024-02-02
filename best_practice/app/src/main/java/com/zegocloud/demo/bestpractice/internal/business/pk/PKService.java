@@ -71,8 +71,8 @@ public class PKService {
     private IZIMEventHandler zimEventHandler;
     private List<PKListener> listenerList = new ArrayList<>();
     private boolean isPKStarted;
-    public static final int MIX_VIDEO_WIDTH = 972;
-    public static final int MIX_VIDEO_HEIGHT = 864;
+    public static final int MIX_VIDEO_WIDTH = 810;
+    public static final int MIX_VIDEO_HEIGHT = 720;
     public static final int MIX_VIDEO_BITRATE = 1500;
     public static final int MIX_VIDEO_FPS = 15;
 

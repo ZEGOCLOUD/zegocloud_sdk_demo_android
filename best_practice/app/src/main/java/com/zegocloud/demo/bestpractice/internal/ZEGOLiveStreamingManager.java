@@ -266,11 +266,12 @@ public class ZEGOLiveStreamingManager {
     }
 
     public void leave() {
-        if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
-            ZEGOLiveStreamingManager.getInstance().quitPKBattle();
+        if (isCurrentUserHost()) {
+            quitPKBattle();
         }
-        ZEGOLiveStreamingManager.getInstance().removeRoomData();
-        ZEGOLiveStreamingManager.getInstance().removeRoomListeners();
+        removeRoomData();
+        removeRoomListeners();
+        ZEGOSDKManager.getInstance().expressService.setMediaPlayerEventHandler(null);
         ZEGOSDKManager.getInstance().logoutRoom(null);
     }
 

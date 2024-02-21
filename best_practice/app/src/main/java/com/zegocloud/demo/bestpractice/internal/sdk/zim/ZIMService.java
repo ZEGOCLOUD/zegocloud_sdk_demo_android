@@ -583,9 +583,6 @@ public class ZIMService {
     }
 
     public void addEventHandler(IZIMEventHandler zimEventHandler, boolean autoDelete) {
-        Timber.d(
-            "addEventHandler() called with: zimEventHandler = [" + zimEventHandler + "], autoDelete = [" + autoDelete
-                + "]");
         if (autoDelete) {
             autoDeleteHandlerList.add(zimEventHandler);
         } else {

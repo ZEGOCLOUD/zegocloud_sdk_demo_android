@@ -2,6 +2,7 @@ package com.zegocloud.demo.bestpractice.internal.sdk.express;
 
 import android.app.Application;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.TextureView;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import im.zego.zegoexpress.ZegoExpressEngine;
@@ -422,6 +423,8 @@ public class ExpressService {
     }
 
     public void startPlayingStream(TextureView textureView, String streamID, ZegoViewMode viewMode) {
+        Timber.d("startPlayingStream() called with: textureView = [" + textureView + "], streamID = [" + streamID
+            + "], viewMode = [" + viewMode + "]");
         if (engineProxy.getExpressEngine() == null) {
             return;
         }
@@ -455,6 +458,9 @@ public class ExpressService {
                     if (mediaPlayerEvent != null) {
                         mediaPlayerEvent.onMediaPlayerStateUpdate(mediaPlayer, state, errorCode);
                     }
+                    Timber.d(
+                        "onMediaPlayerStateUpdate() called with: mediaPlayer = [" + mediaPlayer + "], state = [" + state
+                            + "], errorCode = [" + errorCode + "]");
                 }
 
                 @Override
@@ -467,6 +473,8 @@ public class ExpressService {
                     if (mediaPlayerEvent != null) {
                         mediaPlayerEvent.onMediaPlayerLocalCache(mediaPlayer, errorCode, resource, cachedFile);
                     }
+                    Timber.d("onMediaPlayerLocalCache() called with: mediaPlayer = [" + mediaPlayer + "], errorCode = ["
+                        + errorCode + "], resource = [" + resource + "], cachedFile = [" + cachedFile + "]");
                 }
 
                 @Override
@@ -476,6 +484,10 @@ public class ExpressService {
                     if (mediaPlayerEvent != null) {
                         mediaPlayerEvent.onMediaPlayerNetworkEvent(mediaPlayer, networkEvent);
                     }
+
+                    Timber.d(
+                        "onMediaPlayerNetworkEvent() called with: mediaPlayer = [" + mediaPlayer + "], networkEvent = ["
+                            + networkEvent + "]");
                 }
             });
         }
@@ -504,6 +516,13 @@ public class ExpressService {
                 }
             }
         });
+    }
+
+    public void switchRoom(String fromRoomID, String toRoomID) {
+        if (engineProxy.getExpressEngine() == null || currentUser == null) {
+            return;
+        }
+        engineProxy.switchRoom(fromRoomID, toRoomID);
     }
 
     public void loginRoom(String roomID, IZegoRoomLoginCallback callback) {
@@ -575,7 +594,10 @@ public class ExpressService {
         roomRemoteUserMap.clear();
         roomRemoteUserIDList.clear();
         currentRoomID = null;
-        mediaPlayer = null;
+        if (mediaPlayer != null) {
+            engineProxy.destroyMediaPlayer(mediaPlayer);
+            mediaPlayer = null;
+        }
         stopPreview();
         useFrontCamera(true);
         openCamera(false);

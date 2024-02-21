@@ -16,6 +16,9 @@ import androidx.core.content.ContextCompat;
 import com.permissionx.guolindev.PermissionX;
 import com.permissionx.guolindev.callback.RequestCallback;
 import com.zegocloud.demo.bestpractice.R;
+import com.zegocloud.demo.bestpractice.components.cohost.BottomMenuBar;
+import com.zegocloud.demo.bestpractice.components.cohost.CoHostView;
+import com.zegocloud.demo.bestpractice.components.cohost.PKBattleLayout;
 import com.zegocloud.demo.bestpractice.databinding.ActivityLiveStreamingBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager.LiveStreamingListener;
@@ -53,6 +56,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import org.json.JSONObject;
+import timber.log.Timber;
 
 public class LiveStreamingActivity extends AppCompatActivity {
 
@@ -61,6 +65,7 @@ public class LiveStreamingActivity extends AppCompatActivity {
     //    private AlertDialog inviteCoHostDialog;
     private AlertDialog zimReconnectDialog;
     private SurfaceView mediaPlayerView;
+    private CoHostView coHostView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,10 +79,6 @@ public class LiveStreamingActivity extends AppCompatActivity {
         liveID = getIntent().getStringExtra("liveID");
 
         binding.liveAudioroomTopbar.setRoomID(liveID);
-
-        ZEGOLiveStreamingManager.getInstance().addListenersForUserJoinRoom();
-
-        listenSDKEvent();
 
         binding.previewStart.setOnClickListener(v -> {
             loginRoom();
@@ -102,6 +103,8 @@ public class LiveStreamingActivity extends AppCompatActivity {
     }
 
     private void loginRoom() {
+        prepareForJoinRoom();
+
         ZEGOSDKManager.getInstance().loginRoom(liveID, ZegoScenario.BROADCAST, new ZEGOSDKCallBack() {
             @Override
             public void onResult(int errorCode, String message) {
@@ -114,6 +117,22 @@ public class LiveStreamingActivity extends AppCompatActivity {
         });
     }
 
+    public void prepareForJoinRoom() {
+        ZEGOLiveStreamingManager.getInstance().addListenersForUserJoinRoom();
+
+        binding.liveBottomMenuBarParent.removeAllViews();
+        binding.liveBottomMenuBarParent.addView(new BottomMenuBar(this));
+
+        binding.liveCohostViewParent.removeAllViews();
+        coHostView = new CoHostView(this);
+        binding.liveCohostViewParent.addView(coHostView);
+
+        binding.pkVideoLayoutParent.removeAllViews();
+        binding.pkVideoLayoutParent.addView(new PKBattleLayout(this));
+
+        listenSDKEvent();
+    }
+
     private void onJoinRoomFailed(int errorCode) {
         ToastUtil.show(this, "Join room Failed,errorCode: " + errorCode);
         finish();
@@ -121,7 +140,7 @@ public class LiveStreamingActivity extends AppCompatActivity {
 
     private void onJoinRoomSuccess() {
         binding.previewStart.setVisibility(View.GONE);
-        binding.liveBottomMenuBar.setVisibility(View.VISIBLE);
+        binding.liveBottomMenuBarParent.setVisibility(View.VISIBLE);
 
         boolean isHost = getIntent().getBooleanExtra("host", true);
         if (isHost) {
@@ -136,42 +155,11 @@ public class LiveStreamingActivity extends AppCompatActivity {
         int width = binding.getRoot().getWidth() / 4;
         binding.mainHostVideoIcon.setCircleBackgroundRadius(width);
 
-        prepareGiftView();
+        initGiftView();
 
-        //        ZEGOLiveStreamingManager.getInstance().setMixLayoutProvider(new MixLayoutProvider() {
-        //            @Override
-        //            public ArrayList<ZegoMixerInput> getMixVideoInputs(List<String> streamList,
-        //                ZegoMixerVideoConfig videoConfig) {
-        //                ArrayList<ZegoMixerInput> inputList = new ArrayList<>();
-        //                if (streamList.size() < 4) {
-        //                    for (int i = 0; i < streamList.size(); i++) {
-        //                        int left = (videoConfig.width / streamList.size()) * i;
-        //                        int top = 0;
-        //                        int right = (videoConfig.width / streamList.size()) * (i + 1);
-        //                        int bottom = videoConfig.height;
-        //                        ZegoMixerInput input_1 = new ZegoMixerInput(streamList.get(i), ZegoMixerInputContentType.VIDEO,
-        //                            new Rect(left, top, right, bottom));
-        //                        input_1.renderMode = ZegoMixRenderMode.FILL;
-        //                        inputList.add(input_1);
-        //                    }
-        //                } else if (streamList.size() == 4) {
-        //                    for (int i = 0; i < streamList.size(); i++) {
-        //                        int left = (videoConfig.width / 2) * (i % 2);
-        //                        int top = (videoConfig.height / 2) * (i < 2 ? 0 : 1);
-        //                        int right = left + videoConfig.width / 2;
-        //                        int bottom = top + videoConfig.height / 2;
-        //                        ZegoMixerInput input_1 = new ZegoMixerInput(streamList.get(i), ZegoMixerInputContentType.VIDEO,
-        //                            new Rect(left, top, right, bottom));
-        //                        input_1.renderMode = ZegoMixRenderMode.FILL;
-        //                        inputList.add(input_1);
-        //                    }
-        //                }
-        //                return inputList;
-        //            }
-        //        });
     }
 
-    private void prepareGiftView() {
+    private void initGiftView() {
         ZegoMediaPlayer mediaPlayer = ZEGOSDKManager.getInstance().expressService.getMediaPlayer();
         mediaPlayerView = new SurfaceView(this);
         mediaPlayerView.getHolder().setFormat(PixelFormat.TRANSLUCENT);
@@ -181,16 +169,17 @@ public class LiveStreamingActivity extends AppCompatActivity {
         canvas.alphaBlend = true;
         mediaPlayer.setPlayerCanvas(canvas);
 
-//        String giftUrl = "https://storage.zego.im/sdk-doc/Pics/zegocloud/gift/music_box.mp4";
+        //        String giftUrl = "https://storage.zego.im/sdk-doc/Pics/zegocloud/gift/music_box.mp4";
 
-        ZegoUtil.copyFileFromAssets(this, "gift.mp4", getExternalFilesDir(null) + "/gift.mp4");
-        String giftUrl = getExternalFilesDir(null) + "/gift.mp4";
+        ZegoUtil.copyFileFromAssets(this, "music_box.mp4", getExternalFilesDir(null) + "/music_box.mp4");
+        String giftUrl = getExternalFilesDir(null) + "/music_box.mp4";
 
         ZEGOSDKManager.getInstance().expressService.loadResourceFile(giftUrl,
             new IZegoMediaPlayerLoadResourceCallback() {
                 @Override
                 public void onLoadResourceCallback(int errorCode) {
                     // load success first ,and then can display gift animation
+                    Timber.d("onLoadResourceCallback() called with: errorCode = [" + errorCode + "]");
                 }
             });
 
@@ -235,7 +224,6 @@ public class LiveStreamingActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         if (isFinishing()) {
-            ZEGOSDKManager.getInstance().expressService.setMediaPlayerEventHandler(null);
             ZEGOLiveStreamingManager.getInstance().leave();
         }
     }
@@ -267,7 +255,7 @@ public class LiveStreamingActivity extends AppCompatActivity {
                     }
                 }
                 if (ZEGOLiveStreamingManager.getInstance().getPKBattleInfo() == null) {
-                    binding.liveCohostView.addUser(coHostUserList);
+                    coHostView.addUser(coHostUserList);
                 }
             }
 
@@ -286,7 +274,7 @@ public class LiveStreamingActivity extends AppCompatActivity {
                         coHostUserList.add(ZEGOSDKUser);
                     }
                 }
-                binding.liveCohostView.removeUser(coHostUserList);
+                coHostView.removeUser(coHostUserList);
             }
 
             @Override
@@ -296,7 +284,7 @@ public class LiveStreamingActivity extends AppCompatActivity {
                 ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
                 if (state == ZegoPublisherState.PUBLISHING) {
                     if (ZEGOLiveStreamingManager.getInstance().isCoHost(currentUser.userID)) {
-                        binding.liveCohostView.addUser(currentUser);
+                        coHostView.addUser(currentUser);
                     } else if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
                         binding.mainHostVideo.setUserID(currentUser.userID);
                         binding.mainHostVideoIcon.setLetter(currentUser.userName);
@@ -313,7 +301,7 @@ public class LiveStreamingActivity extends AppCompatActivity {
                         binding.mainHostVideo.stopPublishAudioVideo();
                         binding.mainHostVideoLayout.setVisibility(View.GONE);
                     } else {
-                        binding.liveCohostView.removeUser(currentUser);
+                        coHostView.removeUser(currentUser);
                     }
                 }
             }
@@ -481,18 +469,18 @@ public class LiveStreamingActivity extends AppCompatActivity {
     }
 
     private void onRoomPKStarted() {
-        binding.liveCohostView.setVisibility(View.GONE);
-        binding.pkVideoLayout.setVisibility(View.VISIBLE);
+        binding.liveCohostViewParent.setVisibility(View.GONE);
+        binding.pkVideoLayoutParent.setVisibility(View.VISIBLE);
         binding.mainHostVideoLayout.setVisibility(View.GONE);
     }
 
     private void onRoomPKEnded() {
         ZEGOSDKUser hostUser = ZEGOLiveStreamingManager.getInstance().getHostUser();
-        binding.pkVideoLayout.setVisibility(View.INVISIBLE);
+        binding.pkVideoLayoutParent.setVisibility(View.INVISIBLE);
         if (hostUser != null) {
             binding.mainHostVideoLayout.setVisibility(View.VISIBLE);
         }
-        binding.liveCohostView.setVisibility(View.VISIBLE);
+        binding.liveCohostViewParent.setVisibility(View.VISIBLE);
 
         if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
             binding.mainHostVideo.startPreviewOnly();

@@ -127,7 +127,7 @@ public class PKBattleView extends FrameLayout {
 
             boolean isCurrentUserHost = ZEGOLiveStreamingManager.getInstance().isCurrentUserHost();
             ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
-            if (!Objects.equals(currentUser.userID, pkUser.userID)) {
+            if (!Objects.equals(currentUser.userID, pkUser.userID) && isCurrentUserHost) {
                 muteButton.setVisibility(VISIBLE);
             }
             // host play single stream of each pk user,need attach video view and hide mix video

@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
         binding.liveUserinfoUserid.setText(localUser.userID);
         binding.liveUserinfoUsername.setText(localUser.userName);
 
-//        binding.liveIdStreaming.getEditText().setText(Build.MANUFACTURER.toLowerCase());
+        //        binding.liveIdStreaming.getEditText().setText(Build.MANUFACTURER.toLowerCase());
         binding.startLiveStreaming.setOnClickListener(v -> {
             String liveID = binding.liveIdStreaming.getEditText().getText().toString();
             if (TextUtils.isEmpty(liveID)) {
@@ -70,6 +70,11 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, LiveStreamingActivity.class);
             intent.putExtra("host", false);
             intent.putExtra("liveID", liveID);
+            startActivity(intent);
+        });
+
+        binding.slideLiveStreaming.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, LiveSlideActivity.class);
             startActivity(intent);
         });
 
@@ -120,7 +125,8 @@ public class MainActivity extends AppCompatActivity {
                     @NonNull List<String> deniedList) {
                     if (allGranted) {
                         String[] split = targetUserID.split(",");
-                        ZEGOCallInvitationManager.getInstance().inviteVideoCall(Arrays.asList(split), new ZIMCallInvitationSentCallback() {
+                        ZEGOCallInvitationManager.getInstance()
+                            .inviteVideoCall(Arrays.asList(split), new ZIMCallInvitationSentCallback() {
                                 @Override
                                 public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info,
                                     ZIMError errorInfo) {
@@ -153,7 +159,8 @@ public class MainActivity extends AppCompatActivity {
                     @NonNull List<String> deniedList) {
                     if (allGranted) {
                         String[] split = targetUserID.split(",");
-                        ZEGOCallInvitationManager.getInstance().inviteVoiceCall(Arrays.asList(split), new ZIMCallInvitationSentCallback() {
+                        ZEGOCallInvitationManager.getInstance()
+                            .inviteVoiceCall(Arrays.asList(split), new ZIMCallInvitationSentCallback() {
                                 @Override
                                 public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info,
                                     ZIMError errorInfo) {

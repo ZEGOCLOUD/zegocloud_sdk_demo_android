@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent">
+
+  <FrameLayout
+    android:id="@+id/full_view_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"></FrameLayout>
+
+  <FrameLayout
+    android:id="@+id/simple_view_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextureView
+      android:id="@+id/texture_view"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent" />
+
+    <TextView
+      android:id="@+id/text_view"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_gravity="center"
+      android:textSize="36sp" />
+  </FrameLayout>
+
+</FrameLayout>

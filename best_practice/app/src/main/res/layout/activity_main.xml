@@ -88,6 +88,14 @@
       android:layout_marginTop="8dp"
       android:text="Watch LiveStreaming" />
 
+    <Button
+      android:id="@+id/slide_live_streaming"
+      android:layout_width="275dp"
+      android:layout_height="wrap_content"
+      android:layout_gravity="center_horizontal"
+      android:layout_marginTop="8dp"
+      android:text="Slide Show LiveStreaming" />
+
     <com.google.android.material.textfield.TextInputLayout
       android:id="@+id/live_id_audio_room"
       style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"

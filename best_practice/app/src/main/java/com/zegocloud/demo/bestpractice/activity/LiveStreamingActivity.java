@@ -28,6 +28,7 @@ import com.zegocloud.demo.bestpractice.internal.sdk.express.ExpressService;
 import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
 import com.zegocloud.demo.bestpractice.internal.sdk.zim.IZIMEventHandler;
 import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
+import com.zegocloud.demo.bestpractice.internal.utils.ZegoUtil;
 import im.zego.zegoexpress.ZegoMediaPlayer;
 import im.zego.zegoexpress.callback.IZegoMediaPlayerEventHandler;
 import im.zego.zegoexpress.callback.IZegoMediaPlayerLoadResourceCallback;
@@ -135,7 +136,7 @@ public class LiveStreamingActivity extends AppCompatActivity {
         int width = binding.getRoot().getWidth() / 4;
         binding.mainHostVideoIcon.setCircleBackgroundRadius(width);
 
-        preparGiftView();
+        prepareGiftView();
 
         //        ZEGOLiveStreamingManager.getInstance().setMixLayoutProvider(new MixLayoutProvider() {
         //            @Override
@@ -170,7 +171,7 @@ public class LiveStreamingActivity extends AppCompatActivity {
         //        });
     }
 
-    private void preparGiftView() {
+    private void prepareGiftView() {
         ZegoMediaPlayer mediaPlayer = ZEGOSDKManager.getInstance().expressService.getMediaPlayer();
         mediaPlayerView = new SurfaceView(this);
         mediaPlayerView.getHolder().setFormat(PixelFormat.TRANSLUCENT);
@@ -180,7 +181,11 @@ public class LiveStreamingActivity extends AppCompatActivity {
         canvas.alphaBlend = true;
         mediaPlayer.setPlayerCanvas(canvas);
 
-        String giftUrl = "https://storage.zego.im/sdk-doc/Pics/zegocloud/gift/music_box.mp4";
+//        String giftUrl = "https://storage.zego.im/sdk-doc/Pics/zegocloud/gift/music_box.mp4";
+
+        ZegoUtil.copyFileFromAssets(this, "gift.mp4", getExternalFilesDir(null) + "/gift.mp4");
+        String giftUrl = getExternalFilesDir(null) + "/gift.mp4";
+
         ZEGOSDKManager.getInstance().expressService.loadResourceFile(giftUrl,
             new IZegoMediaPlayerLoadResourceCallback() {
                 @Override

@@ -24,4 +24,8 @@ public class FakeServerApi {
     public static void reset() {
         roomID = 1;
     }
+
+    public static LiveRoom getNextLive(String liveID) {
+        return null;
+    }
 }

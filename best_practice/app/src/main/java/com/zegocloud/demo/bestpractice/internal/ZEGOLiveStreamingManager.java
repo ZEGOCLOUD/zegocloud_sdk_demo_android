@@ -13,6 +13,9 @@ import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventH
 import com.zegocloud.demo.bestpractice.internal.sdk.zim.IZIMEventHandler;
 import im.zego.zegoexpress.callback.IZegoMixerStartCallback;
 import im.zego.zegoexpress.constants.ZegoPublisherState;
+import im.zego.zim.callback.ZIMUsersInfoQueriedCallback;
+import im.zego.zim.entity.ZIMUserFullInfo;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +56,22 @@ public class ZEGOLiveStreamingManager {
         ZEGOSDKManager.getInstance().expressService.addEventHandler(new IExpressEngineEventHandler() {
             @Override
             public void onReceiveStreamAdd(List<ZEGOSDKUser> userList) {
+                boolean needQuery = false;
+                for (ZEGOSDKUser zegosdkUser : userList) {
+                    ZIMUserFullInfo zimUserFullInfo = ZEGOSDKManager.getInstance().zimService.getUserInfo(
+                        zegosdkUser.userID);
+                    if (zimUserFullInfo == null) {
+                        needQuery = true;
+                        break;
+                    }
+                }
+                if (needQuery) {
+                    List<String> userIDList = new ArrayList<>();
+                    for (ZEGOSDKUser user : userList) {
+                        userIDList.add(user.userID);
+                    }
+                    ZEGOLiveStreamingManager.getInstance().queryUsersInfo(userIDList, null);
+                }
                 coHostService.onReceiveStreamAdd(userList);
                 pkService.onReceiveStreamAdd(userList);
             }
@@ -204,6 +223,10 @@ public class ZEGOLiveStreamingManager {
     public void removeLiveStreamingListener(LiveStreamingListener listener) {
         pkService.removeListener(listener);
         coHostService.removeListener(listener);
+    }
+
+    public void queryUsersInfo(List<String> userIDList, ZIMUsersInfoQueriedCallback callback) {
+        ZEGOSDKManager.getInstance().zimService.queryUsersInfo(userIDList, callback);
     }
 
     public void invitePKBattle(String anotherHostID, UserRequestCallback callback) {

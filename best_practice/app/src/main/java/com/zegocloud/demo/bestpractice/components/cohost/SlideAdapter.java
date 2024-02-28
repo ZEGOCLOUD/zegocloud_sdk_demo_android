@@ -41,11 +41,11 @@ public class SlideAdapter extends RecyclerView.Adapter<ViewHolder> {
         textView.setText(text);
         textView.setTextColor(Color.WHITE);
 
-        Random random = new Random();
-        int red = random.nextInt(256);
-        int green = random.nextInt(256);
-        int blue = random.nextInt(256);
-        holder.itemView.setBackgroundColor(Color.rgb(red, green, blue));
+//        Random random = new Random();
+//        int red = random.nextInt(256);
+//        int green = random.nextInt(256);
+//        int blue = random.nextInt(256);
+//        holder.itemView.setBackgroundColor(Color.rgb(red, green, blue));
     }
 
     @Override

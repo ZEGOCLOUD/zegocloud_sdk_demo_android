@@ -3,7 +3,6 @@ package com.zegocloud.demo.bestpractice.activity;
 import android.Manifest.permission;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import androidx.annotation.NonNull;
@@ -52,8 +51,7 @@ public class MainActivity extends AppCompatActivity {
                 public void onResult(boolean allGranted, @NonNull List<String> grantedList,
                     @NonNull List<String> deniedList) {
                     if (allGranted) {
-                        Intent intent = new Intent(MainActivity.this, LiveStreamingActivity.class);
-                        intent.putExtra("host", true);
+                        Intent intent = new Intent(MainActivity.this, StartLiveStreamActivity.class);
                         intent.putExtra("liveID", liveID);
                         startActivity(intent);
                     }
@@ -61,20 +59,14 @@ public class MainActivity extends AppCompatActivity {
             });
         });
 
-        binding.watchLiveStreaming.setOnClickListener(v -> {
+        binding.slideLiveStreaming.setOnClickListener(v -> {
             String liveID = binding.liveIdStreaming.getEditText().getText().toString();
             if (TextUtils.isEmpty(liveID)) {
                 binding.liveIdStreaming.setError("please input liveID");
                 return;
             }
-            Intent intent = new Intent(MainActivity.this, LiveStreamingActivity.class);
-            intent.putExtra("host", false);
+            Intent intent = new Intent(MainActivity.this, WatchLiveStreamActivity.class);
             intent.putExtra("liveID", liveID);
-            startActivity(intent);
-        });
-
-        binding.slideLiveStreaming.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, LiveSlideActivity.class);
             startActivity(intent);
         });
 

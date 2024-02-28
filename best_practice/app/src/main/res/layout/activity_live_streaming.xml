@@ -6,7 +6,7 @@
   android:layout_width="match_parent"
   android:layout_height="match_parent"
   android:background="@drawable/livestreaming_img_bg"
-  tools:context=".activity.LiveStreamingActivity">
+  tools:context=".activity.StartLiveStreamActivity">
 
   <FrameLayout
     android:id="@+id/main_host_video_layout"

@@ -3,8 +3,6 @@ package com.zegocloud.demo.bestpractice.activity;
 import android.Manifest.permission;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,11 +33,10 @@ import java.util.Objects;
 import java.util.Set;
 import timber.log.Timber;
 
-public class LiveSlideActivity extends AppCompatActivity {
+public class WatchLiveStreamActivity extends AppCompatActivity {
 
     private ViewPager2 viewPager2;
-    private List<LiveRoom> roomList;
-    private Handler handler = new Handler(Looper.getMainLooper());
+    private List<LiveRoom> roomList = new ArrayList<>();
     private int currentState;
     private Set<String> loadingRooms = new HashSet<>();
     private SlideAdapter slideAdapter;
@@ -50,7 +47,13 @@ public class LiveSlideActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        roomList = FakeServerApi.getRoomList();
+        String liveID = getIntent().getStringExtra("liveID");
+        roomList.add(new LiveRoom(liveID));
+
+        LiveRoom nextLive = FakeServerApi.getNextLive(liveID);
+        if (nextLive != null) {
+            roomList.add(nextLive);
+        }
 
         setContentView(R.layout.activity_live_slide);
 
@@ -79,9 +82,15 @@ public class LiveSlideActivity extends AppCompatActivity {
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
 
-                if (position == slideAdapter.getItemCount() - 2) {
-                    roomList.addAll(FakeServerApi.getRoomList());
+                LiveRoom nextLive = FakeServerApi.getNextLive(liveID);
+                if (nextLive != null) {
+                    int position1 = roomList.size() - 1;
+                    if (!roomList.contains(nextLive)) {
+                        roomList.add(nextLive);
+                        slideAdapter.notifyItemInserted(position1);
+                    }
                 }
+
                 onItemPageSelected(position);
                 Timber.d("onPageSelected() called with: position = [" + position + "]");
             }
@@ -117,7 +126,7 @@ public class LiveSlideActivity extends AppCompatActivity {
         }
         LiveRoom liveRoom = slideAdapter.getItem(position);
         // if no live room
-        if (liveRoom == null) {
+        if (liveRoom == null || liveRoom.hostUserID == null) {
             return;
         }
         // if this room has loaded
@@ -166,19 +175,15 @@ public class LiveSlideActivity extends AppCompatActivity {
 
         ZEGOLiveStreamingManager.getInstance().leave();
 
-        ZEGOLiveStreamingManager.getInstance().addListenersForUserJoinRoom();
-        ZEGOSDKManager.getInstance().expressService.openCamera(false);
-        ZEGOSDKManager.getInstance().expressService.openMicrophone(false);
-
         ViewGroup simpleViewParent = (ViewGroup) viewHolder.itemView.findViewById(R.id.simple_view_layout);
         simpleViewParent.setVisibility(View.GONE);
-
         ViewGroup fullViewParent = (ViewGroup) viewHolder.itemView.findViewById(R.id.full_view_layout);
         fullViewParent.removeAllViews();
+
         LiveStreamingView liveStreamingView = new LiveStreamingView(this);
         fullViewParent.addView(liveStreamingView);
 
-        liveStreamingView.prepareForJoinRoom();
+        liveStreamingView.prepareForJoinLive();
 
         ZEGOSDKManager.getInstance().loginRoom(liveRoom.roomID, ZegoScenario.BROADCAST, new ZEGOSDKCallBack() {
             @Override
@@ -200,11 +205,15 @@ public class LiveSlideActivity extends AppCompatActivity {
         if (position < 0 || position > roomList.size() - 1) {
             return;
         }
-
+        LiveRoom liveRoom = slideAdapter.getItem(position);
+        if (liveRoom == null) {
+            return;
+        }
+        loadingRooms.remove(liveRoom.roomID);
         for (String loadingRoom : loadingRooms) {
-            for (LiveRoom liveRoom : roomList) {
-                if (Objects.equals(liveRoom.roomID, loadingRoom)) {
-                    String streamID = liveRoom.roomID + "_" + liveRoom.hostUserID + "_main" + "_host";
+            for (LiveRoom room : roomList) {
+                if (Objects.equals(room.roomID, loadingRoom)) {
+                    String streamID = room.roomID + "_" + room.hostUserID + "_main" + "_host";
                     ZEGOSDKManager.getInstance().expressService.stopPlayingStream(streamID);
                     break;
                 }
@@ -212,7 +221,6 @@ public class LiveSlideActivity extends AppCompatActivity {
         }
         loadingRooms.clear();
 
-        LiveRoom liveRoom = slideAdapter.getItem(position);
         loadingRooms.add(liveRoom.roomID);
 
 
@@ -248,6 +256,7 @@ public class LiveSlideActivity extends AppCompatActivity {
         if (isFinishing()) {
             FakeServerApi.reset();
             loadingRooms.clear();
+            roomList.clear();
             ZEGOLiveStreamingManager.getInstance().leave();
         }
     }

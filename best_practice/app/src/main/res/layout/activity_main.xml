@@ -81,20 +81,12 @@
       android:text="Start LiveStreaming" />
 
     <Button
-      android:id="@+id/watch_live_streaming"
-      android:layout_width="275dp"
-      android:layout_height="wrap_content"
-      android:layout_gravity="center_horizontal"
-      android:layout_marginTop="8dp"
-      android:text="Watch LiveStreaming" />
-
-    <Button
       android:id="@+id/slide_live_streaming"
       android:layout_width="275dp"
       android:layout_height="wrap_content"
       android:layout_gravity="center_horizontal"
       android:layout_marginTop="8dp"
-      android:text="Slide Show LiveStreaming" />
+      android:text="Watch LiveStreaming" />
 
     <com.google.android.material.textfield.TextInputLayout
       android:id="@+id/live_id_audio_room"

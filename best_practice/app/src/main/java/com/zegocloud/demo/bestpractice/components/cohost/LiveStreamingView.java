@@ -28,6 +28,7 @@ import im.zego.zegoexpress.constants.ZegoPublisherState;
 import im.zego.zegoexpress.constants.ZegoVideoConfigPreset;
 import im.zego.zegoexpress.entity.ZegoCanvas;
 import im.zego.zegoexpress.entity.ZegoVideoConfig;
+import im.zego.zim.entity.ZIMUserFullInfo;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -58,7 +59,33 @@ public class LiveStreamingView extends FrameLayout {
         binding = ActivityLiveStreamingBinding.inflate(LayoutInflater.from(getContext()), this, true);
     }
 
-    public void prepareForJoinRoom() {
+    public void prepareForStartLive(View.OnClickListener onClickListener) {
+
+        ZEGOSDKManager.getInstance().expressService.openCamera(true);
+        ZEGOSDKManager.getInstance().expressService.openMicrophone(true);
+        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+        ZEGOLiveStreamingManager.getInstance().setHostUser(currentUser);
+
+        binding.previewStart.setVisibility(View.VISIBLE);
+        binding.liveAudioroomTopbar.setVisibility(GONE);
+        binding.mainHostVideo.startPreviewOnly();
+        binding.previewStart.setOnClickListener(v -> {
+            if (onClickListener != null) {
+                onClickListener.onClick(v);
+            }
+        });
+        prepareForJoinLiveInner();
+    }
+
+    public void prepareForJoinLive() {
+        ZEGOSDKManager.getInstance().expressService.openCamera(false);
+        ZEGOSDKManager.getInstance().expressService.openMicrophone(false);
+        prepareForJoinLiveInner();
+    }
+
+    private void prepareForJoinLiveInner() {
+        ZEGOLiveStreamingManager.getInstance().addListenersForUserJoinRoom();
+
         binding.liveBottomMenuBarParent.removeAllViews();
         binding.liveBottomMenuBarParent.addView(new BottomMenuBar(getContext()));
 
@@ -73,8 +100,13 @@ public class LiveStreamingView extends FrameLayout {
     }
 
     public void onJoinRoomSuccess(String roomID) {
+        if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
+            ZEGOLiveStreamingManager.getInstance().startPublishingStream();
+        }
+
         binding.previewStart.setVisibility(View.GONE);
         binding.liveBottomMenuBarParent.setVisibility(View.VISIBLE);
+        binding.liveAudioroomTopbar.setVisibility(VISIBLE);
         binding.liveAudioroomTopbar.setRoomID(roomID);
 
         ZegoVideoConfig videoConfig = new ZegoVideoConfig(ZegoVideoConfigPreset.PRESET_360P);
@@ -98,8 +130,9 @@ public class LiveStreamingView extends FrameLayout {
         canvas.alphaBlend = true;
         mediaPlayer.setPlayerCanvas(canvas);
 
-//        String giftUrl = "https://storage.zego.im/sdk-doc/Pics/zegocloud/gift/music_box.mp4";
-        ZegoUtil.copyFileFromAssets(getContext(), "music_box.mp4", getContext().getExternalFilesDir(null) + "/music_box.mp4");
+        //        String giftUrl = "https://storage.zego.im/sdk-doc/Pics/zegocloud/gift/music_box.mp4";
+        ZegoUtil.copyFileFromAssets(getContext(), "music_box.mp4",
+            getContext().getExternalFilesDir(null) + "/music_box.mp4");
         String giftUrl = getContext().getExternalFilesDir(null) + "/music_box.mp4";
 
         ZEGOSDKManager.getInstance().expressService.loadResourceFile(giftUrl,
@@ -159,8 +192,14 @@ public class LiveStreamingView extends FrameLayout {
                 List<ZEGOSDKUser> coHostUserList = new ArrayList<>();
                 for (ZEGOSDKUser zegosdkUser : userList) {
                     if (ZEGOLiveStreamingManager.getInstance().isHost(zegosdkUser.userID)) {
+                        onRoomUserCameraOpen(zegosdkUser.userID, zegosdkUser.isCameraOpen());
                         binding.mainHostVideo.setUserID(zegosdkUser.userID);
                         binding.mainHostVideoIcon.setLetter(zegosdkUser.userName);
+                        ZIMUserFullInfo zimUserFullInfo = ZEGOSDKManager.getInstance().zimService.getUserInfo(
+                            zegosdkUser.userID);
+                        if (zimUserFullInfo != null) {
+                            binding.mainHostVideoIcon.setIconUrl(zimUserFullInfo.userAvatarUrl);
+                        }
                         binding.mainHostVideo.setStreamID(zegosdkUser.getMainStreamID());
                         if (ZEGOLiveStreamingManager.getInstance().getPKBattleInfo() == null) {
                             binding.mainHostVideo.setVisibility(View.VISIBLE);
@@ -187,6 +226,7 @@ public class LiveStreamingView extends FrameLayout {
                         binding.mainHostVideo.setStreamID("");
                         binding.mainHostVideo.setUserID("");
                         binding.mainHostVideoIcon.setLetter("");
+                        binding.mainHostVideoIcon.setIconUrl("");
                         binding.mainHostVideoLayout.setVisibility(View.GONE);
 
                     } else {
@@ -207,6 +247,9 @@ public class LiveStreamingView extends FrameLayout {
                     } else if (ZEGOLiveStreamingManager.getInstance().isCurrentUserHost()) {
                         binding.mainHostVideo.setUserID(currentUser.userID);
                         binding.mainHostVideoIcon.setLetter(currentUser.userName);
+                        ZIMUserFullInfo zimUserFullInfo = ZEGOSDKManager.getInstance().zimService.getUserInfo(
+                            currentUser.userID);
+                        binding.mainHostVideoIcon.setIconUrl(zimUserFullInfo.userAvatarUrl);
                         binding.mainHostVideo.setStreamID(streamID);
                         if (ZEGOLiveStreamingManager.getInstance().getPKBattleInfo() == null) {
                             binding.mainHostVideoLayout.setVisibility(View.VISIBLE);
@@ -216,6 +259,7 @@ public class LiveStreamingView extends FrameLayout {
                     if (streamID.endsWith("_host")) {
                         binding.mainHostVideo.setUserID("");
                         binding.mainHostVideoIcon.setLetter("");
+                        binding.mainHostVideoIcon.setIconUrl("");
                         binding.mainHostVideo.setStreamID("");
                         binding.mainHostVideo.stopPublishAudioVideo();
                         binding.mainHostVideoLayout.setVisibility(View.GONE);

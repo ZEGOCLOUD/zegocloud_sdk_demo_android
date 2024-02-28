@@ -20,7 +20,7 @@ import com.zegocloud.demo.bestpractice.components.cohost.LiveRoom;
 import com.zegocloud.demo.bestpractice.components.cohost.LiveStreamingView;
 import com.zegocloud.demo.bestpractice.components.cohost.SlideAdapter;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
-import com.zegocloud.demo.bestpractice.internal.business.FakeServerApi;
+import com.zegocloud.demo.bestpractice.internal.business.FakeApi;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKCallBack;
 import im.zego.zegoexpress.constants.ZegoScenario;
@@ -50,7 +50,7 @@ public class WatchLiveStreamActivity extends AppCompatActivity {
         String liveID = getIntent().getStringExtra("liveID");
         roomList.add(new LiveRoom(liveID));
 
-        LiveRoom nextLive = FakeServerApi.getNextLive(liveID);
+        LiveRoom nextLive = FakeApi.getNextLive(liveID);
         if (nextLive != null) {
             roomList.add(nextLive);
         }
@@ -82,7 +82,7 @@ public class WatchLiveStreamActivity extends AppCompatActivity {
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
 
-                LiveRoom nextLive = FakeServerApi.getNextLive(liveID);
+                LiveRoom nextLive = FakeApi.getNextLive(liveID);
                 if (nextLive != null) {
                     int position1 = roomList.size() - 1;
                     if (!roomList.contains(nextLive)) {
@@ -254,7 +254,6 @@ public class WatchLiveStreamActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         if (isFinishing()) {
-            FakeServerApi.reset();
             loadingRooms.clear();
             roomList.clear();
             ZEGOLiveStreamingManager.getInstance().leave();

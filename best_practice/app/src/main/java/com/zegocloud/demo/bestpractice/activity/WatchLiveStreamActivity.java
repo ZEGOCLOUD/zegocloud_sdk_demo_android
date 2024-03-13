@@ -50,6 +50,7 @@ public class WatchLiveStreamActivity extends AppCompatActivity {
         String liveID = getIntent().getStringExtra("liveID");
         roomList.add(new LiveRoom(liveID));
 
+        // to slide watch livestreaming,need get next LiveID to switch .
         LiveRoom nextLive = FakeApi.getNextLive(liveID);
         if (nextLive != null) {
             roomList.add(nextLive);
@@ -85,6 +86,7 @@ public class WatchLiveStreamActivity extends AppCompatActivity {
                 LiveRoom nextLive = FakeApi.getNextLive(liveID);
                 if (nextLive != null) {
                     int position1 = roomList.size() - 1;
+                    // once a page is selected,need to get next liveID to ready for slide
                     if (!roomList.contains(nextLive)) {
                         roomList.add(nextLive);
                         slideAdapter.notifyItemInserted(position1);
@@ -173,6 +175,7 @@ public class WatchLiveStreamActivity extends AppCompatActivity {
     private void joinRoom(int position, ViewHolder viewHolder) {
         LiveRoom liveRoom = slideAdapter.getItem(position);
 
+        // leave room will auto stop streams and remove subview's sdk event listeners.
         ZEGOLiveStreamingManager.getInstance().leave();
 
         ViewGroup simpleViewParent = (ViewGroup) viewHolder.itemView.findViewById(R.id.simple_view_layout);
@@ -183,6 +186,8 @@ public class WatchLiveStreamActivity extends AppCompatActivity {
         LiveStreamingView liveStreamingView = new LiveStreamingView(this);
         fullViewParent.addView(liveStreamingView);
 
+        // create subviews now,because their sdk event listeners was add when constructor,
+        // and removed when leave room(internal logic).
         liveStreamingView.prepareForJoinLive();
 
         ZEGOSDKManager.getInstance().loginRoom(liveRoom.roomID, ZegoScenario.BROADCAST, new ZEGOSDKCallBack() {
@@ -254,6 +259,16 @@ public class WatchLiveStreamActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         if (isFinishing()) {
+            loadingRooms.clear();
+            roomList.clear();
+            ZEGOLiveStreamingManager.getInstance().leave();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (!loadingRooms.isEmpty()) {
             loadingRooms.clear();
             roomList.clear();
             ZEGOLiveStreamingManager.getInstance().leave();

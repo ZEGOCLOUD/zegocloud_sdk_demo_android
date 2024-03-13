@@ -61,11 +61,15 @@ public class LiveStreamingView extends FrameLayout {
 
     public void prepareForStartLive(View.OnClickListener onClickListener) {
 
+        //prepare for ZEGOLiveStreamingManager do something
         ZEGOSDKManager.getInstance().expressService.openCamera(true);
         ZEGOSDKManager.getInstance().expressService.openMicrophone(true);
+        ZEGOLiveStreamingManager.getInstance().addListenersForUserJoinRoom();
+
         ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
         ZEGOLiveStreamingManager.getInstance().setHostUser(currentUser);
 
+        //prepare for host view
         binding.previewStart.setVisibility(View.VISIBLE);
         binding.liveAudioroomTopbar.setVisibility(GONE);
         binding.mainHostVideo.startPreviewOnly();
@@ -74,18 +78,23 @@ public class LiveStreamingView extends FrameLayout {
                 onClickListener.onClick(v);
             }
         });
+
+        //prepare for view
         prepareForJoinLiveInner();
     }
 
     public void prepareForJoinLive() {
+        // prepare for ZEGOLiveStreamingManager do something
         ZEGOSDKManager.getInstance().expressService.openCamera(false);
         ZEGOSDKManager.getInstance().expressService.openMicrophone(false);
+        ZEGOLiveStreamingManager.getInstance().addListenersForUserJoinRoom();
+
+        //prepare for view
         prepareForJoinLiveInner();
     }
 
     private void prepareForJoinLiveInner() {
-        ZEGOLiveStreamingManager.getInstance().addListenersForUserJoinRoom();
-
+        // create new subviews to add sdk event for view itself when constructor
         binding.liveBottomMenuBarParent.removeAllViews();
         binding.liveBottomMenuBarParent.addView(new BottomMenuBar(getContext()));
 
@@ -96,7 +105,7 @@ public class LiveStreamingView extends FrameLayout {
         binding.pkVideoLayoutParent.removeAllViews();
         binding.pkVideoLayoutParent.addView(new PKBattleLayout(getContext()));
 
-        listenSDKEvent();
+        listenSDKEventForViews();
     }
 
     public void onJoinRoomSuccess(String roomID) {
@@ -180,7 +189,7 @@ public class LiveStreamingView extends FrameLayout {
         });
     }
 
-    private void listenSDKEvent() {
+    private void listenSDKEventForViews() {
         ZEGOSDKManager.getInstance().expressService.addEventHandler(new IExpressEngineEventHandler() {
             @Override
             public void onCameraOpen(String userID, boolean open) {

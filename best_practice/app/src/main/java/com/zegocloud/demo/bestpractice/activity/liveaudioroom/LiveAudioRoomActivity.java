@@ -1,4 +1,4 @@
-package com.zegocloud.demo.bestpractice.activity;
+package com.zegocloud.demo.bestpractice.activity.liveaudioroom;
 
 import android.os.Bundle;
 import android.text.TextUtils;

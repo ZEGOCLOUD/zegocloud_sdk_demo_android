@@ -1,4 +1,4 @@
-package com.zegocloud.demo.bestpractice.activity;
+package com.zegocloud.demo.bestpractice.activity.livestreaming;
 
 import android.Manifest.permission;
 import android.content.pm.PackageManager;
@@ -33,7 +33,7 @@ import java.util.Objects;
 import java.util.Set;
 import timber.log.Timber;
 
-public class WatchLiveStreamActivity extends AppCompatActivity {
+public class LiveStreamAudienceActivity extends AppCompatActivity {
 
     private ViewPager2 viewPager2;
     private List<LiveRoom> roomList = new ArrayList<>();

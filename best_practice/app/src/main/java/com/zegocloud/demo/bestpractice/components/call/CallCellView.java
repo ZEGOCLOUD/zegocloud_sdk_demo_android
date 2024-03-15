@@ -75,11 +75,12 @@ public class CallCellView extends FrameLayout {
         ZEGOCallInvitationManager.getInstance().addCallListener(new CallChangedListener() {
             @Override
             public void onCallUserInfoUpdate(ArrayList<ZIMUserFullInfo> userList) {
-                if(callInviteUser != null){
+                if (callInviteUser != null) {
                     for (ZIMUserFullInfo userFullInfo : userList) {
                         if (Objects.equals(userFullInfo.baseInfo.userID, callInviteUser.getUserID())) {
                             audioVideoView.setUserID(callInviteUser.getUserID());
-                            ZIMUserFullInfo zimUserInfo = ZEGOSDKManager.getInstance().zimService.getUserInfo(callInviteUser.getUserID());
+                            ZIMUserFullInfo zimUserInfo = ZEGOSDKManager.getInstance().zimService.getUserInfo(
+                                callInviteUser.getUserID());
                             if (zimUserInfo != null) {
                                 textView.setText(zimUserInfo.baseInfo.userName);
                             }
@@ -114,12 +115,11 @@ public class CallCellView extends FrameLayout {
             if (zegosdkUser != null) {
                 audioVideoView.setStreamID(zegosdkUser.getMainStreamID());
                 if (zegosdkUser.isCameraOpen()) {
-                    audioVideoView.startPlayRemoteAudioVideo();
                     audioVideoView.showVideoView();
                 } else {
-                    //                    audioVideoView.stopPlayRemoteAudioVideo();
                     audioVideoView.showAudioView();
                 }
+                audioVideoView.startPlayRemoteAudioVideo();
             }
         }
     }

@@ -1,4 +1,4 @@
-package com.zegocloud.demo.bestpractice.activity;
+package com.zegocloud.demo.bestpractice.activity.call;
 
 import android.Manifest.permission;
 import android.content.Intent;
@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import timber.log.Timber;
 
 public class CallWaitActivity extends AppCompatActivity {
 

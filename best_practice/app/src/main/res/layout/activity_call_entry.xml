@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  xmlns:tools="http://schemas.android.com/tools"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  tools:context=".activity.call.CallEntryActivity">
+
+  <TextView
+    android:id="@+id/title"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="96dp"
+    android:text="Call"
+    android:textSize="28dp"
+    android:textStyle="bold"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toTopOf="parent" />
+
+  <com.google.android.material.textfield.TextInputLayout
+    android:id="@+id/call_user_id"
+    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+    android:layout_width="275dp"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
+    android:layout_marginTop="196dp"
+    android:hint="Call User ID"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toTopOf="parent">
+
+    <com.google.android.material.textfield.TextInputEditText
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:ellipsize="middle"
+      android:paddingStart="16dp"
+      android:paddingEnd="16dp"
+      android:singleLine="true"
+      android:text="" />
+
+  </com.google.android.material.textfield.TextInputLayout>
+
+  <Button
+    android:id="@+id/call_user_video"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
+    android:layout_marginTop="8dp"
+    android:text="Video Call"
+
+    app:layout_constraintEnd_toStartOf="@+id/call_user_audio"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toBottomOf="@+id/call_user_id" />
+
+  <Button
+    android:id="@+id/call_user_audio"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
+    android:layout_marginTop="8dp"
+    android:text="Audio Call"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintStart_toEndOf="@+id/call_user_video"
+    app:layout_constraintTop_toBottomOf="@+id/call_user_id" />
+
+  <View
+    android:layout_width="match_parent"
+    android:layout_height="1dp"
+    android:layout_marginTop="48dp"
+    android:background="#dddddd"
+    app:layout_constraintTop_toBottomOf="@+id/call_user_audio" />
+
+  <com.google.android.material.textfield.TextInputLayout
+    android:id="@+id/call_room_id"
+    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+    android:layout_width="275dp"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
+    android:layout_marginTop="96dp"
+    android:hint="Join by Call ID"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toBottomOf="@+id/call_user_audio">
+
+    <com.google.android.material.textfield.TextInputEditText
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:ellipsize="middle"
+      android:paddingStart="16dp"
+      android:paddingEnd="16dp"
+      android:singleLine="true"
+      android:text="" />
+
+  </com.google.android.material.textfield.TextInputLayout>
+
+  <com.google.android.material.button.MaterialButton
+    android:id="@+id/call_room_button"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:text="Join Room"
+    app:layout_constraintEnd_toEndOf="@+id/call_room_id"
+    app:layout_constraintStart_toStartOf="@+id/call_room_id"
+    app:layout_constraintTop_toBottomOf="@+id/call_room_id" />
+</androidx.constraintlayout.widget.ConstraintLayout>

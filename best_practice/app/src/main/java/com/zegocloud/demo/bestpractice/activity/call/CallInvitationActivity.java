@@ -1,4 +1,4 @@
-package com.zegocloud.demo.bestpractice.activity;
+package com.zegocloud.demo.bestpractice.activity.call;
 
 import android.Manifest.permission;
 import android.content.Context;
@@ -30,7 +30,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import org.json.JSONObject;
-import timber.log.Timber;
 
 public class CallInvitationActivity extends AppCompatActivity {
 
@@ -139,7 +138,6 @@ public class CallInvitationActivity extends AppCompatActivity {
 
             @Override
             public void onCallEnded(String requestID) {
-                Timber.d("onCallEnded() called with: requestID = [" + requestID + "]");
                 finish();
             }
         });

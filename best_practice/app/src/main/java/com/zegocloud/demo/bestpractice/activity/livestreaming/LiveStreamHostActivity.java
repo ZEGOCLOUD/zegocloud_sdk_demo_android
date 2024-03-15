@@ -1,4 +1,4 @@
-package com.zegocloud.demo.bestpractice.activity;
+package com.zegocloud.demo.bestpractice.activity.livestreaming;
 
 import android.Manifest.permission;
 import android.content.pm.PackageManager;
@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class StartLiveStreamActivity extends AppCompatActivity {
+public class LiveStreamHostActivity extends AppCompatActivity {
 
     private LiveStreamingView liveStreamingView;
     private AlertDialog zimReconnectDialog;

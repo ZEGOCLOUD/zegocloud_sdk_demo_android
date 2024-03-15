@@ -343,6 +343,14 @@ public class ZEGOCallInvitationManager {
         return null;
     }
 
+    public void setCallInviteInfo(String callID, int type) {
+        callInviteInfo = new CallInviteInfo();
+        callInviteInfo.requestID = callID;
+        callInviteInfo.type = type;
+        callInviteInfo.userList = new ArrayList<>();
+        return;
+    }
+
     public CallInviteInfo getCallInviteInfo() {
         return callInviteInfo;
     }
@@ -560,11 +568,6 @@ public class ZEGOCallInvitationManager {
     }
 
     public void joinRoom(IZegoRoomLoginCallback callback) {
-        if (callInviteInfo.isVideoCall()) {
-            ZEGOSDKManager.getInstance().expressService.setRoomScenario(ZegoScenario.STANDARD_VIDEO_CALL);
-        } else {
-            ZEGOSDKManager.getInstance().expressService.setRoomScenario(ZegoScenario.STANDARD_VOICE_CALL);
-        }
         ZEGOSDKManager.getInstance().expressService.loginRoom(callInviteInfo.requestID, callback);
     }
 

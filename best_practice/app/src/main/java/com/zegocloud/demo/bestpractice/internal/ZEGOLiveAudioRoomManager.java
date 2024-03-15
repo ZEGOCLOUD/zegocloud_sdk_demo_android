@@ -140,6 +140,18 @@ public class ZEGOLiveAudioRoomManager {
         }
     }
 
+    public void clearHost() {
+        JSONObject extraInfoValueJson = audioRoomExtraInfo.getExtraInfoValueJson();
+        try {
+            ZEGOSDKUser localUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+            JSONObject jsonObject = new JSONObject(extraInfoValueJson.toString());
+            jsonObject.put(EXTRA_INFO_VALUE_HOST, "");
+            ZEGOSDKManager.getInstance().expressService.setRoomExtraInfo(EXTRA_INFO_KEY, jsonObject.toString());
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void startPublishingStream() {
         String roomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
         ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
@@ -229,8 +241,9 @@ public class ZEGOLiveAudioRoomManager {
     }
 
     public void leave() {
-        ZEGOLiveAudioRoomManager.getInstance().removeRoomData();
-        ZEGOLiveAudioRoomManager.getInstance().removeRoomListeners();
+        clearHost();
+        removeRoomData();
+        removeRoomListeners();
         ZEGOSDKManager.getInstance().logoutRoom(null);
     }
 

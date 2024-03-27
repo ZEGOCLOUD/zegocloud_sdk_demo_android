@@ -22,6 +22,7 @@ import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteInfo;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteUser;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
+import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
 import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
 import im.zego.zegoexpress.callback.IZegoRoomLoginCallback;
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import org.json.JSONObject;
+import timber.log.Timber;
 
 public class CallInvitationActivity extends AppCompatActivity {
 
@@ -73,15 +75,20 @@ public class CallInvitationActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuItem add_new_user = menu.add("");
-        add_new_user.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
-        add_new_user.setIcon(R.drawable.baseline_add_24);
-        //        TextView textView = new TextView(this);
-        //        textView.setText(R.string.add_new_user);
-        //        textView.setTextColor(Color.WHITE);
-        //        add_new_user.setActionView(textView);
-
-        return true;
+        CallInviteInfo callInviteInfo = ZEGOCallInvitationManager.getInstance().getCallInviteInfo();
+        Timber.d("onCreateOptionsMenu() called with: callInviteInfo = [" + callInviteInfo + "]");
+        if (callInviteInfo == null || callInviteInfo.userList.isEmpty()) {
+            return super.onCreateOptionsMenu(menu);
+        } else {
+            MenuItem add_new_user = menu.add("");
+            add_new_user.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+            add_new_user.setIcon(R.drawable.baseline_add_24);
+            //        TextView textView = new TextView(this);
+            //        textView.setText(R.string.add_new_user);
+            //        textView.setTextColor(Color.WHITE);
+            //        add_new_user.setActionView(textView);
+            return true;
+        }
     }
 
     @Override
@@ -123,6 +130,8 @@ public class CallInvitationActivity extends AppCompatActivity {
                 binding.layoutMain.onPermissionAnswered(allGranted, grantedList, deniedList);
             }
         });
+
+
     }
 
     @Override
@@ -134,10 +143,17 @@ public class CallInvitationActivity extends AppCompatActivity {
     }
 
     public void listenSDKEvent() {
+        ZEGOSDKManager.getInstance().expressService.addEventHandler(new IExpressEngineEventHandler() {
+            @Override
+            public void onUserEnter(List<ZEGOSDKUser> userList) {
+                super.onUserEnter(userList);
+            }
+        });
         ZEGOCallInvitationManager.getInstance().addCallListener(new CallChangedListener() {
 
             @Override
             public void onCallEnded(String requestID) {
+                //
                 finish();
             }
         });

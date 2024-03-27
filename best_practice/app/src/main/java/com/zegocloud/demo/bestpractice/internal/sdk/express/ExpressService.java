@@ -2,7 +2,6 @@ package com.zegocloud.demo.bestpractice.internal.sdk.express;
 
 import android.app.Application;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.TextureView;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import im.zego.zegoexpress.ZegoExpressEngine;
@@ -258,6 +257,8 @@ public class ExpressService {
             @Override
             public void onRemoteCameraStateUpdate(String streamID, ZegoRemoteDeviceState state) {
                 super.onRemoteCameraStateUpdate(streamID, state);
+                Timber.d(
+                    "onRemoteCameraStateUpdate() called with: streamID = [" + streamID + "], state = [" + state + "]");
                 if (state == ZegoRemoteDeviceState.NOT_SUPPORT) {
                     return;
                 }

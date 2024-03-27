@@ -85,6 +85,7 @@ public class CallEntryActivity extends AppCompatActivity {
                                 @Override
                                 public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info,
                                     ZIMError errorInfo) {
+                                    // by default , requestID == roomID,used it to join room by roomID
                                     if (errorInfo.code.value() == 0) {
                                         if (split.length > 1) {
                                             Intent intent = new Intent(CallEntryActivity.this, CallInvitationActivity.class);
@@ -101,7 +102,7 @@ public class CallEntryActivity extends AppCompatActivity {
             });
         });
 
-        binding.callRoomId.getEditText().setText("9353741103003546789");
+        binding.callRoomId.getEditText().setText("12437470458557595774");
         binding.callRoomButton.setOnClickListener(v -> {
             String callID = binding.callRoomId.getEditText().getText().toString();
             ZEGOCallInvitationManager.getInstance().setCallInviteInfo(callID, CallExtendedData.VIDEO_CALL);

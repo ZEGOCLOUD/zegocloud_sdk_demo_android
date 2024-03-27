@@ -1,4 +1,4 @@
-package com.zegocloud.demo.bestpractice.components.cohost;
+package com.zegocloud.demo.bestpractice.activity.livestreaming;
 
 import android.graphics.Color;
 import android.view.LayoutInflater;
@@ -9,9 +9,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.RecyclerView.ViewHolder;
 import com.zegocloud.demo.bestpractice.R;
-import java.util.ArrayList;
+import com.zegocloud.demo.bestpractice.components.cohost.LiveRoom;
 import java.util.List;
-import java.util.Random;
 
 public class SlideAdapter extends RecyclerView.Adapter<ViewHolder> {
 

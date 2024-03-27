@@ -18,7 +18,6 @@ import com.permissionx.guolindev.callback.RequestCallback;
 import com.zegocloud.demo.bestpractice.R;
 import com.zegocloud.demo.bestpractice.components.cohost.LiveRoom;
 import com.zegocloud.demo.bestpractice.components.cohost.LiveStreamingView;
-import com.zegocloud.demo.bestpractice.components.cohost.SlideAdapter;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
 import com.zegocloud.demo.bestpractice.internal.business.FakeApi;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;

@@ -5,7 +5,6 @@ import android.graphics.Color;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
@@ -120,6 +119,17 @@ public class CallCellView extends FrameLayout {
                     audioVideoView.showAudioView();
                 }
                 audioVideoView.startPlayRemoteAudioVideo();
+            }
+        }
+    }
+
+    public void updateUserIcon() {
+        if (callInviteUser != null) {
+            ZIMUserFullInfo zimUserInfo = ZEGOSDKManager.getInstance().zimService.getUserInfo(
+                callInviteUser.getUserID());
+            if (zimUserInfo != null) {
+                audioVideoView.setUserID(zimUserInfo.baseInfo.userID);
+                textView.setText(zimUserInfo.baseInfo.userName);
             }
         }
     }

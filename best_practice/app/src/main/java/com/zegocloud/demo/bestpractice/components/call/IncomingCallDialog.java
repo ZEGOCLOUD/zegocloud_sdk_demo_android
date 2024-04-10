@@ -6,22 +6,16 @@ import android.view.Gravity;
 import android.view.Window;
 import androidx.appcompat.app.AppCompatActivity;
 import com.zegocloud.demo.bestpractice.R;
-import com.zegocloud.demo.bestpractice.activity.CallInvitationActivity;
-import com.zegocloud.demo.bestpractice.activity.CallWaitActivity;
+import com.zegocloud.demo.bestpractice.activity.call.CallInvitationActivity;
+import com.zegocloud.demo.bestpractice.activity.call.CallWaitActivity;
 import com.zegocloud.demo.bestpractice.databinding.DialogIncomingCallBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOCallInvitationManager;
 import com.zegocloud.demo.bestpractice.internal.business.UserRequestCallback;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallChangedListener;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteInfo;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
-import com.zegocloud.demo.bestpractice.internal.sdk.zim.IZIMEventHandler;
 import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
-import im.zego.zegoexpress.callback.IZegoRoomLoginCallback;
-import im.zego.zegoexpress.constants.ZegoScenario;
-import im.zego.zim.entity.ZIMCallInvitationCancelledInfo;
-import im.zego.zim.entity.ZIMCallInvitationTimeoutInfo;
 import im.zego.zim.entity.ZIMUserFullInfo;
-import org.json.JSONObject;
 
 public class IncomingCallDialog extends AppCompatActivity {
 

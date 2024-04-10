@@ -39,29 +39,34 @@
 
   </androidx.constraintlayout.widget.ConstraintLayout>
 
-  <com.google.android.flexbox.FlexboxLayout
-    android:id="@+id/layout_flexbox"
+  <androidx.viewpager2.widget.ViewPager2
+    android:id="@+id/view_pager"
     android:layout_width="0dp"
     android:layout_height="0dp"
-    app:flexDirection="row"
-    app:flexWrap="wrap"
     app:layout_constraintDimensionRatio="18:16"
     app:layout_constraintEnd_toEndOf="parent"
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintTop_toTopOf="parent">
+  </androidx.viewpager2.widget.ViewPager2>
 
 
-    <com.google.android.flexbox.FlexboxLayout
-      android:id="@+id/layout_child_flexbox"
-      android:layout_width="wrap_content"
-      android:layout_height="match_parent"
-      app:flexDirection="column"
-      app:flexWrap="wrap"
-      app:layout_flexBasisPercent="50%">
+<!--  <com.google.android.material.button.MaterialButton-->
+<!--    android:id="@+id/add_button"-->
+<!--    android:layout_width="wrap_content"-->
+<!--    android:layout_height="wrap_content"-->
+<!--    android:layout_marginBottom="96dp"-->
+<!--    android:text="add"-->
+<!--    app:layout_constraintBottom_toBottomOf="parent"-->
+<!--    app:layout_constraintEnd_toEndOf="parent"-->
+<!--    app:layout_constraintStart_toStartOf="parent"/>-->
 
-    </com.google.android.flexbox.FlexboxLayout>
-
-
-  </com.google.android.flexbox.FlexboxLayout>
-
+<!--  <com.google.android.material.button.MaterialButton-->
+<!--    android:id="@+id/remove_button"-->
+<!--    android:layout_width="wrap_content"-->
+<!--    android:layout_height="wrap_content"-->
+<!--    android:layout_marginBottom="164dp"-->
+<!--    android:text="remove"-->
+<!--    app:layout_constraintBottom_toBottomOf="parent"-->
+<!--    app:layout_constraintEnd_toEndOf="parent"-->
+<!--    app:layout_constraintStart_toStartOf="parent"/>-->
 </androidx.constraintlayout.widget.ConstraintLayout>

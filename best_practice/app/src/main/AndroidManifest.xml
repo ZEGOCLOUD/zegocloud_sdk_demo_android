@@ -28,7 +28,15 @@
     android:supportsRtl="true"
     android:theme="@style/Theme.ZEGOCLOUDBestPractice"
     tools:targetApi="31">
-
+    <activity
+      android:name=".activity.call.CallEntryActivity"
+      android:exported="false" />
+    <activity
+      android:name=".activity.livestreaming.LiveStreamEntryActivity"
+      android:exported="false" />
+    <activity
+      android:name=".activity.livestreaming.LiveStreamAudienceActivity"
+      android:exported="false" />
     <activity
       android:name=".activity.LoginActivity"
       android:exported="true">
@@ -42,29 +50,34 @@
       android:name=".activity.MainActivity"
       android:exported="true" />
     <activity
-      android:name=".activity.LiveStreamingActivity"
+      android:name=".activity.livestreaming.LiveStreamHostActivity"
       android:exported="false"
       android:screenOrientation="portrait" />
     <activity
-      android:name=".activity.LiveAudioRoomActivity"
+      android:name=".activity.liveaudioroom.LiveAudioRoomActivity"
       android:exported="true"
       android:screenOrientation="portrait" />
 
     <activity
-      android:name=".activity.CallWaitActivity"
+      android:name=".activity.liveaudioroom.LiveAudioRoomEntryActivity"
+      android:exported="true"
+      android:screenOrientation="portrait" />
+
+    <activity
+      android:name=".activity.call.CallWaitActivity"
       android:exported="false"
       android:screenOrientation="portrait" />
     <activity
-      android:name=".activity.CallInvitationActivity"
+      android:name=".activity.call.CallInvitationActivity"
       android:exported="false"
-      android:theme="@style/Theme.MaterialComponents.Light.NoActionBar"
-      android:screenOrientation="portrait" />
+      android:screenOrientation="portrait"
+      android:theme="@style/Theme.MaterialComponents.Light.NoActionBar" />
     <activity
       android:name=".components.call.IncomingCallDialog"
       android:exported="false"
       android:launchMode="singleTop"
-      android:theme="@style/dialogActivityTheme"
-      android:screenOrientation="portrait" />
+      android:screenOrientation="portrait"
+      android:theme="@style/dialogActivityTheme" />
   </application>
 
 </manifest>

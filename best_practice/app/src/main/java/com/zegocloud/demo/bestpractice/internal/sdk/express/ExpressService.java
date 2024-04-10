@@ -257,6 +257,8 @@ public class ExpressService {
             @Override
             public void onRemoteCameraStateUpdate(String streamID, ZegoRemoteDeviceState state) {
                 super.onRemoteCameraStateUpdate(streamID, state);
+                Timber.d(
+                    "onRemoteCameraStateUpdate() called with: streamID = [" + streamID + "], state = [" + state + "]");
                 if (state == ZegoRemoteDeviceState.NOT_SUPPORT) {
                     return;
                 }
@@ -422,6 +424,8 @@ public class ExpressService {
     }
 
     public void startPlayingStream(TextureView textureView, String streamID, ZegoViewMode viewMode) {
+        Timber.d("startPlayingStream() called with: textureView = [" + textureView + "], streamID = [" + streamID
+            + "], viewMode = [" + viewMode + "]");
         if (engineProxy.getExpressEngine() == null) {
             return;
         }
@@ -455,6 +459,9 @@ public class ExpressService {
                     if (mediaPlayerEvent != null) {
                         mediaPlayerEvent.onMediaPlayerStateUpdate(mediaPlayer, state, errorCode);
                     }
+                    Timber.d(
+                        "onMediaPlayerStateUpdate() called with: mediaPlayer = [" + mediaPlayer + "], state = [" + state
+                            + "], errorCode = [" + errorCode + "]");
                 }
 
                 @Override
@@ -467,6 +474,8 @@ public class ExpressService {
                     if (mediaPlayerEvent != null) {
                         mediaPlayerEvent.onMediaPlayerLocalCache(mediaPlayer, errorCode, resource, cachedFile);
                     }
+                    Timber.d("onMediaPlayerLocalCache() called with: mediaPlayer = [" + mediaPlayer + "], errorCode = ["
+                        + errorCode + "], resource = [" + resource + "], cachedFile = [" + cachedFile + "]");
                 }
 
                 @Override
@@ -476,6 +485,10 @@ public class ExpressService {
                     if (mediaPlayerEvent != null) {
                         mediaPlayerEvent.onMediaPlayerNetworkEvent(mediaPlayer, networkEvent);
                     }
+
+                    Timber.d(
+                        "onMediaPlayerNetworkEvent() called with: mediaPlayer = [" + mediaPlayer + "], networkEvent = ["
+                            + networkEvent + "]");
                 }
             });
         }
@@ -504,6 +517,13 @@ public class ExpressService {
                 }
             }
         });
+    }
+
+    public void switchRoom(String fromRoomID, String toRoomID) {
+        if (engineProxy.getExpressEngine() == null || currentUser == null) {
+            return;
+        }
+        engineProxy.switchRoom(fromRoomID, toRoomID);
     }
 
     public void loginRoom(String roomID, IZegoRoomLoginCallback callback) {
@@ -575,7 +595,10 @@ public class ExpressService {
         roomRemoteUserMap.clear();
         roomRemoteUserIDList.clear();
         currentRoomID = null;
-        mediaPlayer = null;
+        if (mediaPlayer != null) {
+            engineProxy.destroyMediaPlayer(mediaPlayer);
+            mediaPlayer = null;
+        }
         stopPreview();
         useFrontCamera(true);
         openCamera(false);

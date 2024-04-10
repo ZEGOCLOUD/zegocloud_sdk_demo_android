@@ -6,7 +6,7 @@
   android:layout_width="match_parent"
   android:layout_height="match_parent"
   android:background="@drawable/livestreaming_img_bg"
-  tools:context=".activity.LiveStreamingActivity">
+  tools:context=".activity.livestreaming.LiveStreamHostActivity">
 
   <FrameLayout
     android:id="@+id/main_host_video_layout"
@@ -27,12 +27,13 @@
       android:visibility="gone" />
   </FrameLayout>
 
-  <com.zegocloud.demo.bestpractice.components.cohost.PKBattleLayout
-    android:id="@+id/pk_video_layout"
+  <FrameLayout
+    android:id="@+id/pk_video_layout_parent"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:visibility="invisible"
-    app:layout_constraintTop_toTopOf="@id/main_host_video_layout" />
+    app:layout_constraintTop_toTopOf="@id/main_host_video_layout">
+  </FrameLayout>
 
   <FrameLayout
     android:id="@+id/gift_parent"
@@ -47,6 +48,7 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="88dp"
     android:text="Start"
+    android:visibility="gone"
     app:layout_constraintBottom_toBottomOf="parent"
     app:layout_constraintEnd_toEndOf="parent"
     app:layout_constraintStart_toStartOf="parent" />
@@ -56,15 +58,15 @@
     android:layout_width="270dp"
     android:layout_height="200dp"
     android:layout_marginEnd="90dp"
-    app:layout_constraintBottom_toTopOf="@+id/live_bottom_menu_bar"
+    app:layout_constraintBottom_toTopOf="@+id/live_bottom_menu_bar_parent"
     app:layout_constraintStart_toStartOf="parent" />
 
-  <com.zegocloud.demo.bestpractice.components.cohost.BottomMenuBar
-    android:id="@+id/live_bottom_menu_bar"
+  <FrameLayout
+    android:id="@+id/live_bottom_menu_bar_parent"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:visibility="gone"
-    app:layout_constraintBottom_toBottomOf="parent" />
+    app:layout_constraintBottom_toBottomOf="parent"></FrameLayout>
 
   <androidx.constraintlayout.widget.ConstraintLayout
     android:layout_width="wrap_content"
@@ -76,8 +78,8 @@
     app:layout_constraintBottom_toBottomOf="parent"
     app:layout_constraintEnd_toEndOf="parent">
 
-    <com.zegocloud.demo.bestpractice.components.cohost.CoHostView
-      android:id="@+id/live_cohost_view"
+    <FrameLayout
+      android:id="@+id/live_cohost_view_parent"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       app:layout_constrainedHeight="true"
@@ -85,7 +87,8 @@
       app:layout_constraintEnd_toEndOf="parent"
       app:layout_constraintHeight_max="380dp"
       app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toTopOf="parent" />
+      app:layout_constraintTop_toTopOf="parent"></FrameLayout>
+
   </androidx.constraintlayout.widget.ConstraintLayout>
 
   <com.zegocloud.demo.bestpractice.components.cohost.TopMenuBar

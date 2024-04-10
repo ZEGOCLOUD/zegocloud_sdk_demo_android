@@ -3,7 +3,6 @@ package com.zegocloud.demo.bestpractice.components.call;
 import android.content.Context;
 import android.text.TextUtils;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,7 +10,9 @@ import android.view.ViewParent;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.flexbox.FlexboxLayout;
+import com.zegocloud.demo.bestpractice.activity.call.VideoCellPageAdapter;
 import com.zegocloud.demo.bestpractice.components.ZEGOAudioVideoView;
 import com.zegocloud.demo.bestpractice.databinding.LayoutCallMainLayoutBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOCallInvitationManager;
@@ -21,6 +22,11 @@ import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteUser;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
+import im.zego.zim.callback.ZIMUsersInfoQueriedCallback;
+import im.zego.zim.entity.ZIMError;
+import im.zego.zim.entity.ZIMErrorUserInfo;
+import im.zego.zim.entity.ZIMUserFullInfo;
+import im.zego.zim.enums.ZIMCallUserState;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -32,6 +38,7 @@ public class CallMainLayout extends ConstraintLayout {
     private CallChangedListener callChangedListener;
     private IExpressEngineEventHandler expressEngineEventHandler;
     private CallCellView[] callCellViews = new CallCellView[9];
+    private VideoCellPageAdapter videoCellPageAdapter;
 
     public CallMainLayout(@NonNull Context context) {
         super(context);
@@ -52,6 +59,7 @@ public class CallMainLayout extends ConstraintLayout {
         binding = LayoutCallMainLayoutBinding.inflate(LayoutInflater.from(getContext()), this, true);
         CallInviteInfo callInviteInfo = ZEGOCallInvitationManager.getInstance().getCallInviteInfo();
 
+        // click to switch video view
         binding.selfVideoView.setOnClickListener(v -> {
             ViewGroup selfVideoViewParent = (ViewGroup) binding.selfVideoView.getParent();
             ViewGroup otherVideoViewParent = (ViewGroup) binding.otherVideoView.getParent();
@@ -81,6 +89,19 @@ public class CallMainLayout extends ConstraintLayout {
             callCellViews[i].setLayoutParams(params);
         }
 
+        videoCellPageAdapter = new VideoCellPageAdapter();
+        binding.viewPager.setAdapter(videoCellPageAdapter);
+
+//        binding.addButton.setOnClickListener(v -> {
+//            CallInviteUser user = new CallInviteUser("234234", ZIMCallUserState.ACCEPTED, "");
+//            callInviteInfo.userList.add(user);
+//            refreshLayout();
+//        });
+//        binding.removeButton.setOnClickListener(v -> {
+//            callInviteInfo.userList.remove(callInviteInfo.userList.get(callInviteInfo.userList.size() - 1));
+//            refreshLayout();
+//        });
+
         initSDKEvents();
     }
 
@@ -94,61 +115,47 @@ public class CallMainLayout extends ConstraintLayout {
 
             @Override
             public void onInvitedUserRejected(String requestID, CallInviteUser rejectUser) {
-
-                updateLayoutVisibility();
-
-                updateCellViewParams();
+                refreshLayout();
             }
 
             @Override
             public void onInvitedUserTimeout(String requestID, CallInviteUser timeoutUser) {
-                updateLayoutVisibility();
 
-                updateCellViewParams();
+                refreshLayout();
             }
 
             @Override
             public void onInvitedUserQuit(String requestID, CallInviteUser quitUser) {
-                updateLayoutVisibility();
 
-                updateCellViewParams();
+                refreshLayout();
             }
 
             @Override
             public void onInvitedUserAccepted(String requestID, CallInviteUser acceptUser) {
-                updateLayoutVisibility();
 
-                updateCellViewParams();
+                updateCellViews(acceptUser);
             }
 
             @Override
             public void onCallEnded(String requestID) {
-                if (!isDisplayPip()) {
-                    removeAllCellViews();
-                }
-                binding.layoutFlexbox.setVisibility(GONE);
-                binding.layoutPip.setVisibility(VISIBLE);
+                refreshLayout();
             }
 
             @Override
             public void onCallCancelled(String requestID) {
-                if (!isDisplayPip()) {
-                    removeAllCellViews();
-                }
-                binding.layoutFlexbox.setVisibility(GONE);
-                binding.layoutPip.setVisibility(VISIBLE);
+                refreshLayout();
             }
 
             @Override
             public void onCallTimeout(String requestID) {
-                updateLayoutVisibility();
-                updateCellViewParams();
+
+                refreshLayout();
             }
 
             @Override
             public void onInviteNewUser(String requestID, CallInviteUser inviteUser) {
-                updateLayoutVisibility();
-                updateCellViewParams();
+
+                refreshLayout();
             }
         };
         ZEGOCallInvitationManager.getInstance().addCallListener(callChangedListener);
@@ -161,16 +168,8 @@ public class CallMainLayout extends ConstraintLayout {
                 for (ZEGOSDKUser zegosdkUser : userList) {
                     ZEGOAudioVideoView audioVideoView = getAudioVideoViewByUserID(zegosdkUser.userID);
                     if (audioVideoView == null) {
-
-                        updateLayoutVisibility();
-
-                        updateCellViewParams();
-
-                        if (!isDisplayPip()) {
-                            audioVideoView = getAudioVideoViewByUserID(zegosdkUser.userID);
-                        }
-                    }
-                    if (audioVideoView != null) {
+                        refreshLayout();
+                    } else {
                         ViewParent parent = audioVideoView.getParent();
                         if (parent instanceof CallCellView) {
                             ((CallCellView) parent).dismissLoading();
@@ -178,7 +177,6 @@ public class CallMainLayout extends ConstraintLayout {
                         audioVideoView.setStreamID(zegosdkUser.getMainStreamID());
                         audioVideoView.startPlayRemoteAudioVideo();
                     }
-
                 }
             }
 
@@ -187,15 +185,12 @@ public class CallMainLayout extends ConstraintLayout {
                 for (ZEGOSDKUser zegosdkUser : userList) {
                     ZEGOAudioVideoView audioVideoView = getAudioVideoViewByUserID(zegosdkUser.userID);
                     if (audioVideoView == null) {
-                        if (!isDisplayPip()) {
-                            updateLayoutVisibility();
-
-                            updateCellViewParams();
-
-                            audioVideoView = getAudioVideoViewByUserID(zegosdkUser.userID);
+                        refreshLayout();
+                    } else {
+                        ViewParent parent = audioVideoView.getParent();
+                        if (parent instanceof CallCellView) {
+                            ((CallCellView) parent).dismissLoading();
                         }
-                    }
-                    if (audioVideoView != null) {
                         audioVideoView.stopPlayRemoteAudioVideo();
                         audioVideoView.setStreamID("");
                     }
@@ -208,15 +203,8 @@ public class CallMainLayout extends ConstraintLayout {
                 Timber.d("onCameraOpen() called with: userID = [" + userID + "], open = [" + open + "]");
                 ZEGOAudioVideoView audioVideoView = getAudioVideoViewByUserID(userID);
                 if (audioVideoView == null) {
-                    if (!isDisplayPip()) {
-                        updateLayoutVisibility();
-
-                        updateCellViewParams();
-
-                        audioVideoView = getAudioVideoViewByUserID(userID);
-                    }
-                }
-                if (audioVideoView != null) {
+                    refreshLayout();
+                } else {
                     ZEGOSDKUser user = ZEGOSDKManager.getInstance().expressService.getUser(userID);
                     if (user.isCameraOpen()) {
                         if (ZEGOSDKManager.getInstance().expressService.isCurrentUser(userID)) {
@@ -229,7 +217,7 @@ public class CallMainLayout extends ConstraintLayout {
                         if (ZEGOSDKManager.getInstance().expressService.isCurrentUser(userID)) {
                             audioVideoView.stopPreview();
                         } else {
-                            //                            audioVideoView.stopPlayRemoteAudioVideo();
+                            audioVideoView.stopPlayRemoteAudioVideo();
                         }
                         audioVideoView.showAudioView();
                     }
@@ -241,15 +229,8 @@ public class CallMainLayout extends ConstraintLayout {
                 super.onMicrophoneOpen(userID, open);
                 ZEGOAudioVideoView audioVideoView = getAudioVideoViewByUserID(userID);
                 if (audioVideoView == null) {
-                    if (!isDisplayPip()) {
-                        updateLayoutVisibility();
-
-                        updateCellViewParams();
-
-                        audioVideoView = getAudioVideoViewByUserID(userID);
-                    }
-                }
-                if (audioVideoView != null) {
+                    refreshLayout();
+                } else {
                     ZEGOSDKUser user = ZEGOSDKManager.getInstance().expressService.getUser(userID);
                     if (user.isCameraOpen()) {
                         audioVideoView.showVideoView();
@@ -260,127 +241,148 @@ public class CallMainLayout extends ConstraintLayout {
             }
 
             @Override
+            public void onUserEnter(List<ZEGOSDKUser> userList) {
+                super.onUserEnter(userList);
+
+                refreshLayout();
+            }
+
+            @Override
             public void onUserLeft(List<ZEGOSDKUser> userList) {
-                for (ZEGOSDKUser zegosdkUser : userList) {
-                    ZEGOAudioVideoView audioVideoView = getAudioVideoViewByUserID(zegosdkUser.userID);
-                    if (audioVideoView != null) {
-                        audioVideoView.stopPlayRemoteAudioVideo();
-                        audioVideoView.setUserID("");
-                        audioVideoView.setStreamID("");
-                        ViewGroup parent = (ViewGroup) audioVideoView.getParent();
-                        if (parent instanceof CallCellView) {
-                            ViewGroup grandParent = (ViewGroup) parent.getParent();
-                            if (grandParent != null) {
-                                grandParent.removeView(parent);
-                            }
-                        }
-                    }
-                }
+
+                refreshLayout();
             }
         };
         ZEGOSDKManager.getInstance().expressService.addEventHandler(expressEngineEventHandler);
     }
 
-    private void updateCellViewParams() {
-        removeAllCellViews();
-
-        CallInviteInfo callInviteInfo = ZEGOCallInvitationManager.getInstance().getCallInviteInfo();
-        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
-        Timber.d("updateCellViewParams() called:" + callInviteInfo.userList);
-
-        List<CallInviteUser> notFinishedUsers = new ArrayList<>();
-        for (CallInviteUser callInviteUser : callInviteInfo.userList) {
-            if (callInviteUser.isWaiting() || callInviteUser.isAccepted()) {
-                notFinishedUsers.add(callInviteUser);
+    private void updateCellViews(CallInviteUser acceptUser) {
+        int currentItem = binding.viewPager.getCurrentItem();
+        if (currentItem != 0) {
+            RecyclerView recyclerView = (RecyclerView) binding.viewPager.getChildAt(0);
+            RecyclerView.ViewHolder viewHolder = recyclerView.findViewHolderForAdapterPosition(currentItem);
+            if (viewHolder != null) {
+                FlexboxLayout flexboxLayout = (FlexboxLayout) viewHolder.itemView;
+                for (int i = 0; i < flexboxLayout.getChildCount(); i++) {
+                    CallCellView cellView = (CallCellView) flexboxLayout.getChildAt(i);
+                    if (Objects.equals(cellView.getUserID(), acceptUser.getUserID())) {
+                        if (acceptUser.isWaiting()) {
+                            cellView.loading();
+                        } else {
+                            cellView.dismissLoading();
+                        }
+                    }
+                }
             }
         }
+    }
 
-        if (!isDisplayPip()) {
-            int width = binding.layoutFlexbox.getWidth();
-            int height = binding.layoutFlexbox.getHeight();
-
-            for (int i = 0; i < notFinishedUsers.size(); i++) {
-                CallInviteUser callInviteUser = notFinishedUsers.get(i);
-                callCellViews[i].dismissLoading();
-                callCellViews[i].setCallUser(callInviteUser);
-                if (!ZEGOSDKManager.getInstance().expressService.isCurrentUser(callInviteUser.getUserID())) {
-                    if (callInviteUser.isWaiting()) {
-                        callCellViews[i].loading();
-                    } else {
-                        callCellViews[i].dismissLoading();
-                    }
-                }
-                FlexboxLayout.LayoutParams layoutParams = (FlexboxLayout.LayoutParams) callCellViews[i].getLayoutParams();
-                if (notFinishedUsers.size() == 3) {
-                    if (i == 0) {
-                        layoutParams.width = width / 2;
-                        layoutParams.height = height;
-                        callCellViews[i].setLayoutParams(layoutParams);
-                        binding.layoutFlexbox.addView(callCellViews[i], 0);
-                    } else {
-                        layoutParams.width = width / 2;
-                        layoutParams.height = height / 2;
-                        callCellViews[i].setLayoutParams(layoutParams);
-                        binding.layoutChildFlexbox.addView(callCellViews[i]);
-                    }
-                } else if (notFinishedUsers.size() == 4) {
-                    layoutParams.width = width / 2;
-                    layoutParams.height = height / 2;
-                    callCellViews[i].setLayoutParams(layoutParams);
-                    binding.layoutFlexbox.addView(callCellViews[i]);
-                } else if (notFinishedUsers.size() == 5) {
-                    if (i <= 1) {
-                        layoutParams.width = width / 2;
-                        layoutParams.height = height / 2;
-                    } else {
-                        layoutParams.width = width / 3;
-                        layoutParams.height = height / 2;
-                    }
-                    callCellViews[i].setLayoutParams(layoutParams);
-                    binding.layoutFlexbox.addView(callCellViews[i]);
-                } else if (notFinishedUsers.size() == 6) {
-                    layoutParams.width = width / 3;
-                    layoutParams.height = height / 2;
-                    callCellViews[i].setLayoutParams(layoutParams);
-                    binding.layoutFlexbox.addView(callCellViews[i]);
-                } else if (notFinishedUsers.size() > 6) {
-                    layoutParams.width = width / 3;
-                    layoutParams.height = height / 3;
-                    callCellViews[i].setLayoutParams(layoutParams);
-                    binding.layoutFlexbox.addView(callCellViews[i]);
+    private void refreshLayout() {
+        List<CallInviteUser> allCallUsers = checkAllCallUsers();
+        List<String> userIDList = new ArrayList<>();
+        for (CallInviteUser allCallUser : allCallUsers) {
+            userIDList.add(allCallUser.getUserID());
+        }
+        ZEGOSDKManager.getInstance().zimService.queryUsersInfo(userIDList, new ZIMUsersInfoQueriedCallback() {
+            @Override
+            public void onUsersInfoQueried(ArrayList<ZIMUserFullInfo> userList,
+                ArrayList<ZIMErrorUserInfo> errorUserList, ZIMError errorInfo) {
+                for (CallCellView callCellView : callCellViews) {
+                    callCellView.updateUserIcon();
                 }
             }
+        });
+
+        // less than two person,use pip more,use flexLayout.
+        if (allCallUsers.size() <= 2) {
+            binding.viewPager.setVisibility(GONE);
+            binding.layoutPip.setVisibility(VISIBLE);
         } else {
-            // if is pip,then only two users,other is waiting.
-            for (CallInviteUser callInviteUser : notFinishedUsers) {
-                if (ZEGOSDKManager.getInstance().expressService.isCurrentUser(callInviteUser.getUserID())) {
-                    if (currentUser.isCameraOpen()) {
-                        binding.selfVideoView.startPreviewOnly();
-                        binding.selfVideoView.showVideoView();
-                    } else {
-                        binding.selfVideoView.showAudioView();
+            binding.layoutPip.setVisibility(GONE);
+            binding.viewPager.setVisibility(VISIBLE);
+        }
+
+        if (isDisplayPip()) {
+            refreshPipLayout(allCallUsers);
+        } else {
+            removeAllCellViews();
+            refreshFlexLayoutCells(allCallUsers);
+        }
+    }
+
+    private void refreshPipLayout(List<CallInviteUser> allCallUsers) {
+        // if is pip,then only two users.
+        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+        for (CallInviteUser callInviteUser : allCallUsers) {
+            if (Objects.equals(callInviteUser.getUserID(), currentUser.userID)) {
+                if (currentUser.isCameraOpen()) {
+                    binding.selfVideoView.startPreviewOnly();
+                    binding.selfVideoView.showVideoView();
+                } else {
+                    binding.selfVideoView.stopPreview();
+                    binding.selfVideoView.showAudioView();
+                }
+            } else {
+                binding.otherVideoView.setUserID(callInviteUser.getUserID());
+                ZEGOSDKUser zegosdkUser = ZEGOSDKManager.getInstance().expressService.getUser(
+                    callInviteUser.getUserID());
+                if (zegosdkUser != null) {
+                    if (!TextUtils.isEmpty(zegosdkUser.getMainStreamID())) {
+                        binding.otherVideoView.setStreamID(zegosdkUser.getMainStreamID());
+                        if (zegosdkUser.isCameraOpen()) {
+                            binding.otherVideoView.showVideoView();
+                        } else {
+                            binding.otherVideoView.showAudioView();
+                        }
+                        binding.otherVideoView.startPlayRemoteAudioVideo();
                     }
                 } else {
-                    binding.otherVideoView.setUserID(callInviteUser.getUserID());
-                    ZEGOSDKUser zegosdkUser = ZEGOSDKManager.getInstance().expressService.getUser(
-                        callInviteUser.getUserID());
-                    if (zegosdkUser != null) {
-                        if (!TextUtils.isEmpty(zegosdkUser.getMainStreamID())) {
-                            binding.otherVideoView.setStreamID(zegosdkUser.getMainStreamID());
-                            if (zegosdkUser.isCameraOpen()) {
-                                binding.otherVideoView.startPlayRemoteAudioVideo();
-                                binding.otherVideoView.showVideoView();
-                            } else {
-                                binding.otherVideoView.showAudioView();
-                                //                                binding.otherVideoView.stopPlayRemoteAudioVideo();
-                            }
-                        }
-                    } else {
-                        binding.otherVideoView.showAudioView();
-                    }
+                    binding.otherVideoView.showAudioView();
                 }
             }
         }
+    }
+
+    private void refreshFlexLayoutCells(List<CallInviteUser> allCallUsers) {
+        int width = binding.viewPager.getWidth();
+        int height = binding.viewPager.getHeight();
+
+        if (width == 0 || height == 0) {
+            return;
+        }
+        videoCellPageAdapter.setPageSize(width, height);
+        videoCellPageAdapter.setAllCallUsers(allCallUsers);
+    }
+
+    @NonNull
+    private List<CallInviteUser> checkAllCallUsers() {
+        CallInviteInfo callInviteInfo = ZEGOCallInvitationManager.getInstance().getCallInviteInfo();
+        List<ZEGOSDKUser> roomUsers = ZEGOSDKManager.getInstance().expressService.getRoomUsers();
+
+        // include invite join users and directly join(without call-invite) users
+        List<CallInviteUser> allCallUsers = new ArrayList<>();
+        if (callInviteInfo != null) {
+            for (CallInviteUser callInviteUser : callInviteInfo.userList) {
+                if (callInviteUser.isWaiting() || callInviteUser.isAccepted()) {
+                    allCallUsers.add(callInviteUser);
+                }
+            }
+        }
+
+        for (ZEGOSDKUser zegosdkUser : roomUsers) {
+            boolean find = false;
+            for (CallInviteUser callInviteUser : allCallUsers) {
+                if (Objects.equals(callInviteUser.getUserID(), zegosdkUser.userID)) {
+                    find = true;
+                    break;
+                }
+            }
+            if (!find) {
+                CallInviteUser callInviteUser = new CallInviteUser(zegosdkUser.userID, null, "");
+                allCallUsers.add(callInviteUser);
+            }
+        }
+        return allCallUsers;
     }
 
     private void removeAllCellViews() {
@@ -393,36 +395,10 @@ public class CallMainLayout extends ConstraintLayout {
     }
 
     /**
-     * less than two person,use pip more,use flexLayout.
+     * pip: 1v1 flexbox: multi
+     *
+     * @return
      */
-    private void updateLayoutVisibility() {
-        CallInviteInfo callInviteInfo = ZEGOCallInvitationManager.getInstance().getCallInviteInfo();
-        if (callInviteInfo == null) {
-            binding.layoutFlexbox.setVisibility(GONE);
-            binding.layoutPip.setVisibility(VISIBLE);
-        } else {
-            int notFinishedCount = 0;
-            for (CallInviteUser callInviteUser : callInviteInfo.userList) {
-                if (callInviteUser.isWaiting() || callInviteUser.isAccepted()) {
-                    notFinishedCount++;
-                }
-            }
-            if (notFinishedCount <= 2) {
-                binding.layoutFlexbox.setVisibility(GONE);
-                binding.layoutPip.setVisibility(VISIBLE);
-            } else {
-                binding.layoutPip.setVisibility(GONE);
-                binding.layoutFlexbox.setVisibility(VISIBLE);
-                if (notFinishedCount == 3) {
-                    binding.layoutChildFlexbox.setVisibility(VISIBLE);
-                } else {
-                    binding.layoutChildFlexbox.setVisibility(GONE);
-                }
-            }
-        }
-
-    }
-
     private boolean isDisplayPip() {
         return binding.layoutPip.getVisibility() == VISIBLE;
     }
@@ -447,57 +423,15 @@ public class CallMainLayout extends ConstraintLayout {
     }
 
     public void onPermissionAnswered(boolean allGranted, List<String> grantedList, List<String> deniedList) {
-        CallInviteInfo callInviteInfo = ZEGOCallInvitationManager.getInstance().getCallInviteInfo();
-
-        CallInviteUser inviteUser = callInviteInfo.userList.get(0);
         ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
-        if (Objects.equals(inviteUser.getUserID(), currentUser.userID)) {
-            inviteUser = callInviteInfo.userList.get(1);
-        }
 
+        String currentRoomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
+        String streamID = ZEGOCallInvitationManager.getInstance()
+            .generateUserStreamID(currentUser.userID, currentRoomID);
+        binding.selfVideoView.setStreamID(streamID);
         binding.selfVideoView.setUserID(currentUser.userID);
-        binding.otherVideoView.setUserID(inviteUser.getUserID());
+        binding.selfVideoView.startPublishAudioVideo();
 
-        updateLayoutVisibility();
-        updateCellViewParams();
-        if (isDisplayPip()) {
-            List<ZEGOSDKUser> roomUsers = ZEGOSDKManager.getInstance().expressService.getRoomUsers();
-            for (ZEGOSDKUser roomUser : roomUsers) {
-                if (!Objects.equals(roomUser.userID, currentUser.userID)) {
-                    binding.otherVideoView.setStreamID(roomUser.getMainStreamID());
-                    binding.otherVideoView.startPlayRemoteAudioVideo();
-                    binding.otherVideoView.showVideoView();
-                } else {
-                    String currentRoomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
-                    String streamID = ZEGOCallInvitationManager.getInstance()
-                        .generateUserStreamID(currentUser.userID, currentRoomID);
-                    binding.selfVideoView.setStreamID(streamID);
-                    binding.selfVideoView.startPublishAudioVideo();
-                    if (currentUser.isCameraOpen()) {
-                        binding.selfVideoView.startPreviewOnly();
-                        binding.selfVideoView.showVideoView();
-                    } else {
-                        binding.selfVideoView.showAudioView();
-                    }
-                }
-            }
-        } else {
-            for (CallCellView callCellView : callCellViews) {
-                if (callCellView.getParent() != null) {
-                    if (Objects.equals(callCellView.getUserID(), currentUser.userID)) {
-                        if (currentUser.isCameraOpen()) {
-                            callCellView.getAudioVideoView().startPreviewOnly();
-                        }
-                        String currentRoomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
-                        String streamID = ZEGOCallInvitationManager.getInstance()
-                            .generateUserStreamID(currentUser.userID, currentRoomID);
-                        callCellView.getAudioVideoView().setStreamID(streamID);
-                        callCellView.getAudioVideoView().startPublishAudioVideo();
-                    } else {
-                        callCellView.getAudioVideoView().startPlayRemoteAudioVideo();
-                    }
-                }
-            }
-        }
+        refreshLayout();
     }
 }

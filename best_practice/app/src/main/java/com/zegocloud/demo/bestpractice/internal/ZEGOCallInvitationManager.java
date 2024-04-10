@@ -15,7 +15,8 @@ import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
 import com.zegocloud.demo.bestpractice.internal.sdk.zim.IZIMEventHandler;
 import im.zego.zegoexpress.callback.IZegoRoomLoginCallback;
-import im.zego.zegoexpress.constants.ZegoScenario;
+import im.zego.zegoexpress.constants.ZegoUpdateType;
+import im.zego.zegoexpress.entity.ZegoUser;
 import im.zego.zim.callback.ZIMCallAcceptanceSentCallback;
 import im.zego.zim.callback.ZIMCallCancelSentCallback;
 import im.zego.zim.callback.ZIMCallEndSentCallback;
@@ -77,6 +78,7 @@ public class ZEGOCallInvitationManager {
     private IExpressEngineEventHandler expressEventHandler;
     private Comparator<CallInviteUser> callInviteUserComparator;
     private Context applicationContext;
+    private boolean oneOnOneCall = true;
 
     public void init(Context context) {
         applicationContext = context.getApplicationContext();
@@ -309,6 +311,20 @@ public class ZEGOCallInvitationManager {
             }
         };
         ZEGOSDKManager.getInstance().zimService.addEventHandler(zimEventHandler, false);
+
+        expressEventHandler = new IExpressEngineEventHandler() {
+            @Override
+            public void onRoomUserUpdate(String roomID, ZegoUpdateType updateType, ArrayList<ZegoUser> userList) {
+                super.onRoomUserUpdate(roomID, updateType, userList);
+                if (updateType == ZegoUpdateType.ADD) {
+                    List<ZEGOSDKUser> roomUsers = ZEGOSDKManager.getInstance().expressService.getRoomUsers();
+                    if (roomUsers.size() > 2) {
+                        oneOnOneCall = false;
+                    }
+                }
+            }
+        };
+        ZEGOSDKManager.getInstance().expressService.addEventHandler(expressEventHandler);
     }
 
     private boolean checkIfSelfAccepted() {
@@ -343,6 +359,14 @@ public class ZEGOCallInvitationManager {
         return null;
     }
 
+    public void setCallInviteInfo(String callID, int type) {
+        callInviteInfo = new CallInviteInfo();
+        callInviteInfo.requestID = callID;
+        callInviteInfo.type = type;
+        callInviteInfo.userList = new ArrayList<>();
+        return;
+    }
+
     public CallInviteInfo getCallInviteInfo() {
         return callInviteInfo;
     }
@@ -363,13 +387,15 @@ public class ZEGOCallInvitationManager {
             }
         }
         if (shouldEndCall) {
-            for (CallChangedListener listener : callListeners) {
-                listener.onCallEnded(callInviteInfo.requestID);
+            if (oneOnOneCall) {
+                for (CallChangedListener listener : callListeners) {
+                    listener.onCallEnded(callInviteInfo.requestID);
+                }
+                for (CallChangedListener listener : autoRemoveCallListeners) {
+                    listener.onCallEnded(callInviteInfo.requestID);
+                }
             }
-            for (CallChangedListener listener : autoRemoveCallListeners) {
-                listener.onCallEnded(callInviteInfo.requestID);
-            }
-            quitCallAndLeaveRoom();
+            quitCall();
         }
     }
 
@@ -560,27 +586,27 @@ public class ZEGOCallInvitationManager {
     }
 
     public void joinRoom(IZegoRoomLoginCallback callback) {
-        if (callInviteInfo.isVideoCall()) {
-            ZEGOSDKManager.getInstance().expressService.setRoomScenario(ZegoScenario.STANDARD_VIDEO_CALL);
-        } else {
-            ZEGOSDKManager.getInstance().expressService.setRoomScenario(ZegoScenario.STANDARD_VOICE_CALL);
-        }
         ZEGOSDKManager.getInstance().expressService.loginRoom(callInviteInfo.requestID, callback);
     }
 
     public void leaveRoom() {
         autoRemoveCallListeners.clear();
+        oneOnOneCall = true;
         ZEGOSDKManager.getInstance().expressService.logoutRoom(null);
     }
 
     public void quitCallAndLeaveRoom() {
         Timber.d("quitCallAndLeaveRoom() called");
+        quitCall();
+        leaveRoom();
+    }
+
+    public void quitCall() {
         if (callInviteInfo != null) {
             ZEGOSDKManager.getInstance().zimService.quitUserRequest(callInviteInfo.requestID, new ZIMCallQuitConfig(),
                 null);
             removeCallData();
         }
-        leaveRoom();
     }
 
     public void setCallInviteUserComparator(Comparator<CallInviteUser> comparator) {

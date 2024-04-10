@@ -3,6 +3,7 @@ package com.zegocloud.demo.bestpractice.components.cohost;
 import android.app.Activity;
 import android.content.Context;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Gravity;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
@@ -24,6 +25,7 @@ import com.zegocloud.demo.bestpractice.internal.sdk.components.express.ToggleMic
 import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
 import com.zegocloud.demo.bestpractice.internal.utils.Utils;
 import java.util.Objects;
+import timber.log.Timber;
 
 public class BottomMenuBar extends LinearLayout {
 
@@ -116,7 +118,17 @@ public class BottomMenuBar extends LinearLayout {
         childLinearLayout.addView(giftButton, generateChildTextLayoutParams());
 
         // init state
-        onUserRoleChanged(Role.AUDIENCE);
+        ZEGOSDKUser hostUser = ZEGOLiveStreamingManager.getInstance().getHostUser();
+        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+        if (currentUser == null) {
+            onUserRoleChanged(Role.AUDIENCE);
+        } else {
+            if (Objects.equals(currentUser, hostUser)) {
+                onUserRoleChanged(Role.HOST);
+            } else {
+                onUserRoleChanged(Role.AUDIENCE);
+            }
+        }
 
         ZEGOSDKManager.getInstance().expressService.addEventHandler(new IExpressEngineEventHandler() {
             @Override
@@ -195,6 +207,7 @@ public class BottomMenuBar extends LinearLayout {
     }
 
     public void onUserRoleChanged(@Role int role) {
+        Timber.d("onUserRoleChanged() called with: role = [" + role + "]");
         if (role == Role.AUDIENCE) {
             coHostButton.setVisibility(VISIBLE);
             pkButton.setVisibility(GONE);

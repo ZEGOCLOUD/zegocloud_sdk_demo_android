@@ -5,7 +5,6 @@ import android.graphics.Color;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
@@ -75,11 +74,12 @@ public class CallCellView extends FrameLayout {
         ZEGOCallInvitationManager.getInstance().addCallListener(new CallChangedListener() {
             @Override
             public void onCallUserInfoUpdate(ArrayList<ZIMUserFullInfo> userList) {
-                if(callInviteUser != null){
+                if (callInviteUser != null) {
                     for (ZIMUserFullInfo userFullInfo : userList) {
                         if (Objects.equals(userFullInfo.baseInfo.userID, callInviteUser.getUserID())) {
                             audioVideoView.setUserID(callInviteUser.getUserID());
-                            ZIMUserFullInfo zimUserInfo = ZEGOSDKManager.getInstance().zimService.getUserInfo(callInviteUser.getUserID());
+                            ZIMUserFullInfo zimUserInfo = ZEGOSDKManager.getInstance().zimService.getUserInfo(
+                                callInviteUser.getUserID());
                             if (zimUserInfo != null) {
                                 textView.setText(zimUserInfo.baseInfo.userName);
                             }
@@ -114,12 +114,22 @@ public class CallCellView extends FrameLayout {
             if (zegosdkUser != null) {
                 audioVideoView.setStreamID(zegosdkUser.getMainStreamID());
                 if (zegosdkUser.isCameraOpen()) {
-                    audioVideoView.startPlayRemoteAudioVideo();
                     audioVideoView.showVideoView();
                 } else {
-                    //                    audioVideoView.stopPlayRemoteAudioVideo();
                     audioVideoView.showAudioView();
                 }
+                audioVideoView.startPlayRemoteAudioVideo();
+            }
+        }
+    }
+
+    public void updateUserIcon() {
+        if (callInviteUser != null) {
+            ZIMUserFullInfo zimUserInfo = ZEGOSDKManager.getInstance().zimService.getUserInfo(
+                callInviteUser.getUserID());
+            if (zimUserInfo != null) {
+                audioVideoView.setUserID(zimUserInfo.baseInfo.userID);
+                textView.setText(zimUserInfo.baseInfo.userName);
             }
         }
     }

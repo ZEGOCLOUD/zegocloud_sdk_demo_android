@@ -352,7 +352,8 @@ public class PKService {
                     }
                 }
             }
-            if (moreThanOneAcceptedExceptMe) {
+
+            if (hasWaitingUser) {
                 if (isPKStarted) {
                     updatePKMixTask(new IZegoMixerStartCallback() {
                         @Override
@@ -362,14 +363,13 @@ public class PKService {
                             }
                         }
                     });
-                } else {
+                }else {
                     // if not start,still notify
                     for (PKListener listener : listenerList) {
                         listener.onPKUserQuit(userInfo.userID, userInfo.extendedData);
                     }
                 }
-            }
-            if (!hasWaitingUser) {
+            } else {
                 for (PKListener listener : listenerList) {
                     listener.onPKUserQuit(userInfo.userID, userInfo.extendedData);
                 }
@@ -645,7 +645,16 @@ public class PKService {
 
     private ArrayList<ZegoMixerInput> getMixVideoInputs(List<String> streamList, ZegoMixerVideoConfig videoConfig) {
         ArrayList<ZegoMixerInput> inputList = new ArrayList<>();
-        if (streamList.size() == 2) {
+        if (streamList.size() == 1) {
+            int left = 0;
+            int top = 0;
+            int right = (videoConfig.width / streamList.size());
+            int bottom = videoConfig.height;
+            ZegoMixerInput input = new ZegoMixerInput(streamList.get(0), ZegoMixerInputContentType.VIDEO,
+                new Rect(left, top, right, bottom));
+            input.renderMode = ZegoMixRenderMode.FILL;
+            inputList.add(input);
+        } else if (streamList.size() == 2) {
             for (int i = 0; i < streamList.size(); i++) {
                 int left = (videoConfig.width / streamList.size()) * i;
                 int top = 0;

@@ -80,7 +80,7 @@ public class ZIMService {
     private List<IZIMEventHandler> autoDeleteHandlerList = new CopyOnWriteArrayList<>();
     private Map<String, RoomRequest> roomRequestMap = new HashMap<>();
     private ZIMEventHandler initEventHandler;
-    private ArrayList<ZIMUserFullInfo> zimUserInfoList = new ArrayList<>();
+    private List<ZIMUserFullInfo> zimUserInfoList = new ArrayList<>();
 
     public void initSDK(Application application, long appID, String appSign) {
         zimProxy.create(application, appID, appSign);
@@ -194,7 +194,8 @@ public class ZIMService {
             @Override
             public void onCallInvitationReceived(ZIM zim, ZIMCallInvitationReceivedInfo info, String callID) {
                 super.onCallInvitationReceived(zim, info, callID);
-                Timber.d("onCallInvitationReceived() called with: zim = [" + zim + "], info = [" + info + "], callID = ["
+                Timber.d(
+                    "onCallInvitationReceived() called with: zim = [" + zim + "], info = [" + info + "], callID = ["
                         + callID + "]");
                 for (IZIMEventHandler handler : autoDeleteHandlerList) {
                     handler.onInComingUserRequestReceived(callID, info);
@@ -528,8 +529,32 @@ public class ZIMService {
         if (zimProxy.getZIM() == null) {
             return;
         }
+        List<String> noCachedUserList = new ArrayList<>();
+        ArrayList<ZIMUserFullInfo> cachedUserInfos = new ArrayList<>();
+        for (String userID : userIDList) {
+            boolean find = false;
+            for (ZIMUserFullInfo zimUserFullInfo : zimUserInfoList) {
+                if (Objects.equals(zimUserFullInfo.baseInfo.userID, userID)) {
+                    cachedUserInfos.add(zimUserFullInfo);
+                    find = true;
+                    break;
+                }
+            }
+            if (!find) {
+                noCachedUserList.add(userID);
+            }
+        }
+        if (noCachedUserList.isEmpty()) {
+            if (callback != null) {
+                ZIMError zimError = new ZIMError();
+                zimError.code = ZIMErrorCode.SUCCESS;
+                callback.onUsersInfoQueried(cachedUserInfos, new ArrayList<>(), zimError);
+                return;
+            }
+        }
+
         ZIMUsersInfoQueryConfig config = new ZIMUsersInfoQueryConfig();
-        zimProxy.queryUsersInfo(userIDList, config, new ZIMUsersInfoQueriedCallback() {
+        zimProxy.queryUsersInfo(noCachedUserList, config, new ZIMUsersInfoQueriedCallback() {
             @Override
             public void onUsersInfoQueried(ArrayList<ZIMUserFullInfo> userList,
                 ArrayList<ZIMErrorUserInfo> errorUserList, ZIMError errorInfo) {
@@ -583,9 +608,6 @@ public class ZIMService {
     }
 
     public void addEventHandler(IZIMEventHandler zimEventHandler, boolean autoDelete) {
-        Timber.d(
-            "addEventHandler() called with: zimEventHandler = [" + zimEventHandler + "], autoDelete = [" + autoDelete
-                + "]");
         if (autoDelete) {
             autoDeleteHandlerList.add(zimEventHandler);
         } else {
@@ -677,13 +699,13 @@ public class ZIMService {
                 @Override
                 public void onMessageSent(ZIMMessage message, ZIMError errorInfo) {
                     if (callback != null) {
-                        callback.onSendRoomCommand(errorInfo.code.value(), errorInfo.message,command);
+                        callback.onSendRoomCommand(errorInfo.code.value(), errorInfo.message, command);
                     }
                     for (IZIMEventHandler handler : autoDeleteHandlerList) {
-                        handler.onSendRoomCommand(errorInfo.code.value(), errorInfo.message,command);
+                        handler.onSendRoomCommand(errorInfo.code.value(), errorInfo.message, command);
                     }
                     for (IZIMEventHandler handler : handlerList) {
-                        handler.onSendRoomCommand(errorInfo.code.value(), errorInfo.message,command);
+                        handler.onSendRoomCommand(errorInfo.code.value(), errorInfo.message, command);
                     }
                 }
             });

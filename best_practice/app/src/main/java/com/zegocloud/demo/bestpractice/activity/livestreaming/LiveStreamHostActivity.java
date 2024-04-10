@@ -15,6 +15,7 @@ import com.zegocloud.demo.bestpractice.components.cohost.LiveStreamingView;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKCallBack;
+import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
 import im.zego.zegoexpress.constants.ZegoScenario;
 import java.util.ArrayList;
@@ -42,6 +43,14 @@ public class LiveStreamHostActivity extends AppCompatActivity {
                 @NonNull List<String> deniedList) {
             }
         });
+
+        //prepare for ZEGOLiveStreamingManager do something
+        ZEGOSDKManager.getInstance().expressService.openCamera(true);
+        ZEGOSDKManager.getInstance().expressService.openMicrophone(true);
+        ZEGOLiveStreamingManager.getInstance().addListenersForUserJoinRoom();
+
+        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+        ZEGOLiveStreamingManager.getInstance().setHostUser(currentUser);
 
         liveStreamingView.prepareForStartLive(new View.OnClickListener() {
             @Override

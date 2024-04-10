@@ -167,11 +167,19 @@ public class LiveStreamAudienceActivity extends AppCompatActivity {
 
         RecyclerView.ViewHolder viewHolder = recyclerView.findViewHolderForAdapterPosition(position);
         if (viewHolder != null) {
-            joinRoom(position, viewHolder);
+            joinRoom(position, viewHolder, new ZEGOSDKCallBack() {
+                @Override
+                public void onResult(int errorCode, String message) {
+                    if (errorCode == 0) {
+                        loadingRoomFullViews(position);
+                        stopPreLoadItems(position);
+                    }
+                }
+            });
         }
     }
 
-    private void joinRoom(int position, ViewHolder viewHolder) {
+    private void joinRoom(int position, ViewHolder viewHolder, ZEGOSDKCallBack callBack) {
         LiveRoom liveRoom = slideAdapter.getItem(position);
 
         // leave room will auto stop streams and remove subview's sdk event listeners.
@@ -187,6 +195,10 @@ public class LiveStreamAudienceActivity extends AppCompatActivity {
 
         // create subviews now,because their sdk event listeners was add when constructor,
         // and removed when leave room(internal logic).
+        ZEGOSDKManager.getInstance().expressService.openCamera(false);
+        ZEGOSDKManager.getInstance().expressService.openMicrophone(false);
+        ZEGOLiveStreamingManager.getInstance().addListenersForUserJoinRoom();
+
         liveStreamingView.prepareForJoinLive();
 
         ZEGOSDKManager.getInstance().loginRoom(liveRoom.roomID, ZegoScenario.BROADCAST, new ZEGOSDKCallBack() {
@@ -194,11 +206,8 @@ public class LiveStreamAudienceActivity extends AppCompatActivity {
             public void onResult(int errorCode, String message) {
                 Timber.d("loginRoom " + liveRoom.roomID + " onResult() called with: errorCode = [" + errorCode
                     + "], message = [" + message + "]");
-                if (errorCode == 0) {
-
-                    loadingRoomFullViews(position);
-
-                    stopPreLoadItems(position);
+                if (callBack != null) {
+                    callBack.onResult(errorCode, message);
                 }
             }
         });

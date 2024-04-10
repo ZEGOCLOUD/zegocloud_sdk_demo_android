@@ -61,14 +61,6 @@ public class LiveStreamingView extends FrameLayout {
 
     public void prepareForStartLive(View.OnClickListener onClickListener) {
 
-        //prepare for ZEGOLiveStreamingManager do something
-        ZEGOSDKManager.getInstance().expressService.openCamera(true);
-        ZEGOSDKManager.getInstance().expressService.openMicrophone(true);
-        ZEGOLiveStreamingManager.getInstance().addListenersForUserJoinRoom();
-
-        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
-        ZEGOLiveStreamingManager.getInstance().setHostUser(currentUser);
-
         //prepare for host view
         binding.previewStart.setVisibility(View.VISIBLE);
         binding.liveAudioroomTopbar.setVisibility(GONE);
@@ -84,11 +76,6 @@ public class LiveStreamingView extends FrameLayout {
     }
 
     public void prepareForJoinLive() {
-        // prepare for ZEGOLiveStreamingManager do something
-        ZEGOSDKManager.getInstance().expressService.openCamera(false);
-        ZEGOSDKManager.getInstance().expressService.openMicrophone(false);
-        ZEGOLiveStreamingManager.getInstance().addListenersForUserJoinRoom();
-
         //prepare for view
         prepareForJoinLiveInner();
     }

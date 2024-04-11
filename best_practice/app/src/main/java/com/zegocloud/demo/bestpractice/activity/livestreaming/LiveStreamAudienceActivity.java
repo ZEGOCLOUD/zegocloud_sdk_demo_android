@@ -46,6 +46,7 @@ public class LiveStreamAudienceActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // this liveID will be displayed when join room
         String liveID = getIntent().getStringExtra("liveID");
         roomList.add(new LiveRoom(liveID));
 
@@ -81,14 +82,17 @@ public class LiveStreamAudienceActivity extends AppCompatActivity {
             @Override
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
-
-                LiveRoom nextLive = FakeApi.getNextLive(liveID);
-                if (nextLive != null) {
-                    int position1 = roomList.size() - 1;
-                    // once a page is selected,need to get next liveID to ready for slide
-                    if (!roomList.contains(nextLive)) {
-                        roomList.add(nextLive);
-                        slideAdapter.notifyItemInserted(position1);
+                // once page is selected,need to get next liveID and add to roomlist,
+                // so that is ready for slide to next one.
+                // if is slide to previous,do nothing to room list
+                if (position == roomList.size() - 1) {
+                    LiveRoom nextLive = FakeApi.getNextLive(liveID);
+                    if (nextLive != null) {
+                        int position1 = roomList.size() - 1;
+                        if (!roomList.contains(nextLive)) {
+                            roomList.add(nextLive);
+                            slideAdapter.notifyItemInserted(position1);
+                        }
                     }
                 }
 

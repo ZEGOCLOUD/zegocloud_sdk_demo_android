@@ -215,9 +215,11 @@ public class CallMainLayout extends ConstraintLayout {
                         audioVideoView.showVideoView();
                     } else {
                         if (ZEGOSDKManager.getInstance().expressService.isCurrentUser(userID)) {
-                            audioVideoView.stopPreview();
+                            // if self, camera close,no need to stop preview
+//                            audioVideoView.stopPreview();
                         } else {
-                            audioVideoView.stopPlayRemoteAudioVideo();
+                            // if other,may have sounds,no stop play
+//                            audioVideoView.stopPlayRemoteAudioVideo();
                         }
                         audioVideoView.showAudioView();
                     }

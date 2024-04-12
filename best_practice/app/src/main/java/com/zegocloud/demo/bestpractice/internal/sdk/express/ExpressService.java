@@ -3,6 +3,7 @@ package com.zegocloud.demo.bestpractice.internal.sdk.express;
 import android.app.Application;
 import android.text.TextUtils;
 import android.view.TextureView;
+import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import im.zego.zegoexpress.ZegoExpressEngine;
 import im.zego.zegoexpress.ZegoMediaPlayer;
@@ -329,6 +330,12 @@ public class ExpressService {
                 super.onPlayerStateUpdate(streamID, state, errorCode, extendedData);
                 Timber.d("onPlayerStateUpdate: " + streamID + ", state:" + state + ", code:" + errorCode + ", data:"
                     + extendedData);
+            }
+
+            @Override
+            public void onRoomTokenWillExpire(String roomID, int remainTimeInSecond) {
+                super.onRoomTokenWillExpire(roomID, remainTimeInSecond);
+                ZEGOSDKManager.getInstance().notifyTokenWillExpire(remainTimeInSecond);
             }
         };
         Timber.d(
@@ -941,5 +948,9 @@ public class ExpressService {
 
     public void uploadLog(IZegoUploadLogResultCallback callback) {
         engineProxy.uploadLog(callback);
+    }
+
+    public void renewToken(String roomID, String token) {
+        engineProxy.renewToken(roomID, token);
     }
 }

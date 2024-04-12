@@ -61,14 +61,7 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            String token = "";
-            try {
-                token = TokenServerAssistant.generateToken(ZEGOSDKKeyCenter.appID, userID,
-                    ZEGOSDKKeyCenter.serverSecret, 60 * 60 * 24).data;
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            signInZEGOSDK(userID, userName, token, (errorCode, message) -> {
+            signInZEGOSDK(userID, userName, (errorCode, message) -> {
                 if (errorCode == 0) {
                     Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                     startActivity(intent);
@@ -81,14 +74,22 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void initZEGOSDK() {
-        ZEGOSDKManager.getInstance().initSDK(getApplication(), ZEGOSDKKeyCenter.appID, "");
+        String userID = binding.liveLoginUserid.getEditText().getText().toString();
+        String token = "";
+        try {
+            token = TokenServerAssistant.generateToken(ZEGOSDKKeyCenter.appID, userID,
+                ZEGOSDKKeyCenter.serverSecret, 60 * 60 * 24).data;
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        ZEGOSDKManager.getInstance().initSDKWithToken(getApplication(), ZEGOSDKKeyCenter.appID, token);
     }
 
     /**
      * should be called only once after the user sign in to their own business account.
      */
-    private void signInZEGOSDK(String userID, String userName, String token, ZEGOSDKCallBack callback) {
-        ZEGOSDKManager.getInstance().connectUser(userID, userName, token, new ZEGOSDKCallBack() {
+    private void signInZEGOSDK(String userID, String userName, ZEGOSDKCallBack callback) {
+        ZEGOSDKManager.getInstance().connectUser(userID, userName, new ZEGOSDKCallBack() {
             @Override
             public void onResult(int errorCode, String message) {
                 if (errorCode == 0) {

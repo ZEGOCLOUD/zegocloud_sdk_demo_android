@@ -63,14 +63,7 @@ public class CallInvitationActivity extends AppCompatActivity {
             }
         });
 
-        String token = "";
-        try {
-            token = TokenServerAssistant.generateToken(ZEGOSDKKeyCenter.appID, currentUser.userID,
-                ZEGOSDKKeyCenter.serverSecret, 60 * 60 * 24).data;
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        ZEGOCallInvitationManager.getInstance().joinRoom(token,new IZegoRoomLoginCallback() {
+        ZEGOCallInvitationManager.getInstance().joinRoom(new IZegoRoomLoginCallback() {
             @Override
             public void onRoomLoginResult(int errorCode, JSONObject extendedData) {
                 if (errorCode == 0) {

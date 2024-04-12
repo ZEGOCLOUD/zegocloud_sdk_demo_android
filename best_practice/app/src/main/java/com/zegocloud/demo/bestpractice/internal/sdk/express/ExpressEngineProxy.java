@@ -230,4 +230,8 @@ class ExpressEngineProxy {
     public void destroyMediaPlayer(ZegoMediaPlayer mediaPlayer) {
         ZegoExpressEngine.getEngine().destroyMediaPlayer(mediaPlayer);
     }
+
+    public void renewToken(String roomID, String token) {
+        ZegoExpressEngine.getEngine().renewToken(roomID, token);
+    }
 }

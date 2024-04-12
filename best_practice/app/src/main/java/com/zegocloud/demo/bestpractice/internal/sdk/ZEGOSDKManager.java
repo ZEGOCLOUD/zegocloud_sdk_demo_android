@@ -1,9 +1,10 @@
 package com.zegocloud.demo.bestpractice.internal.sdk;
 
 import android.app.Application;
-import androidx.annotation.Nullable;
+import android.text.TextUtils;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.MergeCallBack;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKCallBack;
+import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZegoTokenExpireListener;
 import com.zegocloud.demo.bestpractice.internal.sdk.express.ExpressService;
 import com.zegocloud.demo.bestpractice.internal.sdk.zim.ZIMService;
 import im.zego.zegoexpress.callback.IZegoRoomLoginCallback;
@@ -17,6 +18,7 @@ import im.zego.zim.callback.ZIMRoomLeftCallback;
 import im.zego.zim.entity.ZIMError;
 import im.zego.zim.entity.ZIMRoomFullInfo;
 import im.zego.zim.enums.ZIMErrorCode;
+import java.util.Objects;
 import org.json.JSONObject;
 import timber.log.Timber;
 
@@ -24,6 +26,9 @@ public class ZEGOSDKManager {
 
     public ExpressService expressService = new ExpressService();
     public ZIMService zimService = new ZIMService();
+    private String token;
+    private ZegoTokenExpireListener tokenExpireListener;
+    private long lastNotifyTokenTime;
 
     private static final class Holder {
 
@@ -38,39 +43,24 @@ public class ZEGOSDKManager {
         return Holder.INSTANCE;
     }
 
-    /**
-     *
-     * @param application
-     * @param appID
-     * @param appSign  if you want to use token for auth,you can pass null,if do so,then connect and joinroom need to pass
-     *                 valid token to auth.
-     */
-    public void initSDK(Application application, long appID, @Nullable String appSign) {
+    public void initSDK(Application application, long appID, String appSign) {
         initSDK(application, appID, appSign, ZegoScenario.DEFAULT);
     }
 
-    public void initSDK(Application application, long appID, @Nullable String appSign, ZegoScenario scenario) {
+    public void initSDK(Application application, long appID, String appSign, ZegoScenario scenario) {
         expressService.initSDK(application, appID, appSign, scenario);
         zimService.initSDK(application, appID, appSign);
     }
 
-    /**
-     *  if you init with valid appSign,token is not needed,else token is required.
-     * @param userID
-     * @param userName
-     * @param callback
-     */
-    public void connectUser(String userID, String userName, ZEGOSDKCallBack callback) {
-        connectUser(userID, userName, "", callback);
+    public void initSDKWithToken(Application application, long appID, String token) {
+        this.token = token;
+        initSDK(application, appID, "", ZegoScenario.DEFAULT);
     }
 
-    /**
-     *
-     * @param userID
-     * @param userName
-     * @param token  if you init with valid appSign,token is not needed,else token is required.
-     * @param callback
-     */
+    public void connectUser(String userID, String userName, ZEGOSDKCallBack callback) {
+        connectUser(userID, userName, token, callback);
+    }
+
     public void connectUser(String userID, String userName, String token, ZEGOSDKCallBack callback) {
         expressService.connectUser(userID, userName);
         zimService.connectUser(userID, userName, token, new ZIMLoggedInCallback() {
@@ -91,8 +81,20 @@ public class ZEGOSDKManager {
 
     }
 
+    public void loginRTCRoom(String roomID, IZegoRoomLoginCallback callback) {
+        expressService.loginRoom(roomID, token, new IZegoRoomLoginCallback() {
+            @Override
+            public void onRoomLoginResult(int errorCode, JSONObject extendedData) {
+                if (callback != null) {
+                    callback.onRoomLoginResult(errorCode, extendedData);
+                }
+            }
+        });
+    }
+
     /**
-     *  if you init with valid appSign,token is not needed,else token is required.
+     * if you init with valid appSign,token is not needed,else token is required.
+     *
      * @param roomID
      * @param scenario
      * @param callback
@@ -106,34 +108,7 @@ public class ZEGOSDKManager {
             public void onRoomEntered(ZIMRoomFullInfo roomInfo, ZIMError errorInfo) {
                 if (errorInfo.code == ZIMErrorCode.SUCCESS) {
                     expressService.setRoomScenario(scenario);
-                    expressService.loginRoom(roomID, new IZegoRoomLoginCallback() {
-                        @Override
-                        public void onRoomLoginResult(int errorCode, JSONObject extendedData) {
-                            if (callback != null) {
-                                callback.onResult(errorCode, "express error:" + extendedData.toString());
-                            }
-                        }
-                    });
-                } else {
-                    if (callback != null) {
-                        callback.onResult(errorInfo.code.value(), "zim error:" + errorInfo.message);
-                    }
-                }
-            }
-        });
-    }
-
-    /**
-     *  if you init with valid appSign,token is not needed,else token is required.
-     * @param roomID
-     * @param callback
-     */
-    private void loginRoom(String roomID, ZEGOSDKCallBack callback) {
-        zimService.loginRoom(roomID, new ZIMRoomEnteredCallback() {
-            @Override
-            public void onRoomEntered(ZIMRoomFullInfo roomInfo, ZIMError errorInfo) {
-                if (errorInfo.code == ZIMErrorCode.SUCCESS) {
-                    expressService.loginRoom(roomID, new IZegoRoomLoginCallback() {
+                    expressService.loginRoom(roomID, token, new IZegoRoomLoginCallback() {
                         @Override
                         public void onRoomLoginResult(int errorCode, JSONObject extendedData) {
                             if (callback != null) {
@@ -154,37 +129,25 @@ public class ZEGOSDKManager {
         logoutRoom(new ZEGOSDKCallBack() {
             @Override
             public void onResult(int errorCode, String message) {
-                loginRoom(toRoomID, callback);
-            }
-        });
-    }
-
-    /**
-     *
-     * @param roomID
-     * @param token  if you init with valid appSign,token is not needed,else token is required.
-     * @param scenario
-     * @param callback
-     */
-    public void loginRoom(String roomID, String token, ZegoScenario scenario, ZEGOSDKCallBack callback) {
-        zimService.loginRoom(roomID, new ZIMRoomEnteredCallback() {
-            @Override
-            public void onRoomEntered(ZIMRoomFullInfo roomInfo, ZIMError errorInfo) {
-                if (errorInfo.code == ZIMErrorCode.SUCCESS) {
-                    expressService.setRoomScenario(scenario);
-                    expressService.loginRoom(roomID, token, new IZegoRoomLoginCallback() {
-                        @Override
-                        public void onRoomLoginResult(int errorCode, JSONObject extendedData) {
+                zimService.loginRoom(toRoomID, new ZIMRoomEnteredCallback() {
+                    @Override
+                    public void onRoomEntered(ZIMRoomFullInfo roomInfo, ZIMError errorInfo) {
+                        if (errorInfo.code == ZIMErrorCode.SUCCESS) {
+                            expressService.loginRoom(toRoomID, token, new IZegoRoomLoginCallback() {
+                                @Override
+                                public void onRoomLoginResult(int errorCode, JSONObject extendedData) {
+                                    if (callback != null) {
+                                        callback.onResult(errorCode, "express error:" + extendedData.toString());
+                                    }
+                                }
+                            });
+                        } else {
                             if (callback != null) {
-                                callback.onResult(errorCode, "express error:" + extendedData.toString());
+                                callback.onResult(errorInfo.code.value(), "zim error:" + errorInfo.message);
                             }
                         }
-                    });
-                } else {
-                    if (callback != null) {
-                        callback.onResult(errorInfo.code.value(), "zim error:" + errorInfo.message);
                     }
-                }
+                });
             }
         });
     }
@@ -259,5 +222,29 @@ public class ZEGOSDKManager {
                 mergeCallBack.setResult2(errorInfo);
             }
         });
+    }
+
+    public void renewToken(String token) {
+        if (!Objects.equals(token, this.token)) {
+            String currentRoomID = expressService.getCurrentRoomID();
+            if (!TextUtils.isEmpty(currentRoomID)) {
+                expressService.renewToken(currentRoomID, token);
+            }
+        }
+        zimService.renewToken(token, null);
+        this.token = token;
+    }
+
+    public void setTokenWillExpireListener(ZegoTokenExpireListener listener) {
+        this.tokenExpireListener = listener;
+    }
+
+    public void notifyTokenWillExpire(int seconds) {
+        if (System.currentTimeMillis() - lastNotifyTokenTime > 5 * 60 * 1000) {
+            if (tokenExpireListener != null) {
+                tokenExpireListener.onTokenWillExpire(seconds);
+            }
+        }
+        this.lastNotifyTokenTime = System.currentTimeMillis();
     }
 }

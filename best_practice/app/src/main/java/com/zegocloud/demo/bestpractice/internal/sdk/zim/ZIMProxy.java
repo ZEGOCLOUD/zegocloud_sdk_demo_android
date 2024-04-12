@@ -19,6 +19,7 @@ import im.zego.zim.callback.ZIMRoomAttributesOperatedCallback;
 import im.zego.zim.callback.ZIMRoomAttributesQueriedCallback;
 import im.zego.zim.callback.ZIMRoomEnteredCallback;
 import im.zego.zim.callback.ZIMRoomLeftCallback;
+import im.zego.zim.callback.ZIMTokenRenewedCallback;
 import im.zego.zim.callback.ZIMUserAvatarUrlUpdatedCallback;
 import im.zego.zim.callback.ZIMUsersInfoQueriedCallback;
 import im.zego.zim.entity.ZIMAppConfig;
@@ -165,5 +166,9 @@ class ZIMProxy {
 
     public void uploadLog(ZIMLogUploadedCallback callback) {
         ZIM.getInstance().uploadLog(callback);
+    }
+
+    public void renewToken(String token, ZIMTokenRenewedCallback callback) {
+        ZIM.getInstance().renewToken(token, callback);
     }
 }

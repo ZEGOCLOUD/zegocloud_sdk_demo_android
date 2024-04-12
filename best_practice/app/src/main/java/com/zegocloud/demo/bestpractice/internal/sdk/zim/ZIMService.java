@@ -1,6 +1,7 @@
 package com.zegocloud.demo.bestpractice.internal.sdk.zim;
 
 import android.app.Application;
+import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import im.zego.zim.ZIM;
 import im.zego.zim.callback.ZIMCallAcceptanceSentCallback;
 import im.zego.zim.callback.ZIMCallCancelSentCallback;
@@ -19,6 +20,7 @@ import im.zego.zim.callback.ZIMRoomAttributesOperatedCallback;
 import im.zego.zim.callback.ZIMRoomAttributesQueriedCallback;
 import im.zego.zim.callback.ZIMRoomEnteredCallback;
 import im.zego.zim.callback.ZIMRoomLeftCallback;
+import im.zego.zim.callback.ZIMTokenRenewedCallback;
 import im.zego.zim.callback.ZIMUserAvatarUrlUpdatedCallback;
 import im.zego.zim.callback.ZIMUsersInfoQueriedCallback;
 import im.zego.zim.entity.ZIMCallAcceptConfig;
@@ -81,6 +83,7 @@ public class ZIMService {
     private Map<String, RoomRequest> roomRequestMap = new HashMap<>();
     private ZIMEventHandler initEventHandler;
     private List<ZIMUserFullInfo> zimUserInfoList = new ArrayList<>();
+    private long lastNotifyTokenTime;
 
     public void initSDK(Application application, long appID, String appSign) {
         zimProxy.create(application, appID, appSign);
@@ -315,6 +318,12 @@ public class ZIMService {
                         roomRequestMap.remove(roomRequest.requestID);
                     }
                 }
+            }
+
+            @Override
+            public void onTokenWillExpire(ZIM zim, int second) {
+                super.onTokenWillExpire(zim, second);
+                ZEGOSDKManager.getInstance().notifyTokenWillExpire(second);
             }
         };
         zimProxy.addEventHandler(initEventHandler);
@@ -954,6 +963,10 @@ public class ZIMService {
         removeAutoDeleteRoomListeners();
         zimProxy.removeEventHandlerList(new ArrayList<>(handlerList));
         handlerList.clear();
+    }
+
+    public void renewToken(String token, ZIMTokenRenewedCallback callback) {
+        zimProxy.renewToken(token, callback);
     }
 
     public @interface RoomRequestAction {

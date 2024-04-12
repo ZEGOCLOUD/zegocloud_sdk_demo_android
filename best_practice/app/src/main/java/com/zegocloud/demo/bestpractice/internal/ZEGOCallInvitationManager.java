@@ -585,18 +585,10 @@ public class ZEGOCallInvitationManager {
             });
     }
 
-    public void joinRoom(IZegoRoomLoginCallback callback) {
-        ZEGOSDKManager.getInstance().expressService.loginRoom(callInviteInfo.requestID, callback);
+    public void joinRoom(IZegoRoomLoginCallback loginCallback) {
+        ZEGOSDKManager.getInstance().loginRTCRoom(callInviteInfo.requestID, loginCallback);
     }
 
-    /**
-     *  if you init with valid appSign,token is not needed,else token is required.
-     * @param token
-     * @param callback
-     */
-    public void joinRoom(String token, IZegoRoomLoginCallback callback) {
-        ZEGOSDKManager.getInstance().expressService.loginRoom(callInviteInfo.requestID, token, callback);
-    }
 
     public void leaveRoom() {
         autoRemoveCallListeners.clear();

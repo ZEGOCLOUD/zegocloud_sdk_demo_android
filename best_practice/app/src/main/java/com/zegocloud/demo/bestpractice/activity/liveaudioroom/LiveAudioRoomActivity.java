@@ -77,16 +77,9 @@ public class LiveAudioRoomActivity extends AppCompatActivity {
                 }
             }
         });
-        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
-        String token = "";
-        try {
-            token = TokenServerAssistant.generateToken(ZEGOSDKKeyCenter.appID, currentUser.userID,
-                ZEGOSDKKeyCenter.serverSecret, 60 * 60 * 24).data;
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+
         ZegoScenario chatRoom = ZegoScenario.HIGH_QUALITY_CHATROOM;
-        ZEGOSDKManager.getInstance().loginRoom(roomID, token, chatRoom, new ZEGOSDKCallBack() {
+        ZEGOSDKManager.getInstance().loginRoom(roomID, chatRoom, new ZEGOSDKCallBack() {
             @Override
             public void onResult(int errorCode, String message) {
                 if (errorCode != 0) {

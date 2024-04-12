@@ -66,17 +66,9 @@ public class LiveStreamHostActivity extends AppCompatActivity {
     private void loginRoom() {
         //        listenSDKEvent();
 
-        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
-        String token = "";
-        try {
-            token = TokenServerAssistant.generateToken(ZEGOSDKKeyCenter.appID, currentUser.userID,
-                ZEGOSDKKeyCenter.serverSecret, 60 * 60 * 24).data;
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
         String liveID = getIntent().getStringExtra("liveID");
 
-        ZEGOSDKManager.getInstance().loginRoom(liveID, token, ZegoScenario.BROADCAST, new ZEGOSDKCallBack() {
+        ZEGOSDKManager.getInstance().loginRoom(liveID, ZegoScenario.BROADCAST, new ZEGOSDKCallBack() {
             @Override
             public void onResult(int errorCode, String message) {
                 if (errorCode != 0) {

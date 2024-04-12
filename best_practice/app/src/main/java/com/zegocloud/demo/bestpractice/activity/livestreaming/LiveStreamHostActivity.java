@@ -11,6 +11,8 @@ import androidx.core.content.ContextCompat;
 import com.permissionx.guolindev.PermissionX;
 import com.permissionx.guolindev.callback.RequestCallback;
 import com.zegocloud.demo.bestpractice.R;
+import com.zegocloud.demo.bestpractice.internal.utils.TokenServerAssistant;
+import com.zegocloud.demo.bestpractice.ZEGOSDKKeyCenter;
 import com.zegocloud.demo.bestpractice.components.cohost.LiveStreamingView;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
@@ -21,6 +23,7 @@ import im.zego.zegoexpress.constants.ZegoScenario;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.json.JSONException;
 
 public class LiveStreamHostActivity extends AppCompatActivity {
 
@@ -63,9 +66,17 @@ public class LiveStreamHostActivity extends AppCompatActivity {
     private void loginRoom() {
         //        listenSDKEvent();
 
+        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+        String token = "";
+        try {
+            token = TokenServerAssistant.generateToken(ZEGOSDKKeyCenter.appID, currentUser.userID,
+                ZEGOSDKKeyCenter.serverSecret, 60 * 60 * 24).data;
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
         String liveID = getIntent().getStringExtra("liveID");
 
-        ZEGOSDKManager.getInstance().loginRoom(liveID, ZegoScenario.BROADCAST, new ZEGOSDKCallBack() {
+        ZEGOSDKManager.getInstance().loginRoom(liveID, token, ZegoScenario.BROADCAST, new ZEGOSDKCallBack() {
             @Override
             public void onResult(int errorCode, String message) {
                 if (errorCode != 0) {

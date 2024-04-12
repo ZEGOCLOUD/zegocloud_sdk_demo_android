@@ -16,12 +16,15 @@ import androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback;
 import com.permissionx.guolindev.PermissionX;
 import com.permissionx.guolindev.callback.RequestCallback;
 import com.zegocloud.demo.bestpractice.R;
+import com.zegocloud.demo.bestpractice.internal.utils.TokenServerAssistant;
+import com.zegocloud.demo.bestpractice.ZEGOSDKKeyCenter;
 import com.zegocloud.demo.bestpractice.components.cohost.LiveRoom;
 import com.zegocloud.demo.bestpractice.components.cohost.LiveStreamingView;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
 import com.zegocloud.demo.bestpractice.internal.business.FakeApi;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKCallBack;
+import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import im.zego.zegoexpress.constants.ZegoScenario;
 import im.zego.zegoexpress.constants.ZegoViewMode;
 import java.util.ArrayList;
@@ -30,6 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import org.json.JSONException;
 import timber.log.Timber;
 
 public class LiveStreamAudienceActivity extends AppCompatActivity {
@@ -205,7 +209,15 @@ public class LiveStreamAudienceActivity extends AppCompatActivity {
 
         liveStreamingView.prepareForJoinLive();
 
-        ZEGOSDKManager.getInstance().loginRoom(liveRoom.roomID, ZegoScenario.BROADCAST, new ZEGOSDKCallBack() {
+        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+        String token = "";
+        try {
+            token = TokenServerAssistant.generateToken(ZEGOSDKKeyCenter.appID, currentUser.userID,
+                ZEGOSDKKeyCenter.serverSecret, 60 * 60 * 24).data;
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        ZEGOSDKManager.getInstance().loginRoom(liveRoom.roomID, token, ZegoScenario.BROADCAST, new ZEGOSDKCallBack() {
             @Override
             public void onResult(int errorCode, String message) {
                 Timber.d("loginRoom " + liveRoom.roomID + " onResult() called with: errorCode = [" + errorCode

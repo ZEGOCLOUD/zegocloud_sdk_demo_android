@@ -4,6 +4,8 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import androidx.appcompat.app.AppCompatActivity;
+import com.zegocloud.demo.bestpractice.internal.utils.TokenServerAssistant;
+import com.zegocloud.demo.bestpractice.ZEGOSDKKeyCenter;
 import com.zegocloud.demo.bestpractice.databinding.ActivityLiveAudioRoomBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveAudioRoomManager;
 import com.zegocloud.demo.bestpractice.internal.business.RoomRequestExtendedData;
@@ -11,6 +13,7 @@ import com.zegocloud.demo.bestpractice.internal.business.RoomRequestType;
 import com.zegocloud.demo.bestpractice.internal.business.audioroom.LiveAudioRoomLayoutConfig;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKCallBack;
+import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
 import com.zegocloud.demo.bestpractice.internal.sdk.zim.IZIMEventHandler;
 import com.zegocloud.demo.bestpractice.internal.utils.ToastUtil;
@@ -25,6 +28,7 @@ import im.zego.zim.callback.ZIMRoomAttributesOperatedCallback;
 import im.zego.zim.entity.ZIMError;
 import im.zego.zim.entity.ZIMUserFullInfo;
 import java.util.ArrayList;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 public class LiveAudioRoomActivity extends AppCompatActivity {
@@ -73,8 +77,16 @@ public class LiveAudioRoomActivity extends AppCompatActivity {
                 }
             }
         });
+        ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+        String token = "";
+        try {
+            token = TokenServerAssistant.generateToken(ZEGOSDKKeyCenter.appID, currentUser.userID,
+                ZEGOSDKKeyCenter.serverSecret, 60 * 60 * 24).data;
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
         ZegoScenario chatRoom = ZegoScenario.HIGH_QUALITY_CHATROOM;
-        ZEGOSDKManager.getInstance().loginRoom(roomID, chatRoom, new ZEGOSDKCallBack() {
+        ZEGOSDKManager.getInstance().loginRoom(roomID, token, chatRoom, new ZEGOSDKCallBack() {
             @Override
             public void onResult(int errorCode, String message) {
                 if (errorCode != 0) {

@@ -4,4 +4,6 @@ public class ZEGOSDKKeyCenter {
 
     public static long appID = ;
     public static String appSign = ;
+    public static String serverSecret = ;
 }
+

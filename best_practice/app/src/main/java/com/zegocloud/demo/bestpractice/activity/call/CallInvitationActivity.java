@@ -14,6 +14,8 @@ import androidx.fragment.app.FragmentActivity;
 import com.permissionx.guolindev.PermissionX;
 import com.permissionx.guolindev.callback.RequestCallback;
 import com.zegocloud.demo.bestpractice.R;
+import com.zegocloud.demo.bestpractice.internal.utils.TokenServerAssistant;
+import com.zegocloud.demo.bestpractice.ZEGOSDKKeyCenter;
 import com.zegocloud.demo.bestpractice.components.call.CallInviteDialog;
 import com.zegocloud.demo.bestpractice.databinding.ActivityCallInvitationBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOCallInvitationManager;
@@ -30,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import org.json.JSONException;
 import org.json.JSONObject;
 import timber.log.Timber;
 
@@ -59,7 +62,15 @@ public class CallInvitationActivity extends AppCompatActivity {
                 }
             }
         });
-        ZEGOCallInvitationManager.getInstance().joinRoom(new IZegoRoomLoginCallback() {
+
+        String token = "";
+        try {
+            token = TokenServerAssistant.generateToken(ZEGOSDKKeyCenter.appID, currentUser.userID,
+                ZEGOSDKKeyCenter.serverSecret, 60 * 60 * 24).data;
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        ZEGOCallInvitationManager.getInstance().joinRoom(token,new IZegoRoomLoginCallback() {
             @Override
             public void onRoomLoginResult(int errorCode, JSONObject extendedData) {
                 if (errorCode == 0) {

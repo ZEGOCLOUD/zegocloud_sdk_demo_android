@@ -7,13 +7,14 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import androidx.appcompat.app.AppCompatActivity;
+import com.zegocloud.demo.bestpractice.internal.utils.TokenServerAssistant;
 import com.zegocloud.demo.bestpractice.ZEGOSDKKeyCenter;
 import com.zegocloud.demo.bestpractice.databinding.ActivityLoginBinding;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKCallBack;
 import im.zego.zim.callback.ZIMUserAvatarUrlUpdatedCallback;
 import im.zego.zim.entity.ZIMError;
-import java.util.Random;
+import org.json.JSONException;
 import timber.log.Timber;
 import timber.log.Timber.DebugTree;
 
@@ -59,7 +60,15 @@ public class LoginActivity extends AppCompatActivity {
                 }
                 return;
             }
-            signInZEGOSDK(userID, userName, (errorCode, message) -> {
+
+            String token = "";
+            try {
+                token = TokenServerAssistant.generateToken(ZEGOSDKKeyCenter.appID, userID,
+                    ZEGOSDKKeyCenter.serverSecret, 60 * 60 * 24).data;
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            signInZEGOSDK(userID, userName, token, (errorCode, message) -> {
                 if (errorCode == 0) {
                     Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                     startActivity(intent);
@@ -72,14 +81,14 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void initZEGOSDK() {
-        ZEGOSDKManager.getInstance().initSDK(getApplication(), ZEGOSDKKeyCenter.appID, ZEGOSDKKeyCenter.appSign);
+        ZEGOSDKManager.getInstance().initSDK(getApplication(), ZEGOSDKKeyCenter.appID, "");
     }
 
     /**
      * should be called only once after the user sign in to their own business account.
      */
-    private void signInZEGOSDK(String userID, String userName, ZEGOSDKCallBack callback) {
-        ZEGOSDKManager.getInstance().connectUser(userID, userName, new ZEGOSDKCallBack() {
+    private void signInZEGOSDK(String userID, String userName, String token, ZEGOSDKCallBack callback) {
+        ZEGOSDKManager.getInstance().connectUser(userID, userName, token, new ZEGOSDKCallBack() {
             @Override
             public void onResult(int errorCode, String message) {
                 if (errorCode == 0) {
@@ -97,18 +106,5 @@ public class LoginActivity extends AppCompatActivity {
 
             }
         });
-    }
-
-    private static String generateUserID() {
-        StringBuilder builder = new StringBuilder();
-        Random random = new Random();
-        while (builder.length() < 6) {
-            int nextInt = random.nextInt(10);
-            if (builder.length() == 0 && nextInt == 0) {
-                continue;
-            }
-            builder.append(nextInt);
-        }
-        return builder.toString();
     }
 }

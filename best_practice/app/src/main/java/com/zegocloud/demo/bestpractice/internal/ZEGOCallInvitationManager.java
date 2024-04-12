@@ -589,6 +589,15 @@ public class ZEGOCallInvitationManager {
         ZEGOSDKManager.getInstance().expressService.loginRoom(callInviteInfo.requestID, callback);
     }
 
+    /**
+     *  if you init with valid appSign,token is not needed,else token is required.
+     * @param token
+     * @param callback
+     */
+    public void joinRoom(String token, IZegoRoomLoginCallback callback) {
+        ZEGOSDKManager.getInstance().expressService.loginRoom(callInviteInfo.requestID, token, callback);
+    }
+
     public void leaveRoom() {
         autoRemoveCallListeners.clear();
         oneOnOneCall = true;

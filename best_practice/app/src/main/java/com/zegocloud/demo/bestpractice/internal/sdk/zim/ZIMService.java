@@ -379,10 +379,6 @@ public class ZIMService {
         }
     }
 
-    public void connectUser(String userID, String userName, ZIMLoggedInCallback callback) {
-        connectUser(userID, userName, "", callback);
-    }
-
     public void connectUser(String userID, String userName, String token, ZIMLoggedInCallback callback) {
         ZIMUserInfo zimUserInfo = new ZIMUserInfo();
         zimUserInfo.userID = userID;

@@ -3,6 +3,7 @@ package com.zegocloud.demo.bestpractice.components;
 import android.content.Context;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.TextureView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -56,6 +57,8 @@ public class ZEGOAudioVideoView extends ConstraintLayout {
 
         textureView = new TextureView(getContext());
         addView(textureView);
+
+        showVideoView();
     }
 
     public String getUserID() {
@@ -133,10 +136,14 @@ public class ZEGOAudioVideoView extends ConstraintLayout {
     }
 
     public void showVideoView() {
+        Timber.d("showVideoView() called");
         textureView.setVisibility(VISIBLE);
+        letterIconView.setVisibility(GONE);
     }
 
     public void showAudioView() {
+        Timber.d("showAudioView() called");
         textureView.setVisibility(GONE);
+        letterIconView.setVisibility(VISIBLE);
     }
 }

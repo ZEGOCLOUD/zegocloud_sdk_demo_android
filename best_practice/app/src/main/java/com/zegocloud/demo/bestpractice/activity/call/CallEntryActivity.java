@@ -102,7 +102,7 @@ public class CallEntryActivity extends AppCompatActivity {
             });
         });
 
-        binding.callRoomId.getEditText().setText("12437470458557595774");
+//        binding.callRoomId.getEditText().setText("12437470458557595774");
         binding.callRoomButton.setOnClickListener(v -> {
             String callID = binding.callRoomId.getEditText().getText().toString();
             ZEGOCallInvitationManager.getInstance().setCallInviteInfo(callID, CallExtendedData.VIDEO_CALL);

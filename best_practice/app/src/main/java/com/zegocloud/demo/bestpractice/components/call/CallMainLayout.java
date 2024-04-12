@@ -68,8 +68,10 @@ public class CallMainLayout extends ConstraintLayout {
             }
             selfVideoViewParent.removeView(binding.selfVideoView);
             otherVideoViewParent.removeView(binding.otherVideoView);
+
             selfVideoViewParent.addView(binding.otherVideoView);
             otherVideoViewParent.addView(binding.selfVideoView);
+
         });
         binding.otherVideoView.setOnClickListener(v -> {
             ViewGroup selfVideoViewParent = (ViewGroup) binding.selfVideoView.getParent();
@@ -79,6 +81,8 @@ public class CallMainLayout extends ConstraintLayout {
             }
             selfVideoViewParent.removeView(binding.selfVideoView);
             otherVideoViewParent.removeView(binding.otherVideoView);
+
+
             selfVideoViewParent.addView(binding.otherVideoView);
             otherVideoViewParent.addView(binding.selfVideoView);
         });

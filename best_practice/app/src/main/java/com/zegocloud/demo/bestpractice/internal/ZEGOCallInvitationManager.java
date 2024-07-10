@@ -3,6 +3,7 @@ package com.zegocloud.demo.bestpractice.internal;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.text.TextUtils;
 import com.zegocloud.demo.bestpractice.components.call.IncomingCallDialog;
 import com.zegocloud.demo.bestpractice.internal.business.UserRequestCallback;
@@ -10,6 +11,7 @@ import com.zegocloud.demo.bestpractice.internal.business.call.CallChangedListene
 import com.zegocloud.demo.bestpractice.internal.business.call.CallExtendedData;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteInfo;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteUser;
+import com.zegocloud.demo.bestpractice.internal.business.call.RingtoneManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
@@ -82,11 +84,15 @@ public class ZEGOCallInvitationManager {
 
     public void init(Context context) {
         applicationContext = context.getApplicationContext();
+
+        initRingtone(context);
+
         zimEventHandler = new IZIMEventHandler() {
             @Override
             public void onInComingUserRequestReceived(String requestID, ZIMCallInvitationReceivedInfo info) {
                 Timber.d("onInComingUserRequestReceived() called with: requestID = [" + requestID + "], info = [" + info
                     + "]");
+                RingtoneManager.playRingTone(true);
                 CallExtendedData originalExtendedData = CallExtendedData.parse(info.extendedData);
                 if (originalExtendedData != null) {
                     if (originalExtendedData.isVideoCall() || originalExtendedData.isVoiceCall()) {
@@ -204,7 +210,7 @@ public class ZEGOCallInvitationManager {
                         }
                     }
 
-                    if (queryList.size() > 0) {
+                    if (!queryList.isEmpty()) {
                         ZEGOSDKManager.getInstance().zimService.queryUsersInfo(queryList,
                             new ZIMUsersInfoQueriedCallback() {
                                 @Override
@@ -222,6 +228,7 @@ public class ZEGOCallInvitationManager {
                     }
                     for (CallInviteUser stateChangedUser : stateChangedUsers) {
                         if (stateChangedUser.getCallUserState() == ZIMCallUserState.ACCEPTED) {
+                            RingtoneManager.stopRingTone();
                             for (CallChangedListener listener : callListeners) {
                                 listener.onInvitedUserAccepted(requestID, stateChangedUser);
                             }
@@ -236,6 +243,7 @@ public class ZEGOCallInvitationManager {
                                 listener.onInviteNewUser(requestID, stateChangedUser);
                             }
                         } else if (stateChangedUser.getCallUserState() == ZIMCallUserState.REJECTED) {
+                            RingtoneManager.stopRingTone();
                             for (CallChangedListener listener : callListeners) {
                                 listener.onInvitedUserRejected(requestID, stateChangedUser);
                             }
@@ -244,6 +252,7 @@ public class ZEGOCallInvitationManager {
                             }
                             checkIfCallEnded();
                         } else if (stateChangedUser.getCallUserState() == ZIMCallUserState.TIMEOUT) {
+                            RingtoneManager.stopRingTone();
                             for (CallChangedListener listener : callListeners) {
                                 listener.onInvitedUserTimeout(requestID, stateChangedUser);
                             }
@@ -252,6 +261,7 @@ public class ZEGOCallInvitationManager {
                             }
                             checkIfCallEnded();
                         } else if (stateChangedUser.getCallUserState() == ZIMCallUserState.QUITED) {
+                            RingtoneManager.stopRingTone();
                             for (CallChangedListener listener : callListeners) {
                                 listener.onInvitedUserQuit(requestID, stateChangedUser);
                             }
@@ -273,6 +283,7 @@ public class ZEGOCallInvitationManager {
             public void onUserRequestEnded(String requestID, ZIMCallInvitationEndedInfo info) {
                 super.onUserRequestEnded(requestID, info);
                 Timber.d("onUserRequestEnded() called with: requestID = [" + requestID + "], info = [" + info + "]");
+                RingtoneManager.stopRingTone();
                 if (callInviteInfo != null && requestID.equals(callInviteInfo.requestID)) {
                     for (CallChangedListener listener : callListeners) {
                         listener.onCallEnded(requestID);
@@ -325,6 +336,16 @@ public class ZEGOCallInvitationManager {
             }
         };
         ZEGOSDKManager.getInstance().expressService.addEventHandler(expressEventHandler);
+    }
+
+    private static void initRingtone(Context context) {
+        RingtoneManager.init(context);
+        String outgoing = "zego_outgoing";
+        Uri ongoingUri = RingtoneManager.getUriFromRaw(context, outgoing);
+        RingtoneManager.setOutgoingUri(ongoingUri);
+        String incoming = "zego_incoming";
+        Uri inComingUri = RingtoneManager.getUriFromRaw(context, incoming);
+        RingtoneManager.setIncomingUri(inComingUri);
     }
 
     private boolean checkIfSelfAccepted() {
@@ -388,6 +409,7 @@ public class ZEGOCallInvitationManager {
         }
         if (shouldEndCall) {
             if (oneOnOneCall) {
+                RingtoneManager.stopRingTone();
                 for (CallChangedListener listener : callListeners) {
                     listener.onCallEnded(callInviteInfo.requestID);
                 }
@@ -457,6 +479,7 @@ public class ZEGOCallInvitationManager {
                     public void onCallInvitationSent(String requestID, ZIMCallInvitationSentInfo info,
                         ZIMError errorInfo) {
                         if (errorInfo.code.value() == 0) {
+                            RingtoneManager.playRingTone(false);
                             callInviteInfo.requestID = requestID;
                             callInviteInfo.userList = new ArrayList<>();
                             ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
@@ -497,6 +520,7 @@ public class ZEGOCallInvitationManager {
     }
 
     public void rejectCallRequest(String requestID, UserRequestCallback callback) {
+        RingtoneManager.stopRingTone();
         ZEGOSDKManager.getInstance().zimService.rejectUserRequest(requestID, new ZIMCallRejectConfig(),
             new ZIMCallRejectionSentCallback() {
                 @Override
@@ -533,6 +557,7 @@ public class ZEGOCallInvitationManager {
     }
 
     public void acceptCallRequest(String requestID, UserRequestCallback callback) {
+        RingtoneManager.stopRingTone();
         ZEGOSDKManager.getInstance().zimService.acceptUserRequest(requestID, new ZIMCallAcceptConfig(),
             new ZIMCallAcceptanceSentCallback() {
                 @Override
@@ -552,6 +577,7 @@ public class ZEGOCallInvitationManager {
     }
 
     public void cancelCallRequest(String requestID, List<String> userIDList, UserRequestCallback callback) {
+        RingtoneManager.stopRingTone();
         ZEGOSDKManager.getInstance().zimService.cancelUserRequest(userIDList, requestID, new ZIMCallCancelConfig(),
             new ZIMCallCancelSentCallback() {
                 @Override
@@ -569,6 +595,7 @@ public class ZEGOCallInvitationManager {
     }
 
     public void endCallRequest(String requestID, UserRequestCallback callback) {
+        RingtoneManager.stopRingTone();
         ZEGOSDKManager.getInstance().zimService.endUserRequest(requestID, new ZIMCallEndConfig(),
             new ZIMCallEndSentCallback() {
                 @Override

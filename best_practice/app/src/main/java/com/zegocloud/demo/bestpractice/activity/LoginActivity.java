@@ -77,6 +77,7 @@ public class LoginActivity extends AppCompatActivity {
         String userID = binding.liveLoginUserid.getEditText().getText().toString();
         String token = "";
         try {
+            // only for local test.You should get token from your server
             token = TokenServerAssistant.generateToken(ZEGOSDKKeyCenter.appID, userID,
                 ZEGOSDKKeyCenter.serverSecret, 60 * 60 * 24).data;
         } catch (JSONException e) {

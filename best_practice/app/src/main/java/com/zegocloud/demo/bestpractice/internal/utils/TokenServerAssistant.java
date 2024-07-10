@@ -79,6 +79,15 @@ public class TokenServerAssistant {
     private TokenServerAssistant() {
     }
 
+    /**
+     * only for local test.You should get token from your server
+     * @param appId
+     * @param userId
+     * @param secret
+     * @param effectiveTimeInSeconds
+     * @return
+     * @throws JSONException
+     */
     static public TokenInfo generateToken(long appId, String userId, String secret,
                                           int effectiveTimeInSeconds) throws JSONException {
         TokenInfo token = new TokenInfo();

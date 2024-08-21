@@ -96,35 +96,35 @@ public class ZEGOCallInvitationManager {
                 CallExtendedData originalExtendedData = CallExtendedData.parse(info.extendedData);
                 if (originalExtendedData != null) {
                     if (originalExtendedData.isVideoCall() || originalExtendedData.isVoiceCall()) {
-                        boolean inCallRequest = callInviteInfo != null;
-                        String roomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
-                        boolean inRoom = !TextUtils.isEmpty(roomID);
-                        if (inCallRequest || inRoom) {
-                            JSONObject jsonObject = new JSONObject();
-                            try {
-                                jsonObject.put("type", originalExtendedData.type);
-                                jsonObject.put("callID", requestID);
-                                jsonObject.put("reason", "busy");
-                            } catch (JSONException e) {
-                                throw new RuntimeException(e);
-                            }
-                            busyRejectCallRequest(requestID, jsonObject.toString(), new UserRequestCallback() {
-                                @Override
-                                public void onUserRequestSend(int errorCode, String requestID) {
-                                    if (errorCode == 0) {
-                                        for (CallChangedListener listener : callListeners) {
-                                            listener.onBusyRejectCall(requestID);
-                                        }
-                                        for (CallChangedListener listener : autoRemoveCallListeners) {
-                                            listener.onBusyRejectCall(requestID);
-                                        }
-
-                                    }
-
-                                }
-                            });
-                            return;
-                        }
+//                        boolean inCallRequest = callInviteInfo != null;
+//                        String roomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
+//                        boolean inRoom = !TextUtils.isEmpty(roomID);
+//                        if (inCallRequest || inRoom) {
+//                            JSONObject jsonObject = new JSONObject();
+//                            try {
+//                                jsonObject.put("type", originalExtendedData.type);
+//                                jsonObject.put("callID", requestID);
+//                                jsonObject.put("reason", "busy");
+//                            } catch (JSONException e) {
+//                                throw new RuntimeException(e);
+//                            }
+//                            busyRejectCallRequest(requestID, jsonObject.toString(), new UserRequestCallback() {
+//                                @Override
+//                                public void onUserRequestSend(int errorCode, String requestID) {
+//                                    if (errorCode == 0) {
+//                                        for (CallChangedListener listener : callListeners) {
+//                                            listener.onBusyRejectCall(requestID);
+//                                        }
+//                                        for (CallChangedListener listener : autoRemoveCallListeners) {
+//                                            listener.onBusyRejectCall(requestID);
+//                                        }
+//
+//                                    }
+//
+//                                }
+//                            });
+//                            return;
+//                        }
 
                         callInviteInfo = new CallInviteInfo();
                         callInviteInfo.requestID = requestID;
@@ -612,15 +612,31 @@ public class ZEGOCallInvitationManager {
             });
     }
 
+    private String currentRoomID;
     public void joinRoom(IZegoRoomLoginCallback loginCallback) {
-        ZEGOSDKManager.getInstance().loginRTCRoom(callInviteInfo.requestID, loginCallback);
+        ZEGOSDKManager.getInstance().loginRTCRoom(callInviteInfo.requestID, new IZegoRoomLoginCallback() {
+
+            @Override
+            public void onRoomLoginResult(int errorCode, JSONObject extendedData) {
+                if(errorCode == 0){
+                    currentRoomID = callInviteInfo.requestID;
+                    if (loginCallback != null) {
+                        loginCallback.onRoomLoginResult(errorCode,extendedData);
+                    }
+                }
+            }
+        });
     }
 
+    public String getCurrentRoomID() {
+        return currentRoomID;
+    }
 
     public void leaveRoom() {
         autoRemoveCallListeners.clear();
         oneOnOneCall = true;
-        ZEGOSDKManager.getInstance().expressService.logoutRoom(null);
+//        ZEGOSDKManager.getInstance().expressService.logoutRoom(currentRoomID,null);
+        ZEGOSDKManager.getInstance().expressService.logoutRoomInner(currentRoomID,null);
     }
 
     public void quitCallAndLeaveRoom() {

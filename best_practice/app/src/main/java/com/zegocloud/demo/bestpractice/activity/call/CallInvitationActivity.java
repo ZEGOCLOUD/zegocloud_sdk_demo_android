@@ -14,11 +14,10 @@ import androidx.fragment.app.FragmentActivity;
 import com.permissionx.guolindev.PermissionX;
 import com.permissionx.guolindev.callback.RequestCallback;
 import com.zegocloud.demo.bestpractice.R;
-import com.zegocloud.demo.bestpractice.internal.utils.TokenServerAssistant;
-import com.zegocloud.demo.bestpractice.ZEGOSDKKeyCenter;
 import com.zegocloud.demo.bestpractice.components.call.CallInviteDialog;
 import com.zegocloud.demo.bestpractice.databinding.ActivityCallInvitationBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOCallInvitationManager;
+import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallChangedListener;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteInfo;
 import com.zegocloud.demo.bestpractice.internal.business.call.CallInviteUser;
@@ -32,13 +31,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import org.json.JSONException;
 import org.json.JSONObject;
 import timber.log.Timber;
 
 public class CallInvitationActivity extends AppCompatActivity {
 
     private ActivityCallInvitationBinding binding;
+    private boolean isPendingEnd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +61,8 @@ public class CallInvitationActivity extends AppCompatActivity {
                 }
             }
         });
+
+        ZEGOLiveStreamingManager.getInstance().setStartCall();
 
         ZEGOCallInvitationManager.getInstance().joinRoom(new IZegoRoomLoginCallback() {
             @Override
@@ -142,7 +143,20 @@ public class CallInvitationActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         if (isFinishing()) {
+            isPendingEnd = true;
+            binding.layoutMain.removeSDKListeners();// to avoid oom
             ZEGOCallInvitationManager.getInstance().quitCallAndLeaveRoom();
+            ZEGOLiveStreamingManager.getInstance().setReturnFromCall();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (!isPendingEnd) {
+            binding.layoutMain.removeSDKListeners();// to avoid oom
+            ZEGOCallInvitationManager.getInstance().quitCallAndLeaveRoom();
+            ZEGOLiveStreamingManager.getInstance().setReturnFromCall();
         }
     }
 

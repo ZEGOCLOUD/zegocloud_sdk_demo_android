@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import im.zego.zegoexpress.constants.ZegoViewMode;
+import im.zego.zegoexpress.entity.ZegoPlayerConfig;
 
 public class ZEGOVideoView extends TextureView {
 
@@ -53,6 +54,20 @@ public class ZEGOVideoView extends TextureView {
         ZEGOSDKManager.getInstance().expressService.startPlayingStream(this, streamID, ZegoViewMode.ASPECT_FILL);
     }
 
+    public void startPlayRemoteAudioVideo(String roomID) {
+        if (TextUtils.isEmpty(streamID)) {
+            return;
+        }
+        if (!TextUtils.isEmpty(roomID)) {
+            ZegoPlayerConfig config = new ZegoPlayerConfig();
+            config.roomID = roomID;
+            ZEGOSDKManager.getInstance().expressService.startPlayingStream(this, streamID, ZegoViewMode.ASPECT_FILL,
+                config);
+        } else {
+            startPlayRemoteAudioVideo();
+        }
+    }
+
     public void stopPlayRemoteAudioVideo() {
         if (TextUtils.isEmpty(streamID)) {
             return;
@@ -69,6 +84,10 @@ public class ZEGOVideoView extends TextureView {
 
     public void startPublishAudioVideo() {
         ZEGOSDKManager.getInstance().expressService.startPublishingStream(streamID);
+    }
+
+    public void startPublishAudioVideo(String roomID) {
+        ZEGOSDKManager.getInstance().expressService.startPublishingStream(streamID, roomID);
     }
 
     public void stopPublishAudioVideo() {

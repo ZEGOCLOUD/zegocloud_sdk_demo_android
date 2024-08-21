@@ -11,8 +11,7 @@ import androidx.core.content.ContextCompat;
 import com.permissionx.guolindev.PermissionX;
 import com.permissionx.guolindev.callback.RequestCallback;
 import com.zegocloud.demo.bestpractice.R;
-import com.zegocloud.demo.bestpractice.internal.utils.TokenServerAssistant;
-import com.zegocloud.demo.bestpractice.ZEGOSDKKeyCenter;
+import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager.CallEventListener;
 import com.zegocloud.demo.bestpractice.components.cohost.LiveStreamingView;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
@@ -23,12 +22,12 @@ import im.zego.zegoexpress.constants.ZegoScenario;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.json.JSONException;
 
 public class LiveStreamHostActivity extends AppCompatActivity {
 
     private LiveStreamingView liveStreamingView;
     private AlertDialog zimReconnectDialog;
+    private boolean isPendingEnd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,6 +60,24 @@ public class LiveStreamHostActivity extends AppCompatActivity {
                 loginRoom();
             }
         });
+
+        ZEGOLiveStreamingManager.getInstance().setReturnFromCallListener(new CallEventListener() {
+            @Override
+            public void onStart() {
+                ZEGOSDKManager.getInstance().expressService.stopPublishingStream();
+            }
+
+            @Override
+            public void onReturn() {
+                ZEGOSDKManager.getInstance().expressService.stopPublishingStream();
+                ZEGOSDKManager.getInstance().expressService.openCamera(true);
+                ZEGOSDKManager.getInstance().expressService.openMicrophone(true);
+                ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+                ZEGOLiveStreamingManager.getInstance().setHostUser(currentUser);
+                liveStreamingView.onReturnFromCall();
+                ZEGOLiveStreamingManager.getInstance().startPublishingStream();
+            }
+        });
     }
 
     private void loginRoom() {
@@ -68,7 +85,7 @@ public class LiveStreamHostActivity extends AppCompatActivity {
 
         String liveID = getIntent().getStringExtra("liveID");
 
-        ZEGOSDKManager.getInstance().loginRoom(liveID, ZegoScenario.BROADCAST, new ZEGOSDKCallBack() {
+        ZEGOLiveStreamingManager.getInstance().loginRoom(liveID, ZegoScenario.BROADCAST, new ZEGOSDKCallBack() {
             @Override
             public void onResult(int errorCode, String message) {
                 if (errorCode != 0) {
@@ -89,6 +106,16 @@ public class LiveStreamHostActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         if (isFinishing()) {
+            isPendingEnd = true;
+            ZEGOLiveStreamingManager.getInstance().leave();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (!isPendingEnd) {
+            // if called in onPause, don't call again.
             ZEGOLiveStreamingManager.getInstance().leave();
         }
     }

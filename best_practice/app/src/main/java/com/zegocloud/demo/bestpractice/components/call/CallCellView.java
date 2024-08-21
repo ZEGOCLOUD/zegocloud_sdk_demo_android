@@ -118,7 +118,8 @@ public class CallCellView extends FrameLayout {
                 } else {
                     audioVideoView.showAudioView();
                 }
-                audioVideoView.startPlayRemoteAudioVideo();
+                String currentRoomID = ZEGOCallInvitationManager.getInstance().getCurrentRoomID();
+                audioVideoView.startPlayRemoteAudioVideo(currentRoomID);
             }
         }
     }

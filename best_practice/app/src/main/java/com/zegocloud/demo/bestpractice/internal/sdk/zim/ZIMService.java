@@ -442,12 +442,16 @@ public class ZIMService {
     }
 
     public void logoutRoom(ZIMRoomLeftCallback callback) {
+        logoutRoom(currentRoom.roomID, callback);
+    }
+
+    public void logoutRoom(String roomID, ZIMRoomLeftCallback callback) {
         if (zimProxy.getZIM() == null || currentRoom == null) {
             return;
         }
         removeRoomData();
         removeAutoDeleteRoomListeners();
-        zimProxy.leaveRoom(currentRoom.roomID, callback);
+        zimProxy.leaveRoom(roomID, callback);
         currentRoom = null;
     }
 

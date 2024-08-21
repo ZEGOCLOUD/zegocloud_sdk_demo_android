@@ -32,7 +32,7 @@ public class CallEntryActivity extends AppCompatActivity {
         binding = ActivityCallEntryBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        binding.callUserId.getEditText().setText("samsung");
+        binding.callUserId.getEditText().setText("google");
         binding.callUserVideo.setOnClickListener(v -> {
             String targetUserID = binding.callUserId.getEditText().getText().toString();
             if (TextUtils.isEmpty(targetUserID)) {

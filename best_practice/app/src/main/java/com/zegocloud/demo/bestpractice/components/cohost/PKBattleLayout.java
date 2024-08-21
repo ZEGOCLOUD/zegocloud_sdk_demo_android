@@ -350,7 +350,8 @@ public class PKBattleLayout extends FrameLayout {
         if (!isCurrentUserHost) {
             String mixStreamID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID() + "_mix";
             binding.pkBattleVideoMixLayout.setStreamID(mixStreamID);
-            binding.pkBattleVideoMixLayout.startPlayRemoteAudioVideo();
+            String currentRoomID = ZEGOLiveStreamingManager.getInstance().getCurrentRoomID();
+            binding.pkBattleVideoMixLayout.startPlayRemoteAudioVideo(currentRoomID);
         }
     }
 

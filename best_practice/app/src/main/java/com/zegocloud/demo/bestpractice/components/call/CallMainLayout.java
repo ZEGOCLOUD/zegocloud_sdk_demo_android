@@ -26,7 +26,6 @@ import im.zego.zim.callback.ZIMUsersInfoQueriedCallback;
 import im.zego.zim.entity.ZIMError;
 import im.zego.zim.entity.ZIMErrorUserInfo;
 import im.zego.zim.entity.ZIMUserFullInfo;
-import im.zego.zim.enums.ZIMCallUserState;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -167,7 +166,7 @@ public class CallMainLayout extends ConstraintLayout {
         expressEngineEventHandler = new IExpressEngineEventHandler() {
 
             @Override
-            public void onReceiveStreamAdd(List<ZEGOSDKUser> userList) {
+            public void onReceiveStreamAdd(List<ZEGOSDKUser> userList, String roomID) {
                 Timber.d("onReceiveStreamAdd() called with: userList = [" + userList + "]");
                 for (ZEGOSDKUser zegosdkUser : userList) {
                     ZEGOAudioVideoView audioVideoView = getAudioVideoViewByUserID(zegosdkUser.userID);
@@ -179,7 +178,7 @@ public class CallMainLayout extends ConstraintLayout {
                             ((CallCellView) parent).dismissLoading();
                         }
                         audioVideoView.setStreamID(zegosdkUser.getMainStreamID());
-                        audioVideoView.startPlayRemoteAudioVideo();
+                        audioVideoView.startPlayRemoteAudioVideo(roomID);
                     }
                 }
             }
@@ -214,7 +213,8 @@ public class CallMainLayout extends ConstraintLayout {
                         if (ZEGOSDKManager.getInstance().expressService.isCurrentUser(userID)) {
                             audioVideoView.startPreviewOnly();
                         } else {
-                            audioVideoView.startPlayRemoteAudioVideo();
+                            String currentRoomID = ZEGOCallInvitationManager.getInstance().getCurrentRoomID();
+                            audioVideoView.startPlayRemoteAudioVideo(currentRoomID);
                         }
                         audioVideoView.showVideoView();
                     } else {
@@ -340,7 +340,8 @@ public class CallMainLayout extends ConstraintLayout {
                         } else {
                             binding.otherVideoView.showAudioView();
                         }
-                        binding.otherVideoView.startPlayRemoteAudioVideo();
+                        String currentRoomID = ZEGOCallInvitationManager.getInstance().getCurrentRoomID();
+                        binding.otherVideoView.startPlayRemoteAudioVideo(currentRoomID);
                     }
                 } else {
                     binding.otherVideoView.showAudioView();
@@ -436,8 +437,13 @@ public class CallMainLayout extends ConstraintLayout {
             .generateUserStreamID(currentUser.userID, currentRoomID);
         binding.selfVideoView.setStreamID(streamID);
         binding.selfVideoView.setUserID(currentUser.userID);
-        binding.selfVideoView.startPublishAudioVideo();
+        binding.selfVideoView.startPublishAudioVideo(currentRoomID);
 
         refreshLayout();
+    }
+
+    public void removeSDKListeners(){
+        ZEGOCallInvitationManager.getInstance().removeCallListener(callChangedListener);
+        ZEGOSDKManager.getInstance().expressService.removeEventHandler(expressEngineEventHandler);
     }
 }

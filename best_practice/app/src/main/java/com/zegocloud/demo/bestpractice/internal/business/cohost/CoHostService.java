@@ -1,6 +1,7 @@
 package com.zegocloud.demo.bestpractice.internal.business.cohost;
 
 import android.text.TextUtils;
+import android.util.Log;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;

@@ -11,6 +11,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import im.zego.zegoexpress.constants.ZegoViewMode;
+import im.zego.zegoexpress.entity.ZegoPlayerConfig;
 import im.zego.zim.entity.ZIMUserFullInfo;
 import timber.log.Timber;
 
@@ -104,6 +105,20 @@ public class ZEGOAudioVideoView extends ConstraintLayout {
         ZEGOSDKManager.getInstance().expressService.startPlayingStream(textureView, streamID, ZegoViewMode.ASPECT_FILL);
     }
 
+    public void startPlayRemoteAudioVideo(String roomID) {
+        if (TextUtils.isEmpty(streamID)) {
+            return;
+        }
+        if (!TextUtils.isEmpty(roomID)) {
+            ZegoPlayerConfig config = new ZegoPlayerConfig();
+            config.roomID = roomID;
+            ZEGOSDKManager.getInstance().expressService.startPlayingStream(textureView, streamID, ZegoViewMode.ASPECT_FILL,
+                config);
+        } else {
+            startPlayRemoteAudioVideo();
+        }
+    }
+
     public void stopPlayRemoteAudioVideo() {
         if (TextUtils.isEmpty(streamID)) {
             return;
@@ -120,6 +135,10 @@ public class ZEGOAudioVideoView extends ConstraintLayout {
 
     public void startPublishAudioVideo() {
         ZEGOSDKManager.getInstance().expressService.startPublishingStream(streamID);
+    }
+
+    public void startPublishAudioVideo(String roomID) {
+        ZEGOSDKManager.getInstance().expressService.startPublishingStream(streamID, roomID);
     }
 
     public void stopPublishAudioVideo() {

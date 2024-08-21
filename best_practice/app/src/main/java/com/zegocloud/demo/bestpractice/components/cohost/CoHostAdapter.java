@@ -54,10 +54,10 @@ public class CoHostAdapter extends RecyclerView.Adapter<ViewHolder> {
                 videoView.startPublishAudioVideo();
             }
         } else {
-            String currentRoomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
+            String currentRoomID = ZEGOLiveStreamingManager.getInstance().getCurrentRoomID();
             String streamID = ZEGOLiveStreamingManager.getInstance().generateUserStreamID(user.userID, currentRoomID);
             videoView.setStreamID(streamID);
-            videoView.startPlayRemoteAudioVideo();
+            videoView.startPlayRemoteAudioVideo(currentRoomID);
         }
         if (user.isCameraOpen()) {
             videoView.setVisibility(View.VISIBLE);

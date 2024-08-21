@@ -184,7 +184,7 @@ public class LiveStreamingView extends FrameLayout {
             }
 
             @Override
-            public void onReceiveStreamAdd(List<ZEGOSDKUser> userList) {
+            public void onReceiveStreamAdd(List<ZEGOSDKUser> userList, String roomID) {
                 List<ZEGOSDKUser> coHostUserList = new ArrayList<>();
                 for (ZEGOSDKUser zegosdkUser : userList) {
                     if (ZEGOLiveStreamingManager.getInstance().isHost(zegosdkUser.userID)) {
@@ -200,7 +200,7 @@ public class LiveStreamingView extends FrameLayout {
                         if (ZEGOLiveStreamingManager.getInstance().getPKBattleInfo() == null) {
                             binding.mainHostVideo.setVisibility(View.VISIBLE);
                             binding.mainHostVideoLayout.setVisibility(View.VISIBLE);
-                            binding.mainHostVideo.startPlayRemoteAudioVideo();
+                            binding.mainHostVideo.startPlayRemoteAudioVideo(roomID);
                         }
                     } else {
                         if (ZEGOLiveStreamingManager.getInstance().getPKBattleInfo() == null) {
@@ -339,7 +339,8 @@ public class LiveStreamingView extends FrameLayout {
             if (hostUser != null) {
                 String hostMainStreamID = hostUser.getMainStreamID();
                 if (hostMainStreamID != null) {
-                    binding.mainHostVideo.startPlayRemoteAudioVideo();
+                    String currentRoomID = ZEGOLiveStreamingManager.getInstance().getCurrentRoomID();
+                    binding.mainHostVideo.startPlayRemoteAudioVideo(currentRoomID);
                 }
             }
         }
@@ -347,5 +348,9 @@ public class LiveStreamingView extends FrameLayout {
         if (hostUser != null) {
             onRoomUserCameraOpen(hostUser.userID, hostUser.isCameraOpen());
         }
+    }
+
+    public void onReturnFromCall() {
+        binding.mainHostVideo.startPreviewOnly();
     }
 }

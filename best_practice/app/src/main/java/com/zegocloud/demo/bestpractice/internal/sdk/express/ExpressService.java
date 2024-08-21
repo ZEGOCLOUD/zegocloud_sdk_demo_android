@@ -2,6 +2,7 @@ package com.zegocloud.demo.bestpractice.internal.sdk.express;
 
 import android.app.Application;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.TextureView;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
@@ -124,10 +125,10 @@ public class ExpressService {
                     }
 
                     for (IExpressEngineEventHandler eventHandler : autoDeleteHandlerList) {
-                        eventHandler.onReceiveStreamAdd(userList);
+                        eventHandler.onReceiveStreamAdd(userList,roomID);
                     }
                     for (IExpressEngineEventHandler eventHandler : handlerList) {
-                        eventHandler.onReceiveStreamAdd(userList);
+                        eventHandler.onReceiveStreamAdd(userList,roomID);
                     }
 
                     for (ZEGOSDKUser user : needNotifyCameraChangeUserList) {
@@ -441,6 +442,15 @@ public class ExpressService {
         engineProxy.startPlayingStream(streamID, canvas);
     }
 
+    public void startPlayingStream(TextureView textureView, String streamID, ZegoViewMode viewMode,ZegoPlayerConfig config) {
+        if (engineProxy.getExpressEngine() == null) {
+            return;
+        }
+        ZegoCanvas canvas = new ZegoCanvas(textureView);
+        canvas.viewMode = viewMode;
+        engineProxy.startPlayingStream(streamID, canvas, config);
+    }
+
     public void startPlayingStream(String streamID, ZegoPlayerConfig config) {
         if (engineProxy.getExpressEngine() == null) {
             return;
@@ -559,13 +569,31 @@ public class ExpressService {
         });
     }
 
+    private static final String TAG = "ExpressService";
+
     public void logoutRoom(IZegoRoomLogoutCallback callback) {
+        Log.d(TAG, "logoutRoom() called with: currentRoomID = [" + currentRoomID + "]");
         if (engineProxy.getExpressEngine() == null || currentRoomID == null) {
             return;
         }
         removeRoomData();
         removeAutoDeleteRoomListeners();
         engineProxy.logoutRoom(callback);
+    }
+
+    public void logoutRoom(String roomID,IZegoRoomLogoutCallback callback) {
+        Log.d(TAG, "logoutRoom() called with: roomID = [" + roomID + "], currentRoomID = [" + currentRoomID + "]");
+        if (engineProxy.getExpressEngine() == null || currentRoomID == null) {
+            return;
+        }
+        removeRoomData();
+        removeAutoDeleteRoomListeners();
+        logoutRoomInner(roomID,callback);
+    }
+
+    public void logoutRoomInner(String roomID,IZegoRoomLogoutCallback callback) {
+        Log.d(TAG, "logoutRoomInner() called with: roomID = [" + roomID + "], callback = [" + callback + "]");
+        engineProxy.logoutRoom(roomID,callback);
     }
 
     public void addEventHandler(IExpressEngineEventHandler eventHandler) {
@@ -657,6 +685,7 @@ public class ExpressService {
 
 
     public void openCamera(boolean open) {
+        Log.d(TAG, "openCamera() called with: open = [" + open + "]");
         if (currentUser == null || engineProxy.getExpressEngine() == null) {
             return;
         }

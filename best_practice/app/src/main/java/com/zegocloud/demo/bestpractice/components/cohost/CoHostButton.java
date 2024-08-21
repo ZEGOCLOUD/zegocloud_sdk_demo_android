@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Gravity;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -89,6 +90,7 @@ public class CoHostButton extends ZTextButton {
         ZEGOLiveStreamingManager.getInstance().addLiveStreamingListener(new LiveStreamingListener() {
             @Override
             public void onRoleChanged(String userID, int after) {
+                Log.d(TAG, "onRoleChanged() called with: userID = [" + userID + "], after = [" + after + "]");
                 ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
                 if (currentUser.userID.equals(userID)) {
                     if (after == Role.AUDIENCE) {
@@ -100,6 +102,8 @@ public class CoHostButton extends ZTextButton {
         });
         audienceUI();
     }
+
+    private static final String TAG = "CoHostButton";
 
     @Override
     protected void afterClick() {

@@ -1,6 +1,7 @@
 package com.zegocloud.demo.bestpractice.internal.sdk.express;
 
 import android.app.Application;
+import android.util.Log;
 import im.zego.zegoexpress.ZegoExpressEngine;
 import im.zego.zegoexpress.ZegoMediaPlayer;
 import im.zego.zegoexpress.callback.IZegoCustomVideoProcessHandler;
@@ -15,6 +16,7 @@ import im.zego.zegoexpress.callback.IZegoRoomLogoutCallback;
 import im.zego.zegoexpress.callback.IZegoRoomSetRoomExtraInfoCallback;
 import im.zego.zegoexpress.callback.IZegoUploadLogResultCallback;
 import im.zego.zegoexpress.constants.ZegoPublishChannel;
+import im.zego.zegoexpress.constants.ZegoRoomMode;
 import im.zego.zegoexpress.constants.ZegoScenario;
 import im.zego.zegoexpress.entity.ZegoCanvas;
 import im.zego.zegoexpress.entity.ZegoCustomVideoProcessConfig;
@@ -33,6 +35,7 @@ class ExpressEngineProxy {
     private SimpleExpressEventHandler expressEventHandler;
 
     public void createEngine(Application application, long appID, String appSign, ZegoScenario scenario) {
+        ZegoExpressEngine.setRoomMode(ZegoRoomMode.MULTI_ROOM);
         ZegoEngineProfile profile = new ZegoEngineProfile();
         profile.appID = appID;
         profile.appSign = appSign;
@@ -67,15 +70,21 @@ class ExpressEngineProxy {
         ZegoExpressEngine.getEngine().stopSoundLevelMonitor();
     }
 
+    private static final String TAG = "ExpressEngineProxy";
     public void startPublishingStream(String streamID) {
+        Log.d(TAG, "startPublishingStream() called with: streamID = [" + streamID + "]");
         ZegoExpressEngine.getEngine().startPublishingStream(streamID);
     }
 
     public void startPublishingStream(String streamID, ZegoPublishChannel channel) {
+        Log.d(TAG, "startPublishingStream() called with: streamID = [" + streamID + "], channel = [" + channel + "]");
         ZegoExpressEngine.getEngine().startPublishingStream(streamID, channel);
     }
 
     public void startPublishingStream(String streamID, ZegoPublisherConfig config, ZegoPublishChannel channel) {
+        Log.d(TAG,
+            "startPublishingStream() called with: streamID = [" + streamID + "], roomID = [" + config.roomID + "], channel = ["
+                + channel + "]");
         ZegoExpressEngine.getEngine().startPublishingStream(streamID, config, channel);
     }
 
@@ -88,15 +97,20 @@ class ExpressEngineProxy {
     }
 
     public void startPlayingStream(String streamID, ZegoCanvas canvas) {
+        Log.d(TAG, "startPlayingStream() called with: streamID = [" + streamID + "], canvas = [" + canvas + "]");
         ZegoExpressEngine.getEngine().startPlayingStream(streamID, canvas);
     }
 
     public void startPlayingStream(String streamID, ZegoCanvas canvas, ZegoPlayerConfig config) {
+        Log.d(TAG,
+            "startPlayingStream() called with: streamID = [" + streamID + "], canvas = [" + canvas + "], roomID = ["
+                + config.roomID + "]");
         ZegoExpressEngine.getEngine().startPlayingStream(streamID, canvas, config);
     }
 
 
     public void startPlayingStream(String streamID, ZegoPlayerConfig config) {
+        Log.d(TAG, "startPlayingStream() called with: streamID = [" + streamID + "], roomID = [" + config.roomID + "]");
         ZegoExpressEngine.getEngine().startPlayingStream(streamID, config);
     }
 
@@ -134,6 +148,11 @@ class ExpressEngineProxy {
 
     public void logoutRoom(IZegoRoomLogoutCallback callback) {
         ZegoExpressEngine.getEngine().logoutRoom(callback);
+    }
+
+
+    public void logoutRoom(String roomID,IZegoRoomLogoutCallback callback) {
+        ZegoExpressEngine.getEngine().logoutRoom(roomID,callback);
     }
 
     public void enableCamera(boolean enable) {

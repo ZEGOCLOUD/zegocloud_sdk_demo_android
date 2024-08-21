@@ -1,5 +1,6 @@
 package com.zegocloud.demo.bestpractice.internal;
 
+import android.util.Log;
 import com.zegocloud.demo.bestpractice.internal.business.UserRequestCallback;
 import com.zegocloud.demo.bestpractice.internal.business.cohost.CoHostService;
 import com.zegocloud.demo.bestpractice.internal.business.cohost.CoHostService.CoHostListener;
@@ -8,11 +9,13 @@ import com.zegocloud.demo.bestpractice.internal.business.pk.PKListener;
 import com.zegocloud.demo.bestpractice.internal.business.pk.PKService;
 import com.zegocloud.demo.bestpractice.internal.business.pk.PKService.PKBattleInfo;
 import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
+import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKCallBack;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKUser;
 import com.zegocloud.demo.bestpractice.internal.sdk.express.IExpressEngineEventHandler;
 import com.zegocloud.demo.bestpractice.internal.sdk.zim.IZIMEventHandler;
 import im.zego.zegoexpress.callback.IZegoMixerStartCallback;
 import im.zego.zegoexpress.constants.ZegoPublisherState;
+import im.zego.zegoexpress.constants.ZegoScenario;
 import im.zego.zim.callback.ZIMUsersInfoQueriedCallback;
 import im.zego.zim.entity.ZIMUserFullInfo;
 import java.util.ArrayList;
@@ -22,6 +25,8 @@ import java.util.Map;
 import org.json.JSONObject;
 
 public class ZEGOLiveStreamingManager {
+
+    private String currentRoomID;
 
     private static final class Holder {
 
@@ -41,6 +46,7 @@ public class ZEGOLiveStreamingManager {
     private PKService pkService = new PKService();
     private CoHostService coHostService = new CoHostService();
     private MixLayoutProvider mixLayoutProvider;
+    private CallEventListener callEventListener;
 
     /**
      * should be called only once after user signin
@@ -55,7 +61,7 @@ public class ZEGOLiveStreamingManager {
     public void addListenersForUserJoinRoom() {
         ZEGOSDKManager.getInstance().expressService.addEventHandler(new IExpressEngineEventHandler() {
             @Override
-            public void onReceiveStreamAdd(List<ZEGOSDKUser> userList) {
+            public void onReceiveStreamAdd(List<ZEGOSDKUser> userList, String roomID) {
                 boolean needQuery = false;
                 for (ZEGOSDKUser zegosdkUser : userList) {
                     ZIMUserFullInfo zimUserFullInfo = ZEGOSDKManager.getInstance().zimService.getUserInfo(
@@ -134,6 +140,19 @@ public class ZEGOLiveStreamingManager {
         });
     }
 
+    public void loginRoom(String roomID, ZegoScenario scenario, ZEGOSDKCallBack callback) {
+        this.currentRoomID = roomID;
+        ZEGOSDKManager.getInstance().loginRoom(roomID, scenario, new ZEGOSDKCallBack() {
+            @Override
+            public void onResult(int errorCode, String message) {
+                callback.onResult(errorCode, message);
+            }
+        });
+    }
+
+    public String getCurrentRoomID() {
+        return currentRoomID;
+    }
 
     public void setHostUser(ZEGOSDKUser userInfo) {
         coHostService.setHostUser(userInfo);
@@ -190,9 +209,8 @@ public class ZEGOLiveStreamingManager {
 
     public void startPublishingStream() {
         ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
-        String currentRoomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
         String generateUserStreamID = generateUserStreamID(currentUser.userID, currentRoomID);
-        ZEGOSDKManager.getInstance().expressService.startPublishingStream(generateUserStreamID);
+        ZEGOSDKManager.getInstance().expressService.startPublishingStream(generateUserStreamID, currentRoomID);
     }
 
     public String generateUserStreamID(String userID, String roomID) {
@@ -280,6 +298,23 @@ public class ZEGOLiveStreamingManager {
         }
     }
 
+    public void setReturnFromCall() {
+        if (callEventListener != null) {
+            callEventListener.onReturn();
+        }
+    }
+
+    public void setStartCall(){
+        if (callEventListener != null) {
+            callEventListener.onStart();
+        }
+    }
+
+    public void setReturnFromCallListener(
+        CallEventListener callEventListener) {
+        this.callEventListener = callEventListener;
+    }
+
     public void setMixLayoutProvider(MixLayoutProvider mixLayoutProvider) {
         this.mixLayoutProvider = mixLayoutProvider;
     }
@@ -295,11 +330,19 @@ public class ZEGOLiveStreamingManager {
         removeRoomData();
         removeRoomListeners();
         ZEGOSDKManager.getInstance().expressService.setMediaPlayerEventHandler(null);
-        ZEGOSDKManager.getInstance().logoutRoom(null);
+        Log.d(TAG, "leave() called ,currentRoomID:" + currentRoomID);
+        ZEGOSDKManager.getInstance().logoutRoom(currentRoomID, null);
     }
+
+    private static final String TAG = "ZEGOLiveStreamingManage";
 
     public interface LiveStreamingListener extends CoHostListener, PKListener {
 
     }
 
+    public interface CallEventListener {
+
+        void onStart();
+        void onReturn();
+    }
 }

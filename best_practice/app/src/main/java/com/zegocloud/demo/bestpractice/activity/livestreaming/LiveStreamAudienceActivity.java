@@ -24,6 +24,7 @@ import com.zegocloud.demo.bestpractice.internal.sdk.ZEGOSDKManager;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKCallBack;
 import im.zego.zegoexpress.constants.ZegoScenario;
 import im.zego.zegoexpress.constants.ZegoViewMode;
+import im.zego.zegoexpress.entity.ZegoPlayerConfig;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -153,8 +154,11 @@ public class LiveStreamAudienceActivity extends AppCompatActivity {
             simpleViewParent.setVisibility(View.VISIBLE);
 
             TextureView textureView = viewHolder.itemView.findViewById(R.id.texture_view);
+
+            ZegoPlayerConfig config = new ZegoPlayerConfig();
+            config.roomID = liveRoom.roomID;
             ZEGOSDKManager.getInstance().expressService.startPlayingStream(textureView, streamID,
-                ZegoViewMode.ASPECT_FIT);
+                ZegoViewMode.ASPECT_FIT,config);
         }
     }
 
@@ -205,7 +209,7 @@ public class LiveStreamAudienceActivity extends AppCompatActivity {
 
         liveStreamingView.prepareForJoinLive();
 
-        ZEGOSDKManager.getInstance().loginRoom(liveRoom.roomID, ZegoScenario.BROADCAST, new ZEGOSDKCallBack() {
+        ZEGOLiveStreamingManager.getInstance().loginRoom(liveRoom.roomID, ZegoScenario.BROADCAST, new ZEGOSDKCallBack() {
             @Override
             public void onResult(int errorCode, String message) {
                 Timber.d("loginRoom " + liveRoom.roomID + " onResult() called with: errorCode = [" + errorCode

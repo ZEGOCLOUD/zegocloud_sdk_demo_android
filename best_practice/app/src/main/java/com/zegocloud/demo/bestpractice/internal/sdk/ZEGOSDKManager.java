@@ -2,6 +2,7 @@ package com.zegocloud.demo.bestpractice.internal.sdk;
 
 import android.app.Application;
 import android.text.TextUtils;
+import android.util.Log;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.MergeCallBack;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZEGOSDKCallBack;
 import com.zegocloud.demo.bestpractice.internal.sdk.basic.ZegoTokenExpireListener;
@@ -153,7 +154,13 @@ public class ZEGOSDKManager {
     }
 
     public void logoutRoom(ZEGOSDKCallBack callBack) {
-        Timber.d("logoutRoom() called with: callBack = [" + callBack + "]");
+        logoutRoom(null);
+    }
+
+    private static final String TAG = "ZEGOSDKManager";
+
+    public void logoutRoom(String roomID,ZEGOSDKCallBack callBack) {
+        Log.d(TAG, "logoutRoom() called with: roomID = [" + roomID + "], callBack = [" + callBack + "]");
         MergeCallBack<Integer, ZIMError> mergeCallBack = new MergeCallBack<Integer, ZIMError>() {
             @Override
             public void onResult(Integer integer, ZIMError zimError) {
@@ -171,7 +178,7 @@ public class ZEGOSDKManager {
             }
         };
 
-        expressService.logoutRoom(new IZegoRoomLogoutCallback() {
+        expressService.logoutRoom(roomID,new IZegoRoomLogoutCallback() {
             @Override
             public void onRoomLogoutResult(int errorCode, JSONObject extendedData) {
                 Timber.d(
@@ -180,7 +187,7 @@ public class ZEGOSDKManager {
                 mergeCallBack.setResult1(errorCode);
             }
         });
-        zimService.logoutRoom(new ZIMRoomLeftCallback() {
+        zimService.logoutRoom(roomID,new ZIMRoomLeftCallback() {
             @Override
             public void onRoomLeft(String roomID, ZIMError errorInfo) {
                 Timber.d("onRoomLeft() called with: roomID = [" + roomID + "], errorInfo = [" + errorInfo + "]");

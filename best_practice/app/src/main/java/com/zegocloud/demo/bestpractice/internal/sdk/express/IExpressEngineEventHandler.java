@@ -17,7 +17,7 @@ public abstract class IExpressEngineEventHandler extends IZegoEventHandler {
     public void onMicrophoneOpen(String userID, boolean open) {
     }
 
-    public void onReceiveStreamAdd(List<ZEGOSDKUser> userList) {
+    public void onReceiveStreamAdd(List<ZEGOSDKUser> userList, String roomID) {
     }
 
     public void onReceiveStreamRemove(List<ZEGOSDKUser> userList) {

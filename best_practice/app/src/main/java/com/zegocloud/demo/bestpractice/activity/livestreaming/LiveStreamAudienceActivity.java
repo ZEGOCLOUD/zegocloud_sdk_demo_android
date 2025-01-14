@@ -1,8 +1,13 @@
 package com.zegocloud.demo.bestpractice.activity.livestreaming;
 
 import android.Manifest.permission;
+import android.app.PictureInPictureParams;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
+import android.util.Rational;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,11 +41,12 @@ public class LiveStreamAudienceActivity extends AppCompatActivity {
 
     private ViewPager2 viewPager2;
     private List<LiveRoom> roomList = new ArrayList<>();
-    private int currentState;
+    private int currentViewPagerState;
     private Set<String> loadingRooms = new HashSet<>();
     private SlideAdapter slideAdapter;
     private float pageOffset;
     private boolean enablePreLoad = true;
+    private boolean pipAutoEnterEnabled = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,7 +74,7 @@ public class LiveStreamAudienceActivity extends AppCompatActivity {
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
                 super.onPageScrolled(position, positionOffset, positionOffsetPixels);
                 if (enablePreLoad) {
-                    if (currentState == ViewPager2.SCROLL_STATE_DRAGGING) {
+                    if (currentViewPagerState == ViewPager2.SCROLL_STATE_DRAGGING) {
                         if (positionOffset < pageOffset) {
                             preLoadItem(position);
                         } else {
@@ -103,9 +109,9 @@ public class LiveStreamAudienceActivity extends AppCompatActivity {
             @Override
             public void onPageScrollStateChanged(int state) {
                 super.onPageScrollStateChanged(state);
-                currentState = state;
+                currentViewPagerState = state;
                 if (enablePreLoad) {
-                    if (currentState == ViewPager2.SCROLL_STATE_IDLE) {
+                    if (currentViewPagerState == ViewPager2.SCROLL_STATE_IDLE) {
                         stopPreLoadItems(viewPager2.getCurrentItem());
                     }
                 }
@@ -122,6 +128,12 @@ public class LiveStreamAudienceActivity extends AppCompatActivity {
 
             }
         });
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            PictureInPictureParams pipParams = new PictureInPictureParams.Builder().setAspectRatio(new Rational(9, 16))
+                .setAutoEnterEnabled(pipAutoEnterEnabled).build();
+            setPictureInPictureParams(pipParams);
+        }
     }
 
     // preload +1 or -1 position when start dragging slide
@@ -183,6 +195,7 @@ public class LiveStreamAudienceActivity extends AppCompatActivity {
         }
     }
 
+    // if join room success,and LiveStreamingView to view pager's layout
     private void joinRoom(int position, ViewHolder viewHolder, ZEGOSDKCallBack callBack) {
         LiveRoom liveRoom = slideAdapter.getItem(position);
 
@@ -253,6 +266,14 @@ public class LiveStreamAudienceActivity extends AppCompatActivity {
         if (liveRoom == null) {
             return;
         }
+        findViewById(R.id.minimize).setOnClickListener(v -> {
+            minimize();
+        });
+        findViewById(R.id.leave_live).setOnClickListener(v -> {
+            leave();
+            finish();
+        });
+
         RecyclerView recyclerView = (RecyclerView) viewPager2.getChildAt(0);
 
         RecyclerView.ViewHolder viewHolder = recyclerView.findViewHolderForAdapterPosition(position);
@@ -267,24 +288,110 @@ public class LiveStreamAudienceActivity extends AppCompatActivity {
         }
     }
 
+    private static final String TAG = "LiveStreamAudience";
+    private boolean finishedInOnPauseLifeCycle;
+    private boolean stoppedInPictureInPictureMode;
+
     @Override
     protected void onPause() {
         super.onPause();
         if (isFinishing()) {
-            loadingRooms.clear();
-            roomList.clear();
-            ZEGOLiveStreamingManager.getInstance().leave();
+            finishedInOnPauseLifeCycle = true;
+            leave();
         }
+    }
+
+    private void leave() {
+        loadingRooms.clear();
+        roomList.clear();
+        ZEGOLiveStreamingManager.getInstance().leave();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (!loadingRooms.isEmpty()) {
-            loadingRooms.clear();
-            roomList.clear();
-            ZEGOLiveStreamingManager.getInstance().leave();
+        if (!finishedInOnPauseLifeCycle) {
+            leave();
         }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (isInPictureInPictureMode()) {
+            // means clicked X in pip window,make onStop be called,and will exit pip mode and invoke
+            // 'onPictureInPictureModeChanged' in the sequence
+            stoppedInPictureInPictureMode = true;
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        stoppedInPictureInPictureMode = false;
+    }
+
+    @Override
+    public void onBackPressed() {
+        minimize();
+    }
+
+    @Override
+    protected void onUserLeaveHint() {
+        super.onUserLeaveHint();
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && pipAutoEnterEnabled) {
+            minimize();
+        }
+    }
+
+    @Override
+    public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode, @NonNull Configuration newConfig) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
+        Log.d(TAG,
+            "onPictureInPictureModeChanged() called with: isInPictureInPictureMode = [" + isInPictureInPictureMode
+                + "], newConfig = [" + newConfig + "]");
+        if (isInPictureInPictureMode) {
+            findViewById(R.id.minimize).setVisibility(View.GONE);
+            findViewById(R.id.leave_live).setVisibility(View.GONE);
+
+            ViewGroup viewGroup = getCurrentRoomView();
+            if (viewGroup == null) {
+                return;
+            }
+            viewGroup.findViewById(R.id.live_controls).setVisibility(View.GONE);
+        } else {
+            findViewById(R.id.minimize).setVisibility(View.VISIBLE);
+            findViewById(R.id.leave_live).setVisibility(View.VISIBLE);
+            ViewGroup viewGroup = getCurrentRoomView();
+            if (viewGroup == null) {
+                return;
+            }
+            viewGroup.findViewById(R.id.live_controls).setVisibility(View.VISIBLE);
+            if (stoppedInPictureInPictureMode) {
+                finish();
+            }
+        }
+    }
+
+    void minimize() {
+        ViewGroup viewGroup = getCurrentRoomView();
+        if (viewGroup == null) {
+            return;
+        }
+        Rational aspectRatio = new Rational(viewGroup.getWidth(), viewGroup.getHeight());
+        PictureInPictureParams pipParams = new PictureInPictureParams.Builder().setAspectRatio(aspectRatio).build();
+        enterPictureInPictureMode(pipParams);
+    }
+
+    public ViewGroup getCurrentRoomView() {
+        RecyclerView recyclerView = (RecyclerView) viewPager2.getChildAt(0);
+        int currentItem = viewPager2.getCurrentItem();
+        RecyclerView.ViewHolder viewHolder = recyclerView.findViewHolderForAdapterPosition(currentItem);
+        if (viewHolder != null) {
+            ViewGroup fullViewParent = (ViewGroup) viewHolder.itemView.findViewById(R.id.full_view_layout);
+            return (ViewGroup) fullViewParent.getChildAt(0);
+        }
+        return null;
     }
 
     private void requestPermissionIfNeeded(List<String> permissions, RequestCallback requestCallback) {

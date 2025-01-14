@@ -7,8 +7,9 @@ android {
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.zegocloud.demo.bestpractice"
-        minSdk 21
+//        applicationId "com.zegocloud.demo.bestpractice"
+        applicationId "com.zegocloud.zegouikit.example.prebuiltcall"
+        minSdk 26
         targetSdk 33
         versionCode 1
         versionName "1.0"

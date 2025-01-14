@@ -4,6 +4,7 @@ import android.Manifest.permission;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -34,8 +35,11 @@ public class LiveStreamHostActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        setContentView(R.layout.activity_live_stream);
+        ViewGroup viewGroup = findViewById(R.id.container);
         liveStreamingView = new LiveStreamingView(this);
-        setContentView(liveStreamingView);
+        viewGroup.addView(liveStreamingView);
+
 
         getSupportActionBar().setTitle("Live Streaming");
 

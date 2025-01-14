@@ -1,17 +1,19 @@
 package com.zegocloud.demo.bestpractice.activity.livestreaming;
 
 import android.Manifest.permission;
+import android.app.Activity;
+import android.app.Application.ActivityLifecycleCallbacks;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.text.TextUtils;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import com.permissionx.guolindev.PermissionX;
 import com.permissionx.guolindev.callback.RequestCallback;
 import com.zegocloud.demo.bestpractice.R;
-import com.zegocloud.demo.bestpractice.activity.MainActivity;
 import com.zegocloud.demo.bestpractice.databinding.ActivityLiveStreamingEntryBinding;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,13 +21,55 @@ import java.util.List;
 
 public class LiveStreamEntryActivity extends AppCompatActivity {
 
-    private com.zegocloud.demo.bestpractice.databinding.ActivityLiveStreamingEntryBinding binding;
+    private ActivityLiveStreamingEntryBinding binding;
+    private List<Activity> audienceActivityList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityLiveStreamingEntryBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        getApplication().registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
+            @Override
+            public void onActivityCreated(@NonNull Activity activity, @Nullable Bundle savedInstanceState) {
+                if (activity instanceof LiveStreamAudienceActivity) {
+                    audienceActivityList.add(activity);
+                }
+            }
+
+            @Override
+            public void onActivityStarted(@NonNull Activity activity) {
+
+            }
+
+            @Override
+            public void onActivityResumed(@NonNull Activity activity) {
+
+            }
+
+            @Override
+            public void onActivityPaused(@NonNull Activity activity) {
+
+            }
+
+            @Override
+            public void onActivityStopped(@NonNull Activity activity) {
+
+            }
+
+            @Override
+            public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle outState) {
+
+            }
+
+            @Override
+            public void onActivityDestroyed(@NonNull Activity activity) {
+                if (audienceActivityList.contains(activity)) {
+                    audienceActivityList.remove(activity);
+                }
+            }
+        });
 
         //        binding.liveIdStreaming.getEditText().setText(Build.MANUFACTURER.toLowerCase());
         binding.startLiveStreaming.setOnClickListener(v -> {
@@ -54,11 +98,18 @@ public class LiveStreamEntryActivity extends AppCompatActivity {
                 binding.liveIdStreaming.setError("please input liveID");
                 return;
             }
+
+            if(!audienceActivityList.isEmpty()){
+                audienceActivityList.forEach(Activity::finish);
+                audienceActivityList.clear();
+            }
             Intent intent = new Intent(LiveStreamEntryActivity.this, LiveStreamAudienceActivity.class);
             intent.putExtra("liveID", liveID);
             startActivity(intent);
         });
     }
+
+    private static final String TAG = "LiveStreamEntryActivity";
 
     private void requestPermissionIfNeeded(List<String> permissions, RequestCallback requestCallback) {
         boolean allGranted = true;

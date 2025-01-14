@@ -69,6 +69,7 @@
     app:layout_constraintBottom_toBottomOf="parent"></FrameLayout>
 
   <androidx.constraintlayout.widget.ConstraintLayout
+    android:id="@+id/cohost_container"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_marginStart="12dp"
@@ -96,5 +97,11 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     app:layout_constraintTop_toTopOf="parent" />
+
+  <androidx.constraintlayout.widget.Group
+    android:id="@+id/live_controls"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    app:constraint_referenced_ids="cohost_container,live_message_view,live_bottom_menu_bar_parent,live_audioroom_topbar" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

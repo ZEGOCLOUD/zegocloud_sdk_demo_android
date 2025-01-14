@@ -92,10 +92,10 @@ public class ZEGOCallInvitationManager {
             public void onInComingUserRequestReceived(String requestID, ZIMCallInvitationReceivedInfo info) {
                 Timber.d("onInComingUserRequestReceived() called with: requestID = [" + requestID + "], info = [" + info
                     + "]");
-                RingtoneManager.playRingTone(true);
                 CallExtendedData originalExtendedData = CallExtendedData.parse(info.extendedData);
                 if (originalExtendedData != null) {
                     if (originalExtendedData.isVideoCall() || originalExtendedData.isVoiceCall()) {
+                        RingtoneManager.playRingTone(true);
                         boolean inCallRequest = callInviteInfo != null;
                         String roomID = ZEGOSDKManager.getInstance().expressService.getCurrentRoomID();
                         boolean inRoom = !TextUtils.isEmpty(roomID);

@@ -90,7 +90,7 @@ public class CoHostButton extends ZTextButton {
             @Override
             public void onRoleChanged(String userID, int after) {
                 ZEGOSDKUser currentUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
-                if (currentUser.userID.equals(userID)) {
+                if (currentUser != null && currentUser.userID.equals(userID)) {
                     if (after == Role.AUDIENCE) {
                         mRoomRequestID = null;
                     }

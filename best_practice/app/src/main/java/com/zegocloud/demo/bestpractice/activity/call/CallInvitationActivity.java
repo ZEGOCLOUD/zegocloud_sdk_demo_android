@@ -138,10 +138,21 @@ public class CallInvitationActivity extends AppCompatActivity {
 
     }
 
+    private boolean finishedInOnPauseLifeCycle;
+
     @Override
     protected void onPause() {
         super.onPause();
         if (isFinishing()) {
+            finishedInOnPauseLifeCycle = true;
+            ZEGOCallInvitationManager.getInstance().quitCallAndLeaveRoom();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (!finishedInOnPauseLifeCycle) {
             ZEGOCallInvitationManager.getInstance().quitCallAndLeaveRoom();
         }
     }

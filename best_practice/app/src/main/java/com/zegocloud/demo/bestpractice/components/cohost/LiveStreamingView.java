@@ -9,7 +9,7 @@ import android.view.View;
 import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import com.zegocloud.demo.bestpractice.databinding.ActivityLiveStreamingBinding;
+import com.zegocloud.demo.bestpractice.databinding.LayoutLiveStreamingBinding;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager;
 import com.zegocloud.demo.bestpractice.internal.ZEGOLiveStreamingManager.LiveStreamingListener;
 import com.zegocloud.demo.bestpractice.internal.business.RoomRequestExtendedData;
@@ -36,7 +36,7 @@ import org.json.JSONObject;
 
 public class LiveStreamingView extends FrameLayout {
 
-    private ActivityLiveStreamingBinding binding;
+    private LayoutLiveStreamingBinding binding;
     private SurfaceView mediaPlayerView;
     private CoHostView coHostView;
 
@@ -56,7 +56,7 @@ public class LiveStreamingView extends FrameLayout {
     }
 
     private void initView() {
-        binding = ActivityLiveStreamingBinding.inflate(LayoutInflater.from(getContext()), this, true);
+        binding = LayoutLiveStreamingBinding.inflate(LayoutInflater.from(getContext()), this, true);
     }
 
     public void prepareForStartLive(View.OnClickListener onClickListener) {

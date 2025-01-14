@@ -151,7 +151,7 @@ public class BottomMenuBar extends LinearLayout {
             @Override
             public void onRoleChanged(String userID, int after) {
                 ZEGOSDKUser localUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
-                if (Objects.equals(localUser.userID, userID)) {
+                if (localUser !=null && Objects.equals(localUser.userID, userID)) {
                     onUserRoleChanged(after);
                 }
             }

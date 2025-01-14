@@ -1,6 +1,6 @@
 # Built application files
 *.apk
-*.aar
+
 *.ap_
 *.aab
 
@@ -92,5 +92,3 @@ lint/tmp/
 local.properties
 /local.properties
 /.idea
-
-zego-uikit-android.zip

@@ -37,6 +37,9 @@
       android:exported="false" />
     <activity
       android:name=".activity.livestreaming.LiveStreamAudienceActivity"
+      android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar"
+      android:supportsPictureInPicture="true"
+      android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
       android:exported="false" />
     <activity
       android:name=".activity.LoginActivity"

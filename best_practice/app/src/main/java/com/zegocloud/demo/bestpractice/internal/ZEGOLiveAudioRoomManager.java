@@ -1,6 +1,7 @@
 package com.zegocloud.demo.bestpractice.internal;
 
 import android.text.TextUtils;
+import android.util.Log;
 import com.zegocloud.demo.bestpractice.internal.business.audioroom.LiveAudioRoomExtraInfo;
 import com.zegocloud.demo.bestpractice.internal.business.audioroom.LiveAudioRoomExtraInfo.ValuePairUpdateListener;
 import com.zegocloud.demo.bestpractice.internal.business.audioroom.LiveAudioRoomLayoutConfig;
@@ -30,9 +31,10 @@ public class ZEGOLiveAudioRoomManager {
         private static final ZEGOLiveAudioRoomManager INSTANCE = new ZEGOLiveAudioRoomManager();
     }
 
-    private ZEGOLiveAudioRoomManager(){
+    private ZEGOLiveAudioRoomManager() {
 
     }
+
     public static ZEGOLiveAudioRoomManager getInstance() {
         return Holder.INSTANCE;
     }
@@ -45,6 +47,8 @@ public class ZEGOLiveAudioRoomManager {
     private String hostUserID;
     private boolean lockSeat;
     private LiveAudioRoomExtraInfo audioRoomExtraInfo = new LiveAudioRoomExtraInfo();
+
+    private static final String TAG = "ZEGOLiveAudioRoomManage";
 
     public void init(LiveAudioRoomLayoutConfig layoutConfig) {
         ZEGOSDKManager.getInstance().expressService.addEventHandler(new IExpressEngineEventHandler() {
@@ -59,6 +63,7 @@ public class ZEGOLiveAudioRoomManager {
 
             @Override
             public void onUserEnter(List<ZEGOSDKUser> userList) {
+                Log.d(TAG, "onUserEnter() called with: userList = [" + userList + "]");
                 for (ZEGOSDKUser audioRoomUser : userList) {
                     // if RoomExtraInfo callback is first,and userEnter is next
                     if (!TextUtils.isEmpty(hostUserID) && Objects.equals(audioRoomUser.userID, hostUserID)) {
@@ -83,6 +88,8 @@ public class ZEGOLiveAudioRoomManager {
             @Override
             public void onRoomExtraInfoValuePairUpdateListener(Map<String, Object> updatePairs,
                 Map<String, Object> deletePairs) {
+                Log.d(TAG, "onRoomExtraInfoValuePairUpdateListener() called with: updatePairs = [" + updatePairs
+                    + "], deletePairs = [" + deletePairs + "]");
                 if (updatePairs.containsKey(EXTRA_INFO_VALUE_HOST)) {
                     String lastHostUserID = hostUserID;
                     hostUserID = (String) updatePairs.get(EXTRA_INFO_VALUE_HOST);
@@ -241,7 +248,11 @@ public class ZEGOLiveAudioRoomManager {
     }
 
     public void leave() {
-        clearHost();
+        ZEGOSDKUser localUser = ZEGOSDKManager.getInstance().expressService.getCurrentUser();
+        ZEGOSDKUser hostUser = ZEGOLiveAudioRoomManager.getInstance().getHostUser();
+        if (localUser != null && hostUser != null && Objects.equals(localUser.userID, hostUser.userID)) {
+            clearHost();
+        }
         removeRoomData();
         removeRoomListeners();
         ZEGOSDKManager.getInstance().logoutRoom(null);

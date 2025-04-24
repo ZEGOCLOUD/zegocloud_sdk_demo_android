@@ -154,7 +154,8 @@ public class ZEGOSDKManager {
     }
 
     public void logoutRoom(ZEGOSDKCallBack callBack) {
-        logoutRoom(null);
+        String currentRoomID = expressService.getCurrentRoomID();
+        logoutRoom(currentRoomID,callBack);
     }
 
     private static final String TAG = "ZEGOSDKManager";
